@@ -3,9 +3,9 @@
 # ----------------------- #
 
 url: http://kimh.github.io
-title: My Octopress Blog
-subtitle: A blogging framework for hackers.
-author: Your Name
+title: ↑ ↑ ↓ ↓ ← → ← → K I M
+subtitle:
+author: Kim, Hirokuni
 simple_search: http://google.com/search
 description:
 
@@ -19,7 +19,7 @@ date_format: "ordinal"
 subscribe_rss: /atom.xml
 subscribe_email:
 # RSS feeds can list your email address if you like
-email:
+email: yangkookkim@gmail.com
 
 # ----------------------- #
 #    Jekyll & Plugins     #

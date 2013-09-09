@@ -5,6 +5,7 @@ date: 2013-09-08 21:30
 comments: true
 categories: 
 ---
+![](/images/homepage-docker-logo.png)
 # Hello, world!!
 My name is Kim, Hirokuni, working as software engineer in Japan. Well, this is my first blog that I will write in private life. In this post, I will write about Docker, a wrapper for Linux lxc that makes it so easy to create lightweight container, and the experiment to use it to run cucumber tests in parallel. 
 
