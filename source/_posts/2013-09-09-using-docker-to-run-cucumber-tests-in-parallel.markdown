@@ -6,9 +6,6 @@ comments: true
 categories: 
 ---
 ![](/images/homepage-docker-logo.png)
-# Hello, world!!
-My name is Kim, Hirokuni, working as software engineer in Japan. Well, this is my first blog that I will write in private life. In this post, I will write about Docker, a wrapper for Linux lxc that makes it so easy to create lightweight container, and the experiment to use it to run cucumber tests in parallel. 
-
 ## What is Docker?
 You can think of [Docker](https://www.docker.io/) as a wrapper to create and run Linux LXC very easily. In addition to that, Docker comes with very unique technology called "union file system" that allows you to manage the version of your containers with familiar command like _commit_ or _push_ just like you are using git.
 
