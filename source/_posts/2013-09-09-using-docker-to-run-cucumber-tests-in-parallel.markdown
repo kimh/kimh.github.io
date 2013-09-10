@@ -9,7 +9,7 @@ categories:
 ## What is Docker?
 You can think of [Docker](https://www.docker.io/) as a wrapper to create and run Linux LXC very easily. In addition to that, Docker comes with very unique technology called "union file system" that allows you to manage the version of your containers with familiar command like _commit_ or _push_ just like you are using git.
 
-LXC is the one of the virtualisation technology that allows you to run a container that is isolated from its host machine. In contrast to hypervisor type virtualisation like Xen Server, the LXC provides lightweight virtual machine. You can run more virtual machines in a host than hypervisor type.
+LXC is the one of the virtualisation technology that allows you to run a container that is isolated from its host machine. In contrast to hypervisor type virtualisation like Xen Server, the LXC provides lightweight virtual machine. Typically, you can run more virtual machines in a host than hypervisor type with less resource.
 
 Because of the lightweight nature of LXC, one very good use of it is running many tests.
 
@@ -17,12 +17,10 @@ You want to run your each test in very isolated so that running one test doesn't
 
 With LXC, you can easily archive this because running a machine is as light as running a process!!
 
-If you're using the GitHub for Mac, simply sync your repository and you'll see the new branch.
-
 ## Installing Docker
 It is pretty easy to install Docker if you are using Ubuntu 12.04.
 
-The below instructions are from [instruction page of Docker](http://docs.docker.io/en/latest/installation/ubuntulinux/) I tried them and it just worked.
+The below instructions are from [instruction page of Docker](http://docs.docker.io/en/latest/installation/ubuntulinux/) which worked for me.
 
 ```bash
 sudo apt-get update
@@ -40,12 +38,12 @@ Now you can provision a container via Docker.
 sudo docker run -i -t ubuntu /bin/bash
 ```
 
-If you are using Mac, you need to run Docker on vagrant since Docker doesn't suppor Mac at this point. Installing on Mac is explained [here](http://docs.docker.io/en/latest/installation/vagrant/)
-However, I recommend you first to try Docker on Ubuntu. I tried Docker on Vagant VM, too, but provisioned container does not run as fast as running on Ubuntu probably because Vagrant is alrady running virtualised resource.
+If you are using Mac, you need to run Docker on vagrant since Docker doesn't suppor Mac at this point. Installing on Mac is explained [here](http://docs.docker.io/en/latest/installation/vagrant/).
+However, I recommend you first to try Docker on Ubuntu. I tried Docker on Vagant VM, too, but provisioned container does not run as fast as running on Ubuntu probably because Vagrant is already running virtualized resource.
 
 ## Setting up test environment
 As I mentioned earlier, Docker provides very similar interface to git. You can pull docker images from [public Docker repository](https://index.docker.io/) and use it to make your own images and then push.
-Since I will run cucumber test, you need a container that has environment to run ruby program. Although you can create such container very easily, let's save time by using the image that I created before.
+Since we are running cucumber test, you need a container that has environment to run ruby program. Although you can create such container very easily, let's save time by using the image that I created before.
 
 ```bash
 # You need to be root to use Docker
@@ -69,7 +67,7 @@ cd docker_demo/ci_app
 bundle install
 ```
 
-Now, we have done time-consuming operation, so we want to save the state of the container. We will commit the change of container and save to images
+Now, since we have done time-consuming operation (pulling a image and bundle install), we want to save the state of the container. We will commit the change of container and save to images.
 
 ```bash
 # Dont't type exit on logged in container. If you do, your changes will be discarded!!
@@ -125,12 +123,30 @@ You should see consecutive status code of 0 since all tests should pass. (cucumb
 
 # Wrapping up
 You learned basics things about Docker and how to use it to run cucumber tests in parallel. Since each test is invoked by a container,
-tests are run in parallel and isolated environments. In this example, we only ran the same tests, so it is not very useuful, but you see how you can passes different tests
-to each container and run them at once.
+tests are run in parallel and isolated environments. In this example, we only ran one test in multiple containers, so it is not very useful, but you see how you can passes different tests
+to each container and run them at once. This could be something like this.
 
-# Some disappointed outcome...
-Our demo cucumber tests are very simple and fast to finish, so it looked like Docker runs tests very quickly. However, when I run tests in real project that I am working now,
+```bash
+DID=""
+container="kimh/ruby-base:nice"
+dir="/git/your_repo"
+
+for feature in `find  ./features/`
+do
+  DID=$DID" "`docker run -d $container /bin/bash -c "
+  source /etc/profile
+  cd $dir
+  export LC_CTYPE="ja_JP.UTF-8"
+  export RAILS_ENV=test
+  bundle exec cucumber $feature -r features/
+  "`
+done
+docker wait $DID
+```
+
+# Disappointed outcomes in the real world...
+Our demo cucumber tests are very simple, so Docker ran them very fast in parallel. However, when I run tests in real project that I am working now,
 it does not run as fast as I expected. I can still run 50 containers at the same time in Linux physical machine, but took about 1 hour to finish them and looks like
 host machine is not allocating its resources enough to containers. My next task is running containers faster somehow.
 
-I will update the blog once I found a way!!
+I will update the blog once I found a way.
