@@ -143,10 +143,3 @@ do
 done
 docker wait $DID
 ```
-
-# Disappointed outcomes in the real world...
-Our demo cucumber tests are very simple, so Docker ran them very fast in parallel. However, when I run tests in real project that I am working now,
-it does not run as fast as I expected. I can still run 50 containers at the same time in Linux physical machine, but took about 1 hour to finish them and looks like
-host machine is not allocating its resources enough to containers. My next task is running containers faster somehow.
-
-I will update the blog once I found a way.
