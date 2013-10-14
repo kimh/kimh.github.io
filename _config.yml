@@ -21,6 +21,8 @@ subscribe_email:
 # RSS feeds can list your email address if you like
 email: yangkookkim@gmail.com
 
+include: ["google8a606849bffc3e7b.html"]
+
 # ----------------------- #
 #    Jekyll & Plugins     #
 # ----------------------- #
