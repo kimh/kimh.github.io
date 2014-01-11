@@ -3,7 +3,9 @@ layout: post
 title: "Dockerを使ってCucumberテストを並列実行する"
 date: 2013-09-10 22:15
 comments: true
-categories: 
+categories:
+- jp
+- docker
 ---
 ![](/images/homepage-docker-logo.png)
 ## Dockerってなに？

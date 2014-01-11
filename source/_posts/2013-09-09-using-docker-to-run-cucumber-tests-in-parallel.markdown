@@ -3,7 +3,9 @@ layout: post
 title: "Using docker to run cucumber tests in parallel"
 date: 2013-09-08 21:30
 comments: true
-categories: 
+categories:
+- en
+- docker
 ---
 ![](/images/homepage-docker-logo.png)
 ## What is Docker?

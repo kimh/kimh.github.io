@@ -3,7 +3,9 @@ layout: post
 title: "Using Trusted Builds to generate Docker image automatically"
 date: 2013-11-10 08:20
 comments: true
-categories: 
+categories:
+- en
+- docker
 ---
 ![](/images/construction.png)
 ## Trusted Builds

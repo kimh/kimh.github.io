@@ -3,7 +3,9 @@ layout: post
 title: "PFS（Perfect Forward Secrecy）"
 date: 2014-01-05 15:52
 comments: true
-categories: 
+categories:
+- jp
+- security
 ---
 ![](/images/keyblade.jpg)
 
