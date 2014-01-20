@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "Gothas in Writing Dockerfile"
+title: "Gotchas in Writing Dockerfile"
 date: 2014-01-18 23:22
 comments: true
 categories:
