@@ -4,6 +4,8 @@ title: "Gotchas in Writing Dockerfile"
 date: 2014-01-18 23:22
 comments: true
 categories:
+- en
+- docker
 ---
 ![](/images/instruction.jpg)
 
@@ -33,10 +35,8 @@ For these reasons, you **must** use Dockerfile when you build images. However, w
 
 <a id="add_and_context_in_dockerfile"></a>
 ## ADD and understanding context in Dockerfile
-***ADD*** is the instruction to add local files to Docker image.  The basic usage is very simple. Suppose you want to add a local file called *myfile.txt* to /myfile.txt of image.
+***ADD*** is the instruction to add local files to Docker image.  The basic usage is very simple. Suppose you want to add a local file called *myfile.txt* to */myfile.txt* of image.
 
-
-[foo]: This is your directory entries.
 ```bash
 $ ls
 Dockerfile  mydir  myfile.txt
@@ -62,7 +62,7 @@ Step 2 : ADD /home/vagrant/myfile.txt /
 Error build: /home/vagrant/myfile.txt: no such file or directory
 ```
 
-You got `no such file or directory` error even if you have the file. Why? This is because */home/vagrant/myfile.txt* is not added to the **context** of Dockerfile. Context in Dockerfile means files and directories available to the Dockerfile instructions. This, only files and directories can be added during build.
+You got `no such file or directory` error even if you have the file. Why? This is because */home/vagrant/myfile.txt* is not added to the **context** of Dockerfile. Context in Dockerfile means files and directories available to the Dockerfile instructions. Only files and directories in the context can be added during build.
 Files and sub directories under the current directory are added to the context. You can see this when you run build command.
 
 ```
@@ -70,7 +70,7 @@ $ docker build -t blog .
 Uploading context 10240 bytes
 ```
 
-What's happening here is Docker client makes tarball of entries under the current directory and send it to Docker daemon. It says *Uploading* because your Docker daemon may be running on remote machine.
+What's happening here is Docker client makes tarball of entries under the current directory and send it to Docker daemon. The reason why thiis is required is because your Docker daemon may be running on remote machine. That's why the above command says *Uploading*.
 
 There is a pitfall, though. Since automatically entries under current directories are added to the context, it tries to upload huge files and take longer time for build even if you don't add the file.
 
@@ -138,7 +138,7 @@ From ubuntu
 Run apt-get install ruby
 Run echo done!
 
-# Before
+# After
 From ubuntu
 Run apt-get update
 Run apt-get install ruby
@@ -165,7 +165,8 @@ Even if `true` command doesn't change anything of the image, Docker invalids the
 
 <a id="cache_is_invalid_when_you_add_spaces_between_command_and_arguments_inside_instruction"></a>
 #### Cache is invalid when you add spaces between command and arguments inside instruction
-*However, this invalids cache*
+*This invalids cache*
+
 ```bash
 # Before
 Run apt-get update
@@ -199,12 +200,11 @@ Run apt-get update
 You made this Dockerfile and create image. 3 months later, Ubuntu made some security updates to their repository, so you rebuild the image by using the same Dockerfile hoping your new image includes the security updates.
 However, this doesn't pick up the updates. Since no instructions or files are changed, Docker uses cache and skips doing `apt-get update`.
 
-If you don't want to use cache, just pass `--no-cache` option to build.
+If you don't want to use cache, just pass `-no-cache` option to build.
 
 ```bash
-$ docker build . --no-cache
+$ docker build -no-cache .
 ```
-
 
 <a id="instructions_after_add_never_cached_only_versions_before_0.7.3"></a>
 #### Instructions after ADD never cached (Only versions before 0.7.3)
@@ -219,7 +219,7 @@ Run apt-get install openssh-server
 
 If you have Dockerfile like this, ***Run apt-get update*** and ***Run apt-get install openssh-server***  will never be cached.
 
-The behavior is changed from v7.3 in a good way. It caches even if you have ADD instruction, but invalids cache if file content is changed.
+The behavior is changed from v7.3. It caches even if you have ADD instruction, but invalids cache if file content is changed.
 
 ```bash
 $ echo "Jeff Beck" > rock.you
@@ -259,28 +259,23 @@ You can solve this by directly running apache executable with foreground option.
 
 ```bash
 $ docker run -e APACHE_RUN_USER=www-data \
-             -e APACHE_RUN_GROUP=www-data \
-             -e APACHE_PID_FILE=/var/run/apache2.pid \
-             -e APACHE_RUN_DIR=/var/run/apache2\
-             -e APACHE_LOCK_DIR=/var/lock/apache2\
-             -e APACHE_LOG_DIR=/var/log/apache2\
-             -d apache-server /usr/sbin/apache2 -D NO_DETACH -D FOREGROUND
+                    -e APACHE_RUN_GROUP=www-data \
+                    -e APACHE_PID_FILE=/var/run/apache2.pid \
+                    -e APACHE_RUN_DIR=/var/run/apache2 \
+                    -e APACHE_LOCK_DIR=/var/lock/apache2 \
+                    -e APACHE_LOG_DIR=/var/log/apache2 \
+                    -d apache-server /usr/sbin/apache2 -D NO_DETACH -D FOREGROUND
 ```
 
 Here we are manually doing what `apachectl` does for us and run apache executable. With this approach, apache keeps running on foreground.
 
 The problem is that some application does not run in the foreground. Also, we need to do extra works such as exporting environment variables by ourselves. How can we make it easier?
 
-In this situation, you can add `tail -f /dev/null` to your command and they will run in the foreground forever. We can use this technique in the apache case.
+In this situation, you can add `tail -f /dev/null` to your command. By doing this, even if your main command runs in the background, your container doesn't stop because `tail` is keep running in the foreground. We can use this technique in the apache case.
 
 ```bash
 $ docker run -d apache-server apachectl start && tail -f /dev/null
 ```
 
 Much better, right? Since `tail -f /dev/null` doesn't do any harm, you can use this hack to any applications.
-
-
-
-
-
 
