@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "Protect Your Secret Key With Shamir's Secret Sharing"
+title: "Divide And Manage Secret Data Securely With Shamir's Secret Sharing"
 date: 2014-04-22 20:51
 comments: true
 categories: 
@@ -85,7 +85,7 @@ s3 = shamirsecret.compute_share(3)
 # Once we computed shares, we will throw the secret away because we should be able to recover from shares.
 shamirsecret = nil
 
-# And instantiate another ShamirSecret. We don't pass secret this time because we just want to recover secret.
+# Then we will recover the secret. Instantiate ShamirSecret again. We don't pass secret this time because we just want to recover secret.
 shamirsecret = ShamirSecret.new(2)
 
 # Now we can recover the secret by giving two shares or more since we set threshold to be 2.
@@ -138,7 +138,7 @@ Next thing to decide is the threshold. We will choose `3` as our threshold. This
 
 #### Step3: Create polynomial
 We need to create our polynomial. Polynomial is the equation that looks like **y=3x+1** or **y=5x<sup>2</sup>+10x-3**.
-You can choose any numbers for coefficient, but the degree of your polynomial must be **threshold -1**.
+You can choose any numbers for coefficient, but the degree of your polynomial must be **threshold -1 **.
 
 Our threshold is `3`, so the degree must be `2` in our case. The polynomial of degree of 2 should takes the form of **y=ax<sup>2</sup>+bx+c**. Since you can choose any numbers
 for coefficient, we will use `2` for ***a*** and `1` for ***b***.
@@ -168,7 +168,7 @@ For example, we plot **(x,y)(1, 6)**, **(x,y)(2,13)**, **(x,y)(-2, 9)** on the l
 
 ![Plot points on the line of graph](/images/polygraph1.jpg)
 
-These points are your ***shares***. The value in **x** is called *share number* and the value of **y** is a ***share***.
+These points are your ***shares***. The value in **x** is called *share number* and the value of **y** is a *share*.
 
 Remember that we decided our threshold to be `3`? Three shares are minimum number of shares that we need. That's why we plotted three points.
 
@@ -190,7 +190,7 @@ points derived from the polynomial.
 
 ![](/images/polygraph4.jpg)
 
-Not sure if your line is accurate? Yes, it is is difficult to draw the completely same line because it is curving line.
+Not sure if your line is accurate? Yes, it is is difficult to draw the completely same line because it is curving line. It doesn't matter because drawing graph is just to help you understand the idea.
 
 However, by definition, [2 points are sufficient to define a line, 3 points are sufficient to define a parabola](http://en.wikipedia.org/wiki/Shamir's_Secret_Sharing#Shamir.27s_secret-sharing_scheme) (Wikipedia)
 
@@ -217,9 +217,9 @@ Now substitute **(1)** into **(2)** and **(3)** to get **a**.
 
 We could get **a**. Let's compute **b** next. 
 
-> **(7)** substitute a=2 into **(1)** => **c=b - 4**
+> **(7)** substitute **a=2** into **(1)** => **c=b - 4**
 
-> **(8)** substitute a=2 into **(2)** => **c=2b - 5** 
+> **(8)** substitute **a=2** into **(2)** => **c=2b - 5** 
 
 > **(9)** substitute **(7)** into **(8)** => **b = 1**
 
