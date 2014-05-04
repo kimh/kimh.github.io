@@ -10,7 +10,7 @@ categories:
 
 ![](/images/pieces.jpg)
 
-Recently, I came to know an interesting and new idea about password storage schema called [PollyPassHashing](https://github.com/PolyPassHash/PolyPassHash).
+Recently, I came to know an interesting and new idea about password storage schema called [PollyPassHash](https://github.com/PolyPassHash/PolyPassHash).
 
 I may write about PolyPassHasing in more details in separate post, but in summary, PolyPassHashing proposes a new password storage schema that requires certain numbers of shared keys to decrypt the encrypted password.
 

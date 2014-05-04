@@ -10,7 +10,7 @@ categories:
 
 ![](/images/pieces.jpg)
 
-つい最近[PollyPassHashing](https://github.com/PolyPassHash/PolyPassHash)という新しいパスワード管理手法を知りました。
+つい最近[PollyPassHash](https://github.com/PolyPassHash/PolyPassHash)という新しいパスワード管理手法を知りました。
 
 PolyPassHashingについては時間があれば別のポストで書きますが、要約すると、ある一定数の管理者の正しいパスワードが入力されないと暗号化されたパスワードデータベースを復号化できないようにするための仕組みです。
 
