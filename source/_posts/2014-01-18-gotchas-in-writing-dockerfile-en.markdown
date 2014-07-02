@@ -7,18 +7,20 @@ categories:
 - en
 - docker
 ---
-![](/images/instruction.jpg)
-
 ## Contents of This Article
 #### [Why do we need to use Dockerfile?](#why_do_we_need_to_use_dockerfile)
 #### [ADD and understanding context in Dockerfile](#add_and_understanding_context_in_dockerfile)
+#### [Treat your container like a binary with CMD](#treat_your_container_like_a_binary_with_cmd)
+#### [Difference between CMD and ENTRYPOINT](#difference_between_cmd_and_entrypoint)
+* [exec format error](#exec_format_error)
+
 #### [Build caching: what invalids cache and not?](#build_caching_what_invalids_cache_and_not)
 * [Cache invalidation at one instruction invalids cache of all subsequent instructions](#cache_invalidation_at_one_instruction_invalids_cache_of_all_subsequent_instructions)
 * [Cache is invalid even when adding commands that don't do anything](#cache_is_invalid_even_when_adding_commands_that_dont_do_anything)
 * [Cache is invalid when you add spaces between command and arguments inside instruction](#cache_is_invalid_when_you_add_spaces_between_command_and_arguments_inside_instruction)
 * [Cache is used when you add spaces around commands](#cache_is_used_when_you_add_spaces_around_commands_inside_instruction)
 * [Cache is used for non-idempotent instructions](#cache_is_used_for_non_idempotent_instructions)
-* [Instructions after ADD never cached (Only versions before 0.7.3)](#instructions_after_add_never_cached_only_versions_before_0.7.3)
+* [Instructions after ADD never cached (Only versions prior to 0.7.3)](#instructions_after_add_never_cached_only_versions_prior_to_0.7.3)
 
 #### [Hack to run container in the background](#hack_to_run_container_in_the_background)
 
@@ -33,7 +35,7 @@ Dockerfile is also useful to tell the knowledge of what a job the container does
 
 For these reasons, you **must** use Dockerfile when you build images. However, writing Dockerfile is sometimes painful. In this post, I will write a few tips and gochas in writing Dockerfile so that you love the tool.
 
-<a id="add_and_context_in_dockerfile"></a>
+<a id="add_and_understanding_context_in_dockerfile"></a>
 ## ADD and understanding context in Dockerfile
 ***ADD*** is the instruction to add local files to Docker image.  The basic usage is very simple. Suppose you want to add a local file called *myfile.txt* to */myfile.txt* of image.
 
@@ -84,6 +86,91 @@ Uploading context xxxxxx bytes
 ```
 
 So the best practice is only placing files and directories that you need to add to image under current directory.
+
+<a id="treat_your_container_like_a_binary_with_cmd"></a>
+## Treat your container like a binary with CMD
+By using CMD instruction in Dockerfile, your container acts like a single executable binary. Suppose you have these instructions in your Dockerfile.
+
+```
+# Suppose you have run.sh in the same directory as the Dockerfile
+ADD run.sh /usr/local/bin/run.sh
+CMD ["/usr/local/bin/run.sh"]
+```
+
+When you build a container from this Dockerfile and run with ```docker run -i run_image```, it runs ```/usr/local/bin/run.sh``` script and exists.
+
+If you don't use ```CMD```, you always have to pass the command to the argument: ```docker run -i run_image /usr/local/bin/run.sh```.
+
+This is not just cumbersome, but also considered to be a bad practice from the perspective of operation.
+
+If you have ```CMD``` instruction, the purpose of the container becomes explicit: all what the container wants to do is running the command.
+
+But, if you don't have the instruction, anybody except the person who made the container need to rely on external documentation to know how to run the container properly.
+
+So, in general, you should have ```CMD``` instruction in your Dockerfile.
+
+<a id="difference_between_cmd_and_entrypoint"></a>
+## Difference between CMD and ENTRYPOINT
+  ```CMD``` and ```ENTRYPOINT``` are confusing.
+
+Every commands, either passed as an argument or specified from ```CND``` instruction are passed as argument of binary specified in ```ENTRYPOINT```.
+
+  ```/bin/sh -c``` is the default entrypoint. So if you specify ```CMD date``` without specifying entrypoint, Docker executes it as ```/bin/sh -c date```.
+
+By using entrypoint, you can change the behaviour of your container at run time that makes container operation a bit more flexible.
+
+```
+ENTRYPOINT ["/bin/date"]
+```
+
+With the entrypoint above, the container prints out current date with different format.
+
+```bash
+$ docker run -i clock_container +"%s"
+1404214000
+
+$ docker run -i clock_container +"%F"
+2014-07-01
+```
+
+<a id="exec_format_error"></a>
+### exec format error
+There is one caveat in default entrypoint. For example, you want to execute the following shell script.
+
+***/usr/local/bin/run.sh***
+```bash
+echo "hello, world"
+```
+
+***Dockerfile***
+```
+ADD run.sh /usr/local/bin/run.sh
+RUN chmod +x /usr/local/bin/run.sh
+CMD ["/usr/local/bin/run.sh"]
+```
+
+When you run the container, your expectation is the container prints out ```hello, world```. However, what you will get is a error message that doesn't make sense.
+
+```bash
+$ docker run -i hello_world_image
+2014/07/01 10:53:57 exec format error
+```
+
+You see this message when you didn't put shebang in your script, and because of that, default entrypoint ```/bin/sh -c``` does not know how to run the script.
+
+To fix this, you can either add shebang
+
+***/usr/local/bin/run.sh***
+```bash
+#!/bin/bash
+echo "hello, world"
+```
+
+or you can specify from command line.
+
+```bash
+$ docker run -entrypoint="/bin/bash" -i hello_world_image
+```
 
 <a id="build_caching_what_invalids_cache_and_not"></a>
 ## Build caching: what invalids cache and not?
@@ -206,8 +293,8 @@ If you don't want to use cache, just pass `-no-cache` option to build.
 $ docker build -no-cache .
 ```
 
-<a id="instructions_after_add_never_cached_only_versions_before_0.7.3"></a>
-#### Instructions after ADD never cached (Only versions before 0.7.3)
+<a id="instructions_after_add_never_cached_only_versions_prior_to_0.7.3"></a>
+#### Instructions after ADD never cached (Only versions prior to 0.7.3)
 If you use Docker before v7.3, watch out!
 
 ```bash
@@ -278,4 +365,3 @@ $ docker run -d apache-server apachectl start && tail -f /dev/null
 ```
 
 Much better, right? Since `tail -f /dev/null` doesn't do any harm, you can use this hack to any applications.
-

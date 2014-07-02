@@ -3,7 +3,7 @@ layout: post
 title: "Dockerfileを書く時の注意とかコツとかハックとか"
 date: 2014-01-20 22:20
 comments: true
-categories: 
+categories:
 - jp
 - docker
 ---
@@ -11,13 +11,17 @@ categories:
 ## 目次
 #### [なぜDockerfileを使うのか？](#why_do_we_need_to_use_dockerfile)
 #### [ADDとDockerfileにおいてのコンテキストを理解する](#add_and_understanding_context_in_dockerfile)
+#### [CMDでコンテナをバイナリのように扱う](#treat_your_container_like_a_binary_with_cmd)
+#### [CMDとENTRYPOINTの違い](#difference_between_cmd_and_entrypoint)
+* [exec format error](#exec_format_error)
+
 #### [ビルド時のキャッシュについて: キャッシュが有効なときと無効なとき](#build_caching_what_invalids_cache_and_not)
 * [ある一行でキャッシュが使われなかったらそれ以降のすべての行でキャッシュは使われない](#cache_invalidation_at_one_instruction_invalids_cache_of_all_subsequent_instructions)
 * [何もしないコマンドを追加してもキャッシュは無効になる](#cache_is_invalid_even_when_adding_commands_that_dont_do_anything)
 * [コマンドと引数の間に意味のないスペースの入れてもキャッシュは無効となる](#cache_is_invalid_when_you_add_spaces_between_command_and_arguments_inside_instruction)
 * [Dockerfileの行に意味のないスペースを入れてもキャッシュは有効](#cache_is_used_when_you_add_spaces_around_commands_inside_instruction)
 * [冪等ではない命令でもキャッシュは効いてしまう](#cache_is_used_for_non_idempotent_instructions)
-* [ADD以降にある命令はキャッシュされない (ただし、0.7.3以前のバージョンを使っている場合のみ)](#instructions_after_add_never_cached_only_versions_before_0.7.3)
+* [ADD以降にある命令はキャッシュされない (ただし、0.7.3以前のバージョンを使っている場合のみ)](#instructions_after_add_never_cached_only_versions_prior_to_0.7.3)
 
 #### [ コンテナをバックグラウンドで動かすハック](#hack_to_run_container_in_the_background)
 
@@ -32,7 +36,7 @@ Dockerfileはコンテナが何をしているかを別の人の伝える手段�
 
 簡単に述べましたが、これらの理由で、Dockerイメージを作るなら**必ず**Dockerfileを使ってください。しかし、Dockerfileを書くのは時々嫌になってしまうことがあるのも事実です。このポストではDockerfileを書く時に注意することわかりにくいことを解説します。この記事を読んでDockerfileに慣れてもらえればと思います。
 
-<a id="add_and_context_in_dockerfile"></a>
+<a id="add_and_understanding_context_in_dockerfile"></a>
 ## ADDとDockerfileにおいてのコンテキストを理解する
 ***ADD*** is the instruction to add local files to Docker image.  The basic usage is very simple. Suppose you want to add a local file called *myfile.txt* to /myfile.txt of image.
 ***ADD***はローカルファイルシステムのファイルやディレクトリをDockerイメージにコピーするために使います。使い方は至って簡単。もし、ローカルにある*myfile.txt*をイメージの*/myfile.txt*にコピーしたい場合を説明します。
@@ -84,6 +88,90 @@ Uploading context xxxxxx bytes
 ```
 
 ベストプラクティスとしては、イメージに追加したいファイルとディレクトリのみをbuildを実行するディレクトリに置くべきです。
+
+<a id="treat_your_container_like_a_binary_with_cmd"></a>
+## CMDでコンテナをバイナリのように扱う
+CMDをDockerfileで使うことで、コンテナを一つのバイナリのように扱うことができます。以下のようなDockerfileがあるとします。
+
+```
+# run.shがDockerfileと同じディレクトリにあるとします
+ADD run.sh /usr/local/bin/run.sh
+CMD ["/usr/local/bin/run.sh"]
+```
+
+このDockerfileからコンテナを作って、```docker run -i run_image```で起動すると```/usr/local/bin/run.sh```スクリプトを実行してコンテナは終了します。
+
+もし、```CMD```を使わなかった場合、毎回起動する度に、```docker run -i run_image /usr/local/bin/run.sh```とコマンドラインで指定しないといけません。
+
+これは、面倒なだけではなく、コンテナの運用の観点からもバッドプラクティスです。
+
+もし、```CMD```がDockerfileにあればそのコンテナが何をするのか明確になります。
+しかし、もしなかった場合コンテナを作った人以外の人がこのコンテナを正しく起動するためには外部のドキュメントに頼らなければいけません。
+
+なので一般的には常に```CMD```はDockerfileに指定すべきです。
+
+<a id="difference_between_cmd_and_entrypoint"></a>
+## CMDとENTRYPOINTの違い
+  ```CMD```と```ENTRYPOINT```はとても紛らわしいです。
+
+コマンドラインから引数として渡されたものでも```CMD```から指定されたものでも、すべてのコマンドは```ENTRYPOINT```で指定されたバイナリの引数として渡されます。
+
+  ```/bin/sh -c``` はデフォルトのエントリーポイントです。もし、エントリーポイントなしで```CMD date```と書いた場合、Dockerはこれを```/bin/sh -c date```として実行します。
+
+エントリーポイントを使うことによってコンテナの挙動を実行時に変えることができるので、運用を柔軟にすることができます。
+
+```
+ENTRYPOINT ["/bin/date"]
+```
+
+上記のようなエントリーポイントがあった場合、このコンテナは現在時刻を違うフォーマットで出力することができます。
+
+```bash
+$ docker run -i clock_container +"%s"
+1404214000
+
+$ docker run -i clock_container +"%F"
+2014-07-01
+```
+
+<a id="exec_format_error"></a>
+### exec format error
+デフォルトにエントリーポイントに関して、一つ注意することがあります。例えば以下のようなシェルスクリプトを実行したいとします。
+
+***/usr/local/bin/run.sh***
+```bash
+echo "hello, world"
+```
+
+***Dockerfile***
+```
+ADD run.sh /usr/local/bin/run.sh
+RUN chmod +x /usr/local/bin/run.sh
+CMD ["/usr/local/bin/run.sh"]
+```
+
+このコンテナを起動すると、```hello, world```と出力することをあなたは期待すると思いますが、実際は意味のわからないエラーになります。
+
+```bash
+$ docker run -i hello_world_image
+2014/07/01 10:53:57 exec format error
+```
+
+これは、シェルスクリプトにシェバングを忘れたため、デフォルトのエントリーポイントである```/bin/sh -c```がどのようにしてスクリプトを実行したらいいわからないためエラーになりました。
+
+これを修正するには、単にシェバングを足すか、
+
+***/usr/local/bin/run.sh***
+```bash
+#!/bin/bash
+echo "hello, world"
+```
+
+またはコマンドラインから指定することができます。
+
+```bash
+$ docker run -entrypoint="/bin/bash" -i hello_world_image
+```
 
 <a id="build_caching_what_invalids_cache_and_not"></a>
 ## ビルド時のキャッシュについて: キャッシュが有効なときと無効なとき
@@ -208,7 +296,7 @@ Run apt-get update
 $ docker build -no-cache .
 ```
 
-<a id="instructions_after_add_never_cached_only_versions_before_0.7.3"></a>
+<a id="instructions_after_add_never_cached_only_versions_prior_to_0.7.3"></a>
 #### ADD以降にある命令はキャッシュされない (ただし、0.7.3以前のバージョンを使っている場合のみ)
 もし、0.7.3以前のバージョンを使っている場合、注意してください！
 
