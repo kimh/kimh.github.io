@@ -241,8 +241,6 @@ But, what exactly are they?
 #### Executing action for router
 When user enters your app, router will invoke controller actions. Let's assume you have controller like so: 
 
-TODO: understand how routing automatically mappes controller method.
-TODO: should controller is respnsible for #change event?
 ```js
 MyApp.module("ModuleA", function(ModuleA, Demotape, Backbone, Marionette, $, _){
     ModuleA.Controller = Marionette.Controller.extend({
@@ -273,68 +271,31 @@ Then when user enters your app from `/items`, router will execute `controller.li
 
 So, as you can see, I am using Controller pretty much like the way I use Rails ActionController. I don't see no reason why this is wrong even if doc says it is nothing to do with server side MVC.
 
-#### Executing action for event handler
-Once user enters your app, the job of router is done. Subsequet page change is handled by event in single page application. So, when user wants to move to `/items` page from within your app, you can set event handler and execute proper controller action.
+#### Assemble things together
+You saw how router invokes Controller methods. Now, let's look at `listItem()` method. The method looks something like this:
 
 ```js
-MyApp.on("about:show", function(){
-    var controller = new ModuleA.Controller();
-    controller.showAbout();
-});
-
-```
-
-With the event handler above, you can trigger the event by calling `MyApp.trigger("item:list")` which will call `showAbout()` action.
-
-#### Handling Ajax call for View
-I often ask this quetion myself: `Is it ok that my View does ajax call?` Can you imagine what I am talking about? The View that makes ajax call looks like this.
-
-```js
-FormView = Marionette.ItemView.extend({
-    events: {
-        'click button.submit': 'submitForm'
-    },
+listItem: function() {
+    var deferredFetch = MyApp.request("items")
+    var collectionView = new ItemCollectionView()
     
-    submitForm: function() {
-        // Get form data somehow//
-        var data = getFormData();
-        
-        // Model.save fires ajax call to remote server
-        this.model.save(data, {
-            success: function(){
-                console.log("form is submitted");
-            },
-            error: function(){
-                console.log("error");
-            }
-        });  
-    }
-})
-```
-
-Or should I put this task to Marionette.Controller, instead?
-
-```js
-FormController = Marionette.Controller.extend({
+    // Let's assume you have Spinner class.
+    // This will show loading spinner until items are fetched from server.
+    MyApp.mainRegion.show(new Spinner())
     
-    initialize: function(options){
-        var model = new FormData()
-        var formView = FormView.new(model: model)
+    $.when(deferredFetch).done(function(items) {
+        var collectionView = new ItemCollectionView({collection: items});
         
-        // Suppose formView triggers "form:submit"
-        formView.on("form:submit", function(data) {
-            model.save(data, {
-                success: function() {
-                    console.log("form is submitted");
-                },
-                
-                error: function(){
-                    console.log("error");
-                }
-            })
-        })
-    },
-});
+        // Once fetching is done, show items 
+        MyApp.mainRegion.show(collectionView)
+    })/
+    
+    $.when(deferredFetch).fail(function() {
+        // Let's assume you have OopsView.
+        // This will show "oops, something went wrong" when fethcing fails
+        var oopsView = new OopsView()
+    });
 ```
 
-Both works. It's probably matter of preference, but I want controller to do the job. In this way, View can focus on the mapping of DOM and event.
+As you can see, `listItem()` method interacts many things. It also takes care of showing loading spinner as well as error handling. This is the main responsibility of Controller. It assemble many parts defined in different modules and control the flow of action.
+
