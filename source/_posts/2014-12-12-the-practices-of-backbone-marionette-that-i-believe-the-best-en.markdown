@@ -10,7 +10,7 @@ categories:
 
 # Part1: Design
 
-## Use sub-module
+## Modularize App By Using Sub-Module
 You can create sub-modules as many as you want inside one Marionette app. I higly enoucurage to take the advantage of sub-modules.
 
 This is the how to define your sub-modules.
@@ -189,8 +189,6 @@ When modle is mapped to external resource, it fetches resource from external ser
 #### Validation ####
 Before modle is saved into exteranl database, it needs to validate data. When validation fails, it must notifies by using event. View must respond to validation event and notifies user.
 
-BTW, you should use [Backbone.Validation](https://github.com/thedersen/backbone.validation) plugin if your models needs validation. Never try to write validation code by youself unless you are super confident. It is not easy to write validation in a declarative way.
-
 ### V
 This is the place which easily becomes chaotic because vanilla Backbone puts much burden to View. In Marionette, it is less loaded thanks to Controller, but still you want to be careful.
 
@@ -233,32 +231,60 @@ Controller is loosely defined even in official doc.
 
 Quoted from [here](https://github.com/marionettejs/backbone.marionette/blob/master/docs/marionette.controller.md)
 > Its name can be a cause for confusion, as it actually has nothing to do with the popular MVC architectural pattern. Instead, it's better to think of the Controller as a base object from which you can build.
+>
+> Controllers should be used when you have a task that you would like an object to be responsible for, but none of the other Marionette Classes quite make sense to do it. It's a base object for you to use to create a new Class altogether.
 
 So, as the doc says, Controller is the place where you can put things that fit nowhere else.
 
 But, what exactly are they?
 
-#### Providing entry point for user
-When user hits url bar, the user now enters your app. First, router responds the user entry and decides which route to use. Then, router invokes Controller API. One example of Controller API looks something like this:
+#### Executing action for router
+When user enters your app, router will invoke controller actions. Let's assume you have controller like so: 
 
 TODO: understand how routing automatically mappes controller method.
 TODO: should controller is respnsible for #change event?
 ```js
 MyApp.module("ModuleA", function(ModuleA, Demotape, Backbone, Marionette, $, _){
     ModuleA.Controller = Marionette.Controller.extend({
-        showItem: function() {
-            
-            // Here you write code that "assembles" things to display an item
-            var item = new Item()
-            var itemView = new ItemView(model: item)
-            
-            itemView.render();
+        listItem: function() {
+            // Some codes to show item here
         }
     })
+    
+    return ModuleA
 })
 ```
 
+Now you can pass your controller to `controller` property of router.
+```js
+MyApp.module("ModuleA", function(ModuleA, Demotape, Backbone, Marionette, $, _){
+    var controller = new ModuleA.Controller();
+    
+    ModuleA.Router = Marionette.AppRouter.extend({
+        controller: controller,
+        appRoutes: {
+            "items": "listItem"
+        },
+    });
+})    
+
+```
+Then when user enters your app from `/items`, router will execute `controller.listItem()` method which is defined at `ModuleA.Controller`.
+
 So, as you can see, I am using Controller pretty much like the way I use Rails ActionController. I don't see no reason why this is wrong even if doc says it is nothing to do with server side MVC.
+
+#### Executing action for event handler
+Once user enters your app, the job of router is done. Subsequet page change is handled by event in single page application. So, when user wants to move to `/items` page from within your app, you can set event handler and execute proper controller action.
+
+```js
+MyApp.on("about:show", function(){
+    var controller = new ModuleA.Controller();
+    controller.showAbout();
+});
+
+```
+
+With the event handler above, you can trigger the event by calling `MyApp.trigger("item:list")` which will call `showAbout()` action.
 
 #### Handling Ajax call for View
 I often ask this quetion myself: `Is it ok that my View does ajax call?` Can you imagine what I am talking about? The View that makes ajax call looks like this.
@@ -311,4 +337,4 @@ FormController = Marionette.Controller.extend({
 });
 ```
 
-Both works. Probably you have no choise in vanilla Backbone but doing the first one. However, Marionette comes with Controller, so I want Controller to do the job. In this way, View can focus on the mapping of DOM and event.
+Both works. It's probably matter of preference, but I want controller to do the job. In this way, View can focus on the mapping of DOM and event.
