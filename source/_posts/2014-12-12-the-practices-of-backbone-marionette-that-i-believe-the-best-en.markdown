@@ -8,7 +8,7 @@ categories:
 - javascript
 ---
 
-# Part1: Design
+# About Modularity
 
 ## Modularize App By Using Sub-Module
 You can create sub-modules as many as you want inside one Marionette app. I higly enoucurage to take the advantage of sub-modules.
@@ -43,16 +43,16 @@ You can define public and private methods easily inside a module.
 var MyApp = new Backbone.Marionette.Application();
 
 MyApp.module("ModuleA", function(ModuleA, Demotape, Backbone, Marionette, $, _){
-  // Defining public method 
+  // Defining public method
   ModuleA.publicMethod = function() {
     return privateMethod();
   }
-  
-  // Defining private method 
+
+  // Defining private method
   var privateMethod = function() {
     return "some value"
   }
-  
+
 })
 ```
 
@@ -85,7 +85,7 @@ MyApp.on("start", function() {
     $.when(deferredFetching()).done(function(data) {
         // Set data to Module1
         MyApp.Module1.setData(data);
-        
+
         // Now Module1 is ready to start
         MyApp.Module1.start()
     });
@@ -118,7 +118,7 @@ project_root/
     |      |---templates/
     |              |
     |              |---template1.hbs
-    |      
+    |
     |---big_module/
            |
            |---big_module.js
@@ -145,12 +145,12 @@ project_root/
            |            |---template2.hbs
 ```
 
-`application.js` is where you want to decalre global things of your app. This includes 
+`application.js` is where you want to decalre global things of your app. This includes
 
 - App initialization code
 - App starting code (Ex: `App.start()`)
 - Route definition and initilalization
-- Useful global helper (Ex: `App.currentUser()`, `App.showSuccessNotification()`) 
+- Useful global helper (Ex: `App.currentUser()`, `App.showSuccessNotification()`)
 
 
 I like module-based file hierarchy.
@@ -164,21 +164,95 @@ The role of each file under module direclty is self-explanatory except `<module_
 - module option (Ex. `this.startWithParent = false`)
 - module initilaization (Ex. `addInitializer({})` )
 - event listener (Ex. `Module1.on("event", function({}))`)
-    
+
 Maybe it is fair to explain `<module_name>_controller.js` since it does not exist in Backbone as well.
 
 `<module_name>_controller.js` holds methods that redpond to user entry to your app. One example of such method is something like `showItem()`. What `showItem()` does is that instantiate a view, fetch model, pass it to view, and call `render()` of view to display html. It is similar to what Rails ActionController does.
 
 At last, you may think it is redudant to prefix every files with module name, but this makes it easy to search files by module name. Not must to have, but it is useful once your project becomes bigger where you have many `controller.js` or `view.js`.
 
+# About View
+
+## Organizing DOM with ui
+
+This pattern is inspired by [the blog post](http://lxyuma.hatenablog.com/entry/2014/01/23/002644).
+
+[ui](https://github.com/marionettejs/backbone.marionette/blob/master/docs/marionette.itemview.md#organizing-ui-elements) is simple yet very powerful feature of Marionette. You can organize view's DOM by using `ui`. Here is simple example. Say your have a template.
+
+```html
+<div id="edit_form">
+  <input class="name_input">Name
+  <input class="email_input">Name
+  <button type="submit" class="js-submit">Submit</button>
+</div>
+```
+
+And your view code looks like this.
+
+```js
+MyView = Marionette.ItemView.extend({
+    template: "#edit_form",
+
+    ui: {
+        nameInput: "input.name_input",
+        emailInput: "input.email_input",
+        submitButton: "button.js-submit"
+    }
+});
+```
+
+If you don't have ui, you can access name input by using jQuery like this.
+
+```js
+var myView = new MyView()
+var input = myView.$el.find("input.name_input");
+```
+
+By using `ui`, you can access this way.
+
+```js
+var myView = new MyView()
+var input = myView.ui.nameInput;
+```
+
+The difference is subtle, but later one is more maintainable. Here is why.
+
+Html markups are the subject of frequent changes. This is not an issue if the DOM is referenced from a single place. However, when multiple places look at a single DOM, it becomes difficult to maintain.
+
+Suppose one person changes the class name of a input field from `name_input` to `name_field`. Also suppose that many codes refer the DOM by using jQuery: `myView.$el.find("input.name_input")`. Now, you have to change every codes that uses jQuery to  access the DOM. If the DOM is referenced from tests codes, these tests all suddenly break  and updating every places is the nightmare.
+
+`ui` solves the issue. If your codes refer the DOM by using `myView.ui.nameInput`, then the person who changes the html only needs to change `ui` object.
+
+```js
+ui: {
+    nameInput: "input.name_field",
+    // edited for brevity //
+}
+```
+
+And the rest of codes stay the same. Huge improvement.
+
+So here is the pattern. **Avoid jQuery and always use ui to access view's DOM**
+
+## Using LayoutView to create nested views
+
+This pattern is inspired by [the blog post](http://lostechies.com/derickbailey/2012/03/22/managing-layouts-and-nested-views-with-backbone-marionette/).
+
+I saw different people use different ways to create nested views in vanilla Backbone app. Marionette however provides us a nice pattern to archive this.
+
+We will use Marionette [LayoutView](https://github.com/marionettejs/backbone.marionette/blob/master/docs/marionette.layoutview.md#marionettelayoutview) and [Region](https://github.com/marionettejs/backbone.marionette/blob/master/docs/marionette.region.md#marionetteregion).
+
+
+
+<!--
 ## Responsibility of MVC Components
 
-Marionette brings consistency to your Backbone app. However, this is not enough if you are working in a team. Marionette still allows developrs to write codes whatever they want which rapidly makes your project spaghetti. Let's make it clear what MVC components is responsbile for what. 
+Marionette brings consistency to your Backbone app. However, this is not enough if you are working in a team. Marionette still allows developrs to write codes whatever they want which rapidly makes your project spaghetti. It's important to understand your codes must go where. To understand this, let's clarify the role of MVC components in Marionette.
 
 ### M
 The responsibility of model is clearer than other components, so I will go quickly.
 
-#### Business logic 
+#### Business logic
 Just like model of server side, this is the place where you write code for business logic.
 
 **Ex.** Calculate and return total price by adding tax to sub-total.
@@ -190,10 +264,10 @@ When modle is mapped to external resource, it fetches resource from external ser
 Before modle is saved into exteranl database, it needs to validate data. When validation fails, it must notifies by using event. View must respond to validation event and notifies user.
 
 ### V
-This is the place which easily becomes chaotic because vanilla Backbone puts much burden to View. In Marionette, it is less loaded thanks to Controller, but still you want to be careful.
+This is the place which easily becomes chaotic because vanilla Backbone puts much burden to View.
 
 #### Render html
-When you define View, you will speficy which template to use. Template value is fetched by a model that View holds and then rendered a html.
+When you define View, you will speficy which template to use. Template value is fetched by a model that View holds and rendered as html document.
 
 #### Define mapping of DOM and event
 You can define what action of user for DOM elements do what in View. This is done by `events` propety. I don't want to go detail about this since implementation is not the the subject of post, but just briefly showing an example.
@@ -204,11 +278,11 @@ var MyView = Marionette.ItemView.extend({
         paragraph: 'p',
         button: '.my-button'
     },
-    
+
     events: {
         'click ui.button': 'clickedButton'
     },
-    
+
     clickedButton: function() {
         console.log('I clicked the button!');
     }
@@ -239,7 +313,7 @@ So, as the doc says, Controller is the place where you can put things that fit n
 But, what exactly are they?
 
 #### Executing action for router
-When user enters your app, router will invoke controller actions. Let's assume you have controller like so: 
+When user enters your app, router will invoke controller actions. Let's assume you have controller like so:
 
 ```js
 MyApp.module("ModuleA", function(ModuleA, Demotape, Backbone, Marionette, $, _){
@@ -248,7 +322,7 @@ MyApp.module("ModuleA", function(ModuleA, Demotape, Backbone, Marionette, $, _){
             // Some codes to show item here
         }
     })
-    
+
     return ModuleA
 })
 ```
@@ -257,14 +331,14 @@ Now you can pass your controller to `controller` property of router.
 ```js
 MyApp.module("ModuleA", function(ModuleA, Demotape, Backbone, Marionette, $, _){
     var controller = new ModuleA.Controller();
-    
+
     ModuleA.Router = Marionette.AppRouter.extend({
         controller: controller,
         appRoutes: {
             "items": "listItem"
         },
     });
-})    
+})
 
 ```
 Then when user enters your app from `/items`, router will execute `controller.listItem()` method which is defined at `ModuleA.Controller`.
@@ -278,18 +352,18 @@ You saw how router invokes Controller methods. Now, let's look at `listItem()` m
 listItem: function() {
     var deferredFetch = MyApp.request("items")
     var collectionView = new ItemCollectionView()
-    
+
     // Let's assume you have Spinner class.
     // This will show loading spinner until items are fetched from server.
     MyApp.mainRegion.show(new Spinner())
-    
+
     $.when(deferredFetch).done(function(items) {
         var collectionView = new ItemCollectionView({collection: items});
-        
-        // Once fetching is done, show items 
+
+        // Once fetching is done, show items
         MyApp.mainRegion.show(collectionView)
     })/
-    
+
     $.when(deferredFetch).fail(function() {
         // Let's assume you have OopsView.
         // This will show "oops, something went wrong" when fethcing fails
@@ -299,3 +373,4 @@ listItem: function() {
 
 As you can see, `listItem()` method interacts many things. It also takes care of showing loading spinner as well as error handling. This is the main responsibility of Controller. It assemble many parts defined in different modules and control the flow of action.
 
+-->
