@@ -234,7 +234,7 @@ And the rest of codes stay the same. Huge improvement.
 
 So here is the pattern. **Avoid jQuery and always use ui to access view's DOM**
 
-## Using LayoutView to create nested views
+## Using LayoutView to create nested sub-views
 
 This pattern is inspired by [the blog post](http://lostechies.com/derickbailey/2012/03/22/managing-layouts-and-nested-views-with-backbone-marionette/).
 
@@ -242,7 +242,124 @@ I saw different people use different ways to create nested views in vanilla Back
 
 We will use Marionette [LayoutView](https://github.com/marionettejs/backbone.marionette/blob/master/docs/marionette.layoutview.md#marionettelayoutview) and [Region](https://github.com/marionettejs/backbone.marionette/blob/master/docs/marionette.region.md#marionetteregion).
 
+Let's take a example of creating shopping car page. The page contains two sub-views: item list view and pricing view.
 
+![](/images/shopping_cart1.png)
+
+Here is our code that creates this shopping cart page. First we create a layout html and layout view.
+
+**shopping_cart_layout.html**
+```html
+<div id="shopping_cart_layout">
+  <div id="itemlist_region"></div>
+  <div id="price_region"></div>
+</div>
+```
+
+**shopping_cart_layout_view.js**
+```js
+ShoppingCartLayoutView = Marionette.LayoutView.extend({
+    template: "#shopping_cart_layout",
+
+    regions: {
+        itemListRegion: "#itemlist_region",
+        priceRegion: "#price_region",
+    }
+});
+```
+
+Let's talk briefly about what `LayoutView` is. According to [official doc](https://github.com/marionettejs/backbone.marionette/blob/master/docs/marionette.layoutview.md#marionettelayoutview),
+
+> A LayoutView is a hybrid of an ItemView and a collection of Region objects.
+
+So, it is simply extended from `ItemView` and add `Region` objects. Since it is extended from `ItemView`, you can attach template where you can speficy region container DOM. Layout can hold as many region objects as you want so they are suitable to create a parent view.
+
+Now, let's quickly create our sub-views. The template for these views are not important at this subject so let's imagine we have templates for them.
+
+**item_list_view.js**
+```js
+ItemView = Marionette.ItemView.extend({
+    template: ItemTpl,
+});
+
+ItemListView = Marionette.CollectionView.extend({
+    childView: ItemView
+});
+```
+
+**price_view.js**
+```js
+PriceView = Marionette.ItemView.extend({
+    template: PriceTpl,
+});
+```
+
+Now we are ready to put all things together. Here is the code that renders the shopping cart page. Again, model and collection are not important at this subject, so let's assume we have `items` collections already.
+
+```js
+// Instantiate views
+layoutView = new ShoppingCartLayoutView()
+itemListView = new ItemListView({collections: items}) // We assume that items is the collection
+priceView = new PriceView()
+
+// Put them into layout regions
+layoutView.itemListRegion.show(itemListView);
+layoutView.priceRegion.show(priceview);
+```
+
+That's it. Marionette region provides a convenient method called `show()` where you can pass any views to be rendered. `el` property of passed views are automatically provided by region. This is the reason why you don't see `el` object often when using Marionette.
+
+Creating further nested sub-view is easy. Let's say you want to divide `PriceView` into `TotalPriceView` and `SubTotalPriceView`.
+
+![](/images/shopping_cart2.png)
+
+What you have to do is extending `PriceView` from `LayoutView` instead of `ItemView` and add region objects.
+
+**price_view.js**
+```js
+PriceView = Marionette.Layout.extend({
+    // Let's assume the template has #total_price_region and #sub_total_price_region
+    template: PriceTpl,
+
+    regions: {
+        totalRegion: "#total_price_region",
+        subTotalRegion: "#sub_total_price_region",
+    }
+});
+
+totalPriceView = Marionette.ItemView.extend({
+    template: totalPriceTpl,
+});
+
+subTotalPriceView = Marionette.ItemView.extend({
+    template: subTotalPriceTpl,
+});
+```
+
+And put them together.
+
+```js
+priceView = new PriceView()
+totalPriceView = new TotalPriceView()
+subTotalPriceView = new SubTotalPriceView()
+
+priceView.totalRegion.show(totalPriceView)
+priceView.subTotalRegion.show(subTotalPriceView)
+```
+
+It's a piece of cake.
+
+Before closing this section, let me introduce how to access views rendered inside region because you will often use it.
+
+Let's say you want to access `<div id="total_price">$10000</div>` DOM to get the total price of the shopping cart from your code. In this case, you will use `currentView()` API. The code looks like this:
+
+```js
+layoutView.priceRegion.currentView.totalRegion.currentView.ui.totalPrice
+```
+
+As you can see, it's easy to access the value of nested sub-views.
+
+So here is the pattern. **Use LayoutView to create sub-views over simple ItemView.**
 
 <!--
 ## Responsibility of MVC Components
