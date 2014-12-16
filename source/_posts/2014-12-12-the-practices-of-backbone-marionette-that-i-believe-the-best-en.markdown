@@ -377,7 +377,7 @@ Here is how I use Controller.
 ## Use Controller as integrator
 This pattern is inspired by [the book](https://leanpub.com/marionette-gentle-introduction).
 
-The role of Controller is to instantiate objects, access backend, and build everything together required to render a complete page in a browser.
+The role of Controller is to instantiate objects, access backend, and build complex vies: performs everything required to render a complete page in a browser.
 
 Let's imagine that we want to render previous shopping cart page.
 
@@ -482,6 +482,96 @@ Anyway, I am currently satisfied with the way I use Controller.
 So here is the pattern statement. **Use Controller to provide public methods to router that integrates different componetns**
 
 ## Add event listener on view inside Controller
+I often ask this question myself: *Is it ok that my View does ajax call?* Can you imagine what I am talking about? The View that makes ajax call looks like this.
+
+```js
+FormView = Marionette.ItemView.extend({
+    events: {
+        'click button.submit': 'submitForm'
+    },
+
+    submitForm: function() {
+        // Get form data somehow//
+        var data = getFormData();
+
+        // Model.save fires ajax call to remote server
+        this.model.save(data, {
+            success: function(){
+                console.log("form is submitted");
+            },
+            error: function(){
+                console.log("error");
+            }
+        });  
+    }
+})
+```
+
+So, the code above does:
+
+- Listens on `click` event and call `submitForm` method
+- Makes ajax call to save form data to backend server
+- Execute callbacks for ajax call
+
+This is perfectly valid code in Backbone. However, having Controller in Marionette now, I'd rather want to push this task to Controller and let View simply listening and triggering event.
+
+```js
+FormView = Marionette.ItemView.extend({
+    events: {
+        'click button.submit': 'submitForm'
+    },
+
+    submitForm: function() {
+        this.trigger("form:submit");
+    }
+});
+
+FormController = Marionette.Controller.extend({
+
+    showForm: function(options){
+        var formView = FormView.new();
+
+        formView.on("form:submit", function(data) {
+            model.save(data, {
+                success: function() {
+                    console.log("form is submitted");
+                },
+
+                error: function(){
+                    console.log("error");
+                }
+            })
+        })
+
+        MyApp.region.show(formView);
+    },
+});
+```
+
+So, I simply move codes from View to Controller. What's the benefits of doing this? One thing is that View code gets slimed and it can focus on the mapping of DOM and event.
+
+Our Controller instead gets messy but that's the tradeoff. After all, that's how Controller is designed to be used: ***put things that fit nowhere else***.
+
+It also makes sense to put codes to Controller because Controller has more accesses to other components than a view. Imagine a case where you have to access other views inside the event listener.
+You can't access other views directly from a view. Instead, you need to use App level event publishing to archive this.
+
+On the other hand, Controller has an access to everything needed to render the page so it can easily talk to other views.
+
+Before, finishing this section, let me slightly imporve the code above. We will use [View.triggers](https://github.com/marionettejs/backbone.marionette/blob/master/docs/marionette.view.md#viewtriggers).
+
+Here is the new version of View:
+
+```js
+FormView = Marionette.ItemView.extend({
+    triggers: {
+        'click button.submit': 'form:submit'
+    }
+});
+```
+
+We removed `submitForm` method and `event` objects. Instead, we use `trigger` object that does the two thing at the same time: *listen on events* and *trigger events*. Now, our view is much cleaner than before!!
+
+So here is the pattern. **Add event listener on views inside Controller**
 
 <!--
 ## Responsibility of MVC Components
