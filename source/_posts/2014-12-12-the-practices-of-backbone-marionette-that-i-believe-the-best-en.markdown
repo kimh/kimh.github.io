@@ -42,7 +42,7 @@ You can define public and private methods easily inside a module.
 ```js
 var MyApp = new Backbone.Marionette.Application();
 
-MyApp.module("ModuleA", function(ModuleA, Demotape, Backbone, Marionette, $, _){
+MyApp.module("ModuleA", function(ModuleA, MyApp, Backbone, Marionette, $, _){
   // Defining public method
   ModuleA.publicMethod = function() {
     return privateMethod();
@@ -68,7 +68,7 @@ MyApp.ModuleA.privateMethod() // => "Uncaught TypeError: undefined is not a func
 You can start and stop your sub-modules individually. By default, sub-modules is automatically started when Marionette parent app is started. You can change this behavior by `startWithParent` option.
 
 ```js
-MyApp.module("ModuleA", function(ModuleA, Demotape, Backbone, Marionette, $, _){
+MyApp.module("ModuleA", function(ModuleA, MyApp, Backbone, Marionette, $, _){
     this.startWithParent = false;
 })
 
@@ -263,7 +263,7 @@ ShoppingCartLayoutView = Marionette.LayoutView.extend({
 
     regions: {
         itemListRegion: "#itemlist_region",
-        priceRegion: "#price_region",
+        priceListRegion: "#price_region",
     }
 });
 ```
@@ -289,7 +289,7 @@ ItemListView = Marionette.CollectionView.extend({
 
 **price_view.js**
 ```js
-PriceView = Marionette.ItemView.extend({
+PriceListView = Marionette.ItemView.extend({
     template: PriceTpl,
 });
 ```
@@ -300,24 +300,24 @@ Now we are ready to put all things together. Here is the code that renders the s
 // Instantiate views
 layoutView = new ShoppingCartLayoutView()
 itemListView = new ItemListView({collections: items}) // We assume that items is the collection
-priceView = new PriceView()
+priceListView = new PriceListView()
 
 // Put them into layout regions
 layoutView.itemListRegion.show(itemListView);
-layoutView.priceRegion.show(priceview);
+layoutView.priceListRegion.show(priceview);
 ```
 
 That's it. Marionette region provides a convenient method called `show()` where you can pass any views to be rendered. `el` property of passed views are automatically provided by region. This is the reason why you don't see `el` object often when using Marionette.
 
-Creating further nested sub-view is easy. Let's say you want to divide `PriceView` into `TotalPriceView` and `SubTotalPriceView`.
+Creating further nested sub-view is easy. Let's say you want to divide `PriceListView` into `TotalPriceListView` and `SubTotalPriceListView`.
 
 ![](/images/shopping_cart2.png)
 
-What you have to do is extending `PriceView` from `LayoutView` instead of `ItemView` and add region objects.
+What you have to do is extending `PriceListView` from `LayoutView` instead of `ItemView` and add region objects.
 
 **price_view.js**
 ```js
-PriceView = Marionette.Layout.extend({
+PriceListView = Marionette.Layout.extend({
     // Let's assume the template has #total_price_region and #sub_total_price_region
     template: PriceTpl,
 
@@ -327,11 +327,11 @@ PriceView = Marionette.Layout.extend({
     }
 });
 
-totalPriceView = Marionette.ItemView.extend({
+totalPriceListView = Marionette.ItemView.extend({
     template: totalPriceTpl,
 });
 
-subTotalPriceView = Marionette.ItemView.extend({
+subTotalPriceListView = Marionette.ItemView.extend({
     template: subTotalPriceTpl,
 });
 ```
@@ -339,12 +339,12 @@ subTotalPriceView = Marionette.ItemView.extend({
 And put them together.
 
 ```js
-priceView = new PriceView()
-totalPriceView = new TotalPriceView()
-subTotalPriceView = new SubTotalPriceView()
+priceListView = new PriceListView()
+totalPriceListView = new TotalPriceListView()
+subTotalPriceListView = new SubTotalPriceListView()
 
-priceView.totalRegion.show(totalPriceView)
-priceView.subTotalRegion.show(subTotalPriceView)
+priceListView.totalRegion.show(totalPriceListView)
+priceListView.subTotalRegion.show(subTotalPriceListView)
 ```
 
 It's a piece of cake.
@@ -354,12 +354,130 @@ Before closing this section, let me introduce how to access views rendered insid
 Let's say you want to access `<div id="total_price">$10000</div>` DOM to get the total price of the shopping cart from your code. In this case, you will use `currentView()` API. The code looks like this:
 
 ```js
-layoutView.priceRegion.currentView.totalRegion.currentView.ui.totalPrice
+layoutView.priceListRegion.currentView.totalRegion.currentView.ui.totalPrice
 ```
 
 As you can see, it's easy to access the value of nested sub-views.
 
-So here is the pattern. **Use LayoutView to create sub-views over simple ItemView.**
+So here is the pattern statement. **Use LayoutView to create sub-views over simple ItemView.**
+
+# About Controller
+
+If you come from vanilla Backbone, you are not sure what the role of Controller in Marionette. Unforunately, official doc doesn't help you either.
+
+Quoted from [here](https://github.com/marionettejs/backbone.marionette/blob/master/docs/marionette.controller.md)
+> Its name can be a cause for confusion, as it actually has nothing to do with the popular MVC architectural pattern. Instead, it's better to think of the Controller as a base object from which you can build.
+>
+> Controllers should be used when you have a task that you would like an object to be responsible for, but none of the other Marionette Classes quite make sense to do it. It's a base object for you to use to create a new Class altogether.
+
+This makes you further puzzled. How should I use Controller?
+
+Here is how I use Controller.
+
+## Use Controller as integrator
+The role of Controller is to instantiate objects, access backend, and build everything together required to render a complete page in a browser.
+
+Let's imagine that we want to render previous shopping cart page.
+
+![](/images/shopping_cart1.png)
+
+To render the page, several things has to be done.
+
+- Instantiate views (layout views, item list views, etc)
+- Retrieve items and prices (ajax call to backend server)
+- Render views (call show() method of views)
+- Error handling (when ajax call fail )
+
+I will perform these things in a single method `showShoppingCart()` and this method goes to our imaginary ShoppingCart module.
+
+```js
+MyApp.module("ShoppingCart", function(ShoppingCart, MyApp, Backbone, Marionette, $, _){
+    ShoppingCart.Controller = {
+        showShoppingCart: function() {
+            // implementation of this methods
+        }
+    }
+})
+```
+
+Inside the method, you write codes that perform things that I mentioned above.
+
+```js
+MyApp.module("ShoppingCart", function(ShoppingCart, MyApp, Backbone, Marionette, $, _){
+    ShoppingCart.Controller = Marionette.Controller.extend({
+        showShoppingCart: function() {
+            // Let's suppose that items and its prices are saved in backend.
+            // So, we need to retrive them from backend server asynchronously.
+            // Imaginary MyApp.request("items") and MyApp.request("price")
+            // returns promise object that fetches items and prices respectively.
+            var fetchingItems = MyApp.request("items");
+            var fetchingPrice = MyApp.request("prices");
+
+            // Instantiate a layout view that provides regions
+            var layoutView = new ShoppingCartLayoutView();
+
+            $.when(fetchingItems, fetchingPrice).done(function(items, prices){
+                // Add callback method when ajax call is successfully done.
+                // First, we will build collections
+                var itemList = new ItemList([items]);
+                var priceList = new PriceList([prices]);
+
+                // Now we can instantiate views and pass colletion to them
+                var itemListView = new ItemListView({collection: itemList});
+                var priceListView = new PriceListView({collection: priceList});
+
+                // At this point we are ready to render a complete paga for user
+                layoutView.itemListRegion.show(itemListView);
+                layoutView.priceListRegion.show(priceListView);
+            });
+
+            // We don't want user to see nasty error, so let's add error handling
+            $.when(fetchingItems, fetchingPrice).fail(function() {
+                // OopsView will show error message to user
+                var oopsView = new OopsView({error: "oops, something went wrong"});
+                layoutView.render(oopsView);
+            });
+        }
+    });
+})
+```
+
+The example above is pseudo code so it doesn't work, but should be easy enough to demonstrate my idea.
+
+As you can see, my `showShoppingCart()` method does everthing including error handling required to show a shopping cart page to user. Now, somebody must call the method. Who will it be?
+
+It is the responsibility of `Marionette.AppRouter`. Router is the first one that responds when user enters your app. It's job is to look at url and call Controller's methods. Here is how you can pass your `ShoppingCart.Controller` to router.
+
+```js
+// First we need to define router
+MyApp.Router = Marionette.AppRouter.extend({
+    appRoutes: {
+        "shopping_cart": "showShoppingCart",
+    }
+});
+
+// Instantiate controller object
+var shoppingCartController = new ShoppingCat.Controller();
+
+// Register controller
+new MyApp.Router({
+    controller: shoppingCartController
+});
+```
+
+Now, if user accesses `/shopping_cart` page, router will call `showShoppingCart()` method of `ShoppingCat.Controller`.
+
+There is one implicit thing involved here. The object you pass to `controller` property of router must implement the method that you define in `appRoutes` objects.
+
+In this case, since you define `"shopping_cart": "showShoppingCart"` in routing, `shoppingCartController` object must implement `showShoppingCart()` method, which is exactly how we implemented our controller earlier.
+
+If you have experiences with server side MVC frameworks, like RoR, then you may notice that I am using the Marionette Controller like the way I use ActionController of Rails: called by router and does everything needed to render a view. Isn't this contradictory to what [official doc]([here](https://github.com/marionettejs/backbone.marionette/blob/master/docs/marionette.controller.md) says?
+
+***Yes and no***. Yes, because it is used by router and both performs similar tasks. No, because the role of server side Controller is providing HTTP terminal point whereas client side Controller does not do this.
+
+Anyway, I am currently satisfied with the way I use Controller.
+
+So here is the pattern statement. **Use Controller to provide public methods to router that integrates different componetns**
 
 <!--
 ## Responsibility of MVC Components
@@ -433,7 +551,7 @@ But, what exactly are they?
 When user enters your app, router will invoke controller actions. Let's assume you have controller like so:
 
 ```js
-MyApp.module("ModuleA", function(ModuleA, Demotape, Backbone, Marionette, $, _){
+MyApp.module("ModuleA", function(ModuleA, MyApp, Backbone, Marionette, $, _){
     ModuleA.Controller = Marionette.Controller.extend({
         listItem: function() {
             // Some codes to show item here
@@ -446,7 +564,7 @@ MyApp.module("ModuleA", function(ModuleA, Demotape, Backbone, Marionette, $, _){
 
 Now you can pass your controller to `controller` property of router.
 ```js
-MyApp.module("ModuleA", function(ModuleA, Demotape, Backbone, Marionette, $, _){
+MyApp.module("ModuleA", function(ModuleA, MyApp, Backbone, Marionette, $, _){
     var controller = new ModuleA.Controller();
 
     ModuleA.Router = Marionette.AppRouter.extend({
