@@ -571,7 +571,7 @@ FormView = Marionette.ItemView.extend({
 
 We removed `submitForm` method and `event` objects. Instead, we use `trigger` object that does the two thing at the same time: *listen on events* and *trigger events*. Now, our view is much cleaner than before!!
 
-So here is the pattern. **Add event listener on views inside Controller**
+So here is the pattern. **Add event listener on Views inside Controller**
 
 <!--
 ## Responsibility of MVC Components
