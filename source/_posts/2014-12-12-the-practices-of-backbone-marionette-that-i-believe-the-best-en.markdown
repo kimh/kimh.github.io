@@ -375,6 +375,8 @@ This makes you further puzzled. How should I use Controller?
 Here is how I use Controller.
 
 ## Use Controller as integrator
+This pattern is inspired by [the book](https://leanpub.com/marionette-gentle-introduction).
+
 The role of Controller is to instantiate objects, access backend, and build everything together required to render a complete page in a browser.
 
 Let's imagine that we want to render previous shopping cart page.
@@ -478,6 +480,8 @@ If you have experiences with server side MVC frameworks, like RoR, then you may 
 Anyway, I am currently satisfied with the way I use Controller.
 
 So here is the pattern statement. **Use Controller to provide public methods to router that integrates different componetns**
+
+## Add event listener on view inside Controller
 
 <!--
 ## Responsibility of MVC Components
