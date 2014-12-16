@@ -8,12 +8,14 @@ categories:
 - javascript
 ---
 
-# About Modularity
+# On Marionette.Module
 
-## Modularize App By Using Sub-Module
+## Dividing app into sub-modules
 You can create sub-modules as many as you want inside one Marionette app. I higly enoucurage to take the advantage of sub-modules.
 
-This is the how to define your sub-modules.
+You can also say that sub-module is sub-application. The easiest way to imagine is Gmail. Gmail has many features: email, chat, contacts list, etc. You can construct each component as sub-modules in Marionette.
+
+Let's look at how we define sub-modules.
 
 ```js
 var MyApp = new Backbone.Marionette.Application();
@@ -33,6 +35,67 @@ You may wonder about parameters in callback function. This is automatically pass
 
 They are defined in local scope and only accessbile from the callback function.
 
+One of the benefits of using sub-modules is you can write codes of a module into separate files with ease.
+
+Let's say you define a `ShoppingCart` module.
+
+```js
+var MyApp = new Backbone.Marionette.Application();
+MyApp.module("ShoppingCart", function(ModuleA, MyApp, Backbone, Marionette, $, _){
+    // your module code goes here //
+})
+```
+
+You can easily guess what the module does: it takes care everything about shopping cart feature in your app.
+
+One single `ShoppingCart` module is still too big to be written in a file. So, let's divide them into separate files based on functionality: `Controller` and `View`.
+
+***shopping_cart_controller.js***
+```js
+MyApp.module("ShoppingCart", function(ShoppingCart, MyApp, Backbone, Marionette, $, _){
+    ShoppingCart.Controller = Marionette.Controller.extend({
+        // controller implementation goes here
+    });
+})
+```
+
+***shopping_cart_view.js***
+```js
+MyApp.module("ShoppingCart", function(ShoppingCart, MyApp, Backbone, Marionette, $, _){
+    ShoppingCart.View = Marionette.ItemView.extend({
+        // view implementation goes here
+    });
+})
+```
+When you create modules, you don't have to worry whether your module is already defined or not. If not defined, Marionette defines for you. So, in the previous case, `ShoppingCart` module is defined in ***shopping_cart_controller.js*** and ***shopping_cart_view.js*** just adds things to the module.
+
+Maybe `ShoppingCart.View` still contains too many views to be in a single file such as `show_view` or `new_view`. You can further divide your `ShoppingCart` sub-module like this.
+
+***show/shopping_cart_view.js***
+```js
+MyApp.module("ShoppingCart.View", function(View, MyApp, Backbone, Marionette, $, _){
+    View.ShowView = Marionette.ItemView.extend({
+        // show view implementation goes here
+    });
+})
+```
+
+***new/shopping_cart_view.js***
+```js
+MyApp.module("ShoppingCart.View", function(View, MyApp, Backbone, Marionette, $, _){
+    View.NewView = Marionette.ItemView.extend({
+        // new view implementation goes here
+    });
+})
+```
+
+I create separate directories for `show` and `new` and put each file there. You can continue this process until you are satisfied.
+
+Probalby enough words are spoken to introduce sub-modules.
+
+So here is the pattern statement. **Use sub-modules to seperate codes**
+
+<!--
 Now, let's see the benifits of using sub-modules.
 
 ### Encapsulation
@@ -62,8 +125,9 @@ Now other sub-modules can access public method but not private one.
 MyApp.ModuleA.publicMethod() // => "some value"
 MyApp.ModuleA.privateMethod() // => "Uncaught TypeError: undefined is not a function"
 ```
+-->
 
-### Starting and Stopping Modules
+## Starting and stopping sub-modules
 
 You can start and stop your sub-modules individually. By default, sub-modules is automatically started when Marionette parent app is started. You can change this behavior by `startWithParent` option.
 
@@ -96,7 +160,7 @@ How about `stop()`? I don't think you need to use `stop()` unless your app is hu
 
 However, `stop()` is very useful when it comes to testing. I will cover this in the following post.
 
-## File Hierarchy and Naming Convention
+## Organize your files by module base
 
 There is no canonical way to organize your files in Backbone.Marionette. However, it is good to agree on a convetion for how to name and organize files in project if you are working in a team. This is the pattern that works for me.
 
@@ -232,7 +296,7 @@ ui: {
 
 And the rest of codes stay the same. Huge improvement.
 
-So here is the pattern. **Avoid jQuery and always use ui to access view's DOM**
+So here is the pattern statement. **Avoid jQuery and always use ui to access view's DOM**
 
 ## Using LayoutView to create nested sub-views
 
@@ -571,7 +635,7 @@ FormView = Marionette.ItemView.extend({
 
 We removed `submitForm` method and `event` objects. Instead, we use `trigger` object that does the two thing at the same time: *listen on events* and *trigger events*. Now, our view is much cleaner than before!!
 
-So here is the pattern. **Add event listener on Views inside Controller**
+So here is the pattern statement. **Add event listener on Views inside Controller**
 
 <!--
 ## Responsibility of MVC Components
