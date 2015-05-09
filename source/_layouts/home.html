@@ -1,0 +1,20 @@
+{% capture root_url %}{{ site.root | strip_slash }}{% endcapture %}
+{% include head.html %}
+<body>
+    <div id="container">
+        <header>
+            <span id='name-helper'>{{ site.author }}</span>
+            <canvas   id="myCanvas" width="700" ></canvas>
+                <br><br>
+                <h1>{{ site.title }}</h1>
+                <br>
+        </header>
+
+        <div id="main" role="main">
+            <nav role="navigation" >{% include navigation.html %}</nav>
+            {{ content | expand_urls: root_url }}
+        </div>
+        {% include footer.html %}
+    </div> <!--! end of #container -->
+    {% include bottom_scripts.html %}
+</body>
