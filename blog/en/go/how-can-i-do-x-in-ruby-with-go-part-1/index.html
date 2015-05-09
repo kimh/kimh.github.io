@@ -1,0 +1,848 @@
+<!doctype html>
+<!-- paulirish.com/2008/conditional-stylesheets-vs-css-hacks-answer-neither/ -->
+<!--[if lt IE 7]> <html class="no-js ie6 oldie" lang="en"> <![endif]-->
+<!--[if IE 7]>    <html class="no-js ie7 oldie" lang="en"> <![endif]-->
+<!--[if IE 8]>    <html class="no-js ie8 oldie" lang="en"> <![endif]-->
+<!-- Consider adding an manifest.appcache: h5bp.com/d/Offline -->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en"> <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+
+  <!-- Use the .htaccess and remove these lines to avoid edge case issues.
+       More info: h5bp.com/b/378 -->
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+
+  <title>Program Is Made At Night</title>
+  <meta name="author" content="Kim, Hirokuni">
+  
+
+  
+  <!-- Mobile viewport optimized: j.mp/bplateviewport -->
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+
+  <!-- Place favicon.ico and apple-touch-icon.png in the root directory: mathiasbynens.be/notes/touch-icons -->
+
+  <!-- CSS: implied media=all -->
+  <!-- CSS concatenated and minified via ant build script-->
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <link href='https://fonts.googleapis.com/css?family=Inconsolata' rel='stylesheet' type='text/css'>
+  <!-- end CSS-->
+
+  <!-- More ideas for your <head> here: h5bp.com/d/head-Tips -->
+
+  <!-- All JavaScript at the bottom, except for Modernizr / Respond.
+       Modernizr enables HTML5 elements & feature detects; Respond is a polyfill for min/max-width CSS3 Media Queries
+       For optimal performance, use a custom Modernizr build: www.modernizr.com/download/ -->
+  <script src="/javascripts/libs/modernizr-2.0.6.min.js"></script>
+</head>
+
+<body id="post">
+
+  <div id="container">
+    <nav role="navigation" ><ul class="main-navigation">
+  <li style='float:left;margin-right:5px'><a class='nav' href="/">Home</a></li>
+</ul><br><br>
+</nav>
+    <article>
+
+
+  <h1 class="article-title">(WIP) Ruby to Go: How Can I Do X in Ruby With Go? (Part I)</h1>
+  <div class="article-content"><p>I am a programmer who can write decent Ruby and some Javascript.</p>
+
+<p>These two languages were all I know. I wanted to add Go to my list of programming language, so I started learning Go.</p>
+
+<p>It&rsquo;s boring to read programming books to study programming languages, so I decided to learn Go by porting some programs written in Ruby.</p>
+
+<p>While I was porting Ruby program to Go, I came to think it is useful if there is a cheatsheet that I can loop up in order to convert idiomatic Ruby code to Go.</p>
+
+<p>Ruby and Go are totally different language, so sometimes it is impossible to simply translate Ruby code to Go.
+However, it is possible in most cases to write Go code that is sematically equivalant to Ruby code.</p>
+
+<p>So, here is a <strong><em>How can I do X in Ruby with Go?</em></strong> cheetsheet.</p>
+
+<p>I hope you find it useful.</p>
+
+<h2>Contents of this artcile</h2>
+
+<h3>Array and Enumerable Operation</h3>
+
+<ul>
+<li><a href="#create_array">Create array</a></li>
+<li><a href="#append_an_element_to_array">Append element to array</a></li>
+<li><a href="#concatenate_arrays">Concatenate arrays</a></li>
+<li><a href="#create_multi_dimension_aray">Create multi dimension array</a></li>
+<li><a href="#create_empty_array">Create empty array</a></li>
+<li><a href="#iterate_on_an_array">Iterate on array</a></li>
+<li><a href="#looping_n_times">Looping N times</a></li>
+<li><a href="#clone_array">Clone array</a></li>
+<li><a href="#accessing_elements_of_an_array_by_range">Accessing elements of array by range</a></li>
+<li><a href="#compare_array">Compare array</a></li>
+<li><a href="#check_if_array_includes_an_element">Check if array includes an element</a></li>
+</ul>
+
+
+<h3>Method Definition</h3>
+
+<ul>
+<li><a href="#define_a_method_with_optional_parameter">Define a method with optional parameter</a></li>
+<li><a href="#define_a_method_with_variable_length_argument">Define a method with variable length arugment</a></li>
+</ul>
+
+
+<h3>MathematicOperation</h3>
+
+<ul>
+<li><a href="#modular_of_negative_number">Modular of negative number</a></li>
+</ul>
+
+
+<h3>Misc</h3>
+
+<ul>
+<li><a href="#nil_checking">Nil checking</a></li>
+<li><a href="#checking_the_class">Checking the class</a></li>
+</ul>
+
+
+<p><a id="array_and_enumerable_operation"></a></p>
+
+<h2>Array and Enumerable Operation</h2>
+
+<p>Array is very powerful data structure and enumerable is probably the most frequently used object in Ruby.</p>
+
+<p>In Go, we have two different enumerable data structures: <strong>array</strong> and <strong>slice</strong>.
+I don&rsquo;t write about details about them since it is not the goal of this post, but array is low-level data structure that slice refers to.</p>
+
+<p><a id="create_array"></a></p>
+
+<h3>Create array</h3>
+
+<p><strong><em>Ruby:</em></strong></p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="n">numbers</span> <span class="o">=</span> <span class="o">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="o">]</span>
+</span><span class='line'><span class="n">fruits</span> <span class="o">=</span> <span class="o">[</span><span class="s2">&quot;apple&quot;</span><span class="p">,</span> <span class="s2">&quot;banana&quot;</span><span class="p">,</span> <span class="s2">&quot;grape&quot;</span><span class="o">]</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p><strong><em>Go:</em></strong></p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='go'><span class='line'><span class="nx">numbers</span> <span class="o">:=</span> <span class="p">[]</span><span class="kt">int</span><span class="p">{</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">}</span>
+</span><span class='line'><span class="nx">fruits</span> <span class="o">:=</span> <span class="p">[]</span><span class="kt">string</span><span class="p">{</span><span class="s">&quot;apple&quot;</span><span class="p">,</span> <span class="s">&quot;banana&quot;</span><span class="p">,</span> <span class="s">&quot;grape&quot;</span><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>In the case of Go, <code>numbers</code> and <code>words</code> are <strong>slice</strong>, not <strong>array</strong>. Array is primitive data structure, not frequently used in Go code.
+If you want to archive similar things to Ruby array, slice should work for you.</p>
+
+<p><a id="append_an_element_to_array"></a></p>
+
+<h3>Append an element to array</h3>
+
+<p><strong><em>Ruby:</em></strong></p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="n">numbers</span> <span class="o">=</span> <span class="o">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="o">]</span>
+</span><span class='line'><span class="n">numbers</span> <span class="o">&lt;&lt;</span> <span class="mi">4</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p><strong><em>Go:</em></strong></p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='go'><span class='line'><span class="nx">numbers</span> <span class="o">:=</span> <span class="p">[]</span><span class="kt">int</span><span class="p">{</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">}</span>
+</span><span class='line'><span class="nx">numbers</span><span class="p">.</span><span class="nb">append</span><span class="p">(</span><span class="nx">numbers</span><span class="p">,</span> <span class="mi">4</span><span class="p">)</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p><strong>append</strong> adds elements to slice and <strong><em>return new slice</em></strong>. Therefore, you have to reassign to itself.</p>
+
+<p><a id="concatenate_arrays"></a></p>
+
+<h3>Concatenate arrays</h3>
+
+<p><strong><em>Ruby:</em></strong></p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="n">numbers1</span> <span class="o">=</span> <span class="o">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="o">]</span>
+</span><span class='line'><span class="n">numbers2</span> <span class="o">=</span> <span class="o">[</span><span class="mi">4</span><span class="p">,</span><span class="mi">5</span><span class="p">,</span><span class="mi">6</span><span class="o">]</span>
+</span><span class='line'><span class="n">numbers1</span> <span class="o">=</span> <span class="n">numbers1</span> <span class="o">+</span> <span class="n">numbers2</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p><strong><em>Go:</em></strong></p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='go'><span class='line'><span class="nx">numbers1</span> <span class="o">:=</span> <span class="p">[]</span><span class="kt">int</span><span class="p">{</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">}</span>
+</span><span class='line'><span class="nx">numbers2</span> <span class="o">:=</span> <span class="p">[]</span><span class="kt">int</span><span class="p">{</span><span class="mi">4</span><span class="p">,</span><span class="mi">5</span><span class="p">,</span><span class="mi">6</span><span class="p">}</span>
+</span><span class='line'><span class="nx">numbers1</span> <span class="p">=</span> <span class="nb">append</span><span class="p">(</span><span class="nx">numbers1</span><span class="p">,</span> <span class="nx">numbers2</span><span class="o">...</span><span class="p">)</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p><code>...</code> suffix on the slice indicates that it should be passed as the variadic argument, expanded as each <code>int</code> elements inside <code>append</code>.
+Thus, this is equivalent to below:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='go'><span class='line'><span class="nx">numbers1</span> <span class="o">:=</span> <span class="p">[]</span><span class="kt">int</span><span class="p">{</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">}</span>
+</span><span class='line'><span class="nx">numbers1</span> <span class="p">=</span> <span class="nb">append</span><span class="p">(</span><span class="nx">numbers1</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">6</span><span class="p">)</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p><a id="create_multi_dimension_aray"></a></p>
+
+<h3>Create multi dimension array</h3>
+
+<p><strong><em>Ruby:</em></strong></p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="n">multi_array</span> <span class="o">=</span> <span class="o">[[</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="o">]</span><span class="p">,</span><span class="o">[</span><span class="mi">4</span><span class="p">,</span><span class="mi">5</span><span class="p">,</span><span class="mi">6</span><span class="o">]]</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p><strong><em>Go:</em></strong></p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='go'><span class='line'><span class="kd">var</span> <span class="nx">mul</span> <span class="p">[][]</span><span class="kt">int</span> <span class="p">=</span> <span class="p">[][]</span><span class="kt">int</span><span class="p">{</span> <span class="p">{</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">},</span> <span class="p">{</span><span class="mi">4</span><span class="p">,</span><span class="mi">5</span><span class="p">,</span><span class="mi">6</span><span class="p">}</span> <span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p><a id="create_empty_array"></a></p>
+
+<h3>Create empty array</h3>
+
+<p><strong><em>Ruby:</em></strong></p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="n">array</span> <span class="o">=</span> <span class="o">[]</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p><strong><em>Go:</em></strong></p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='go'><span class='line'><span class="kd">var</span> <span class="nx">array</span> <span class="p">[]</span><span class="kt">int</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>When slice is declared, but not initialised, the slice points to an array of size 0.</p>
+
+<p><a id="iterate_on_an_array"></a></p>
+
+<h3>Iterate on array</h3>
+
+<p><strong><em>Ruby:</em></strong></p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="n">numbers</span> <span class="o">=</span> <span class="o">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="o">]</span>
+</span><span class='line'><span class="n">numbets</span><span class="o">.</span><span class="n">each</span> <span class="p">{</span><span class="o">|</span><span class="n">num</span><span class="o">|</span> <span class="nb">puts</span> <span class="n">num</span> <span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p><strong><em>Go:</em></strong></p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='go'><span class='line'><span class="nx">numbers</span> <span class="o">:=</span> <span class="p">[]</span><span class="kt">int</span><span class="p">{</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">}</span>
+</span><span class='line'><span class="k">for</span> <span class="nx">_</span><span class="p">,</span> <span class="nx">num</span> <span class="o">:=</span> <span class="k">range</span> <span class="nx">numbers</span> <span class="p">{</span>
+</span><span class='line'>  <span class="nx">fmt</span><span class="p">.</span><span class="nx">Println</span><span class="p">(</span><span class="nx">num</span><span class="p">)</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>If you want to access the index while iterating over the slice, replace <code>_</code> with other variable, for example, <code>i</code>.</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='go'><span class='line'><span class="nx">numbers</span> <span class="o">:=</span> <span class="p">[]</span><span class="kt">int</span><span class="p">{</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">}</span>
+</span><span class='line'><span class="k">for</span> <span class="nx">i</span><span class="p">,</span> <span class="nx">num</span> <span class="o">:=</span> <span class="k">range</span> <span class="nx">numbers</span> <span class="p">{</span>
+</span><span class='line'>  <span class="nx">fmt</span><span class="p">.</span><span class="nx">Println</span><span class="p">(</span><span class="s">&quot;index: &quot;</span><span class="p">,</span> <span class="nx">i</span><span class="p">,</span> <span class="s">&quot;number: &quot;</span><span class="p">,</span> <span class="nx">num</span><span class="p">)</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p><a id="looping_n_times"></a></p>
+
+<h3>Looping N times</h3>
+
+<p><strong><em>Ruby:</em></strong></p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="mi">5</span><span class="o">.</span><span class="n">times</span> <span class="p">{</span><span class="o">|</span><span class="n">num</span><span class="o">|</span> <span class="nb">puts</span> <span class="n">num</span><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p><strong><em>Go:</em></strong></p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='go'><span class='line'><span class="k">for</span> <span class="nx">num</span><span class="o">:=</span><span class="mi">0</span><span class="p">;</span> <span class="nx">num</span> <span class="p">&lt;</span><span class="mi">5</span><span class="p">;</span> <span class="nx">num</span><span class="o">++</span> <span class="p">{</span>
+</span><span class='line'>  <span class="nx">fmt</span><span class="p">.</span><span class="nx">Println</span><span class="p">(</span><span class="nx">num</span><span class="p">)</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p><a id="clone_array"></a></p>
+
+<h3>Clone array</h3>
+
+<p><strong><em>Ruby:</em></strong></p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="n">new_array</span> <span class="o">=</span> <span class="n">old_array</span><span class="o">.</span><span class="n">clone</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p><strong><em>Go:</em></strong></p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='go'><span class='line'><span class="nx">new_array</span> <span class="o">:=</span> <span class="nb">make</span><span class="p">([]</span><span class="kt">int</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="nx">old_array</span><span class="p">))</span>
+</span><span class='line'><span class="nb">copy</span><span class="p">(</span><span class="nx">new_array</span><span class="p">,</span> <span class="nx">old_array</span><span class="p">)</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p><a id="accessing_elements_of_an_array_by_range"></a></p>
+
+<h3>Accessing elements of array by range</h3>
+
+<p><strong><em>Ruby:</em></strong></p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="n">numbers</span><span class="o">=[</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">,</span><span class="mi">4</span><span class="p">,</span><span class="mi">5</span><span class="o">]</span>
+</span><span class='line'><span class="n">numbers</span><span class="o">[</span><span class="mi">0</span><span class="o">.</span><span class="n">.</span><span class="mi">3</span><span class="o">]</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p><strong><em>Go:</em></strong></p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='go'><span class='line'><span class="nx">ary</span> <span class="o">:=</span> <span class="p">[]</span><span class="kt">int</span><span class="p">{</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">,</span><span class="mi">4</span><span class="p">,</span><span class="mi">5</span><span class="p">}</span>
+</span><span class='line'><span class="nx">ary</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">4</span><span class="p">]</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Note that, with <code>from:to</code>, <code>to</code> is the index where to end <strong>but not including the index itself</strong>.</p>
+
+<p><a id="compare_array"></a></p>
+
+<h3>Compare array</h3>
+
+<p><strong><em>Ruby:</em></strong></p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="k">if</span> <span class="n">ary1</span> <span class="o">==</span> <span class="n">ary2</span>
+</span><span class='line'>  <span class="nb">puts</span> <span class="s2">&quot;Same array&quot;</span>
+</span><span class='line'><span class="k">end</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p><strong><em>Go:</em></strong></p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+</pre></td><td class='code'><pre><code class='go'><span class='line'><span class="nx">same</span> <span class="o">:=</span> <span class="kc">true</span>
+</span><span class='line'><span class="k">for</span> <span class="nx">i</span><span class="p">,</span> <span class="nx">elm</span><span class="o">:=</span> <span class="k">range</span> <span class="nx">ary1</span> <span class="p">{</span>
+</span><span class='line'>   <span class="k">if</span> <span class="nx">ary2</span><span class="p">[</span><span class="nx">i</span><span class="p">]</span> <span class="o">!=</span> <span class="nx">r</span> <span class="p">{</span> <span class="nx">same</span> <span class="p">=</span> <span class="kc">false</span> <span class="p">}</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">if</span> <span class="nx">same</span> <span class="o">==</span> <span class="kc">true</span> <span class="p">{</span>
+</span><span class='line'>  <span class="nx">fmt</span><span class="p">.</span><span class="nx">Println</span><span class="p">(</span><span class="s">&quot;Same slice&quot;</span><span class="p">)</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>You cannot compare slice in Go. You will get <code>slice can only be compared to nil</code> error if you try to do that.</p>
+
+<p><a id="check_if_array_includes_an_element"></a></p>
+
+<h3>Check if array includes an element</h3>
+
+<p><strong><em>Ruby:</em></strong></p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="n">fruits</span> <span class="o">=</span> <span class="o">[</span><span class="s2">&quot;apple&quot;</span><span class="p">,</span> <span class="s2">&quot;banana&quot;</span><span class="p">,</span> <span class="s2">&quot;grape&quot;</span><span class="o">]</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">if</span> <span class="n">fruits</span><span class="o">.</span><span class="n">include?</span><span class="p">(</span><span class="s2">&quot;apple&quot;</span><span class="p">)</span>
+</span><span class='line'>  <span class="nb">puts</span> <span class="s2">&quot;include!&quot;</span>
+</span><span class='line'><span class="k">end</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p><strong><em>Go:</em></strong></p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+</pre></td><td class='code'><pre><code class='go'><span class='line'><span class="nx">include</span> <span class="o">:=</span> <span class="kc">false</span>
+</span><span class='line'><span class="nx">fruits</span> <span class="o">:=</span> <span class="p">[]</span><span class="kt">string</span><span class="p">{</span><span class="s">&quot;apple&quot;</span><span class="p">,</span> <span class="s">&quot;banana&quot;</span><span class="p">,</span> <span class="s">&quot;grape&quot;</span><span class="p">}</span>
+</span><span class='line'><span class="k">for</span> <span class="nx">_</span><span class="p">,</span> <span class="nx">elm</span> <span class="o">:=</span> <span class="k">range</span> <span class="nx">fruits</span> <span class="p">{</span>
+</span><span class='line'>  <span class="k">if</span> <span class="nx">elm</span> <span class="o">==</span> <span class="s">&quot;apple&quot;</span> <span class="p">{</span>
+</span><span class='line'>    <span class="nx">include</span> <span class="p">=</span> <span class="kc">true</span>
+</span><span class='line'>    <span class="k">break</span>
+</span><span class='line'>  <span class="p">}</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">if</span> <span class="nx">include</span> <span class="o">==</span> <span class="kc">true</span> <span class="p">{</span>
+</span><span class='line'>  <span class="nx">fmt</span><span class="p">.</span><span class="nx">Println</span><span class="p">(</span><span class="s">&quot;include!&quot;</span><span class="p">)</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h2>Method Definition</h2>
+
+<p>There are two things that are equivalant to Ruby&rsquo;s method in Go: <strong>method</strong> and <strong>function</strong>.
+Method is a type of function but requires specific receiver.</p>
+
+<p><a id="define_a_method_with_optional_parameter"></a></p>
+
+<h3>Define a method with optional parameter</h3>
+
+<p><strong><em>Ruby:</em></strong></p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="k">def</span> <span class="nf">greeting</span><span class="p">(</span><span class="n">word</span><span class="o">=</span><span class="s2">&quot;hello!&quot;</span><span class="p">)</span>
+</span><span class='line'>  <span class="nb">puts</span> <span class="n">word</span>
+</span><span class='line'><span class="k">end</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p><strong><em>Go:</em></strong></p>
+
+<p>This is not possbile in Go. Go does not support optional parameter in function or method definition.
+One workaround is using struct.</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+</pre></td><td class='code'><pre><code class='go'><span class='line'><span class="kd">type</span> <span class="nx">greetingArg</span> <span class="kd">struct</span> <span class="p">{</span> <span class="nx">word</span> <span class="kt">string</span> <span class="p">}</span>
+</span><span class='line'><span class="kd">func</span> <span class="nx">greeting</span><span class="p">(</span><span class="nx">opt</span> <span class="nx">greetingArg</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>  <span class="nx">word</span> <span class="o">:=</span> <span class="nx">opt</span><span class="p">.</span><span class="nx">word</span>
+</span><span class='line'>  <span class="k">if</span> <span class="nx">word</span> <span class="o">==</span> <span class="s">&quot;&quot;</span> <span class="p">{</span>
+</span><span class='line'>    <span class="nx">fmt</span><span class="p">.</span><span class="nx">Println</span><span class="p">(</span><span class="s">&quot;hello!&quot;</span><span class="p">)</span>
+</span><span class='line'>  <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+</span><span class='line'>    <span class="nx">fmt</span><span class="p">.</span><span class="nx">Println</span><span class="p">(</span><span class="nx">word</span><span class="p">)</span>
+</span><span class='line'>  <span class="p">}</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="nx">greeting</span><span class="p">(</span><span class="nx">greetingArg</span><span class="p">{})</span>
+</span><span class='line'><span class="nx">greeting</span><span class="p">(</span><span class="nx">greetingArg</span><span class="p">{</span><span class="s">&quot;bye!&quot;</span><span class="p">})</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p><a id="define_a_method_with_variable_length_argument"></a></p>
+
+<h3>Define a method with variable length argument</h3>
+
+<p><strong><em>Ruby:</em></strong></p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="k">def</span> <span class="nf">foo</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">)</span>
+</span><span class='line'>  <span class="n">args</span><span class="o">.</span><span class="n">each</span> <span class="p">{</span><span class="o">|</span><span class="n">arg</span><span class="o">|</span> <span class="nb">puts</span> <span class="n">arg</span><span class="p">}</span>
+</span><span class='line'><span class="k">end</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p><strong><em>Go:</em></strong></p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class='go'><span class='line'><span class="kd">func</span> <span class="nx">foo</span><span class="p">(</span><span class="nx">arg</span> <span class="o">...</span><span class="kt">int</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>  <span class="k">for</span> <span class="nx">_</span><span class="p">,</span> <span class="nx">arg</span> <span class="o">:=</span> <span class="k">range</span> <span class="nx">arg</span> <span class="p">{</span>
+</span><span class='line'>    <span class="nx">fmt</span><span class="p">.</span><span class="nx">Prinln</span><span class="p">(</span><span class="nx">arg</span><span class="p">)</span>
+</span><span class='line'>  <span class="p">}</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h2>Mathematic Operation</h2>
+
+<p><a id="modular_of_negative_number"></a></p>
+
+<h3>Modular of negative number</h3>
+
+<p>Both Ruby and Go supports modular of negative number. However, their behavior is different.</p>
+
+<p><strong><em>Ruby:</em></strong></p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="o">-</span><span class="mi">5</span> <span class="o">%</span> <span class="mi">3</span> <span class="o">=&gt;</span> <span class="mi">1</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p><strong><em>Go:</em></strong></p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='go'><span class='line'><span class="o">-</span><span class="mi">5</span> <span class="o">%</span> <span class="mi">3</span> <span class="p">=&gt;</span> <span class="o">-</span><span class="mi">2</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Go follows <strong><em>truncated toward zero</em></strong> for the division of negative number.</p>
+
+<p>If you want to get the same value that Ruby returns, here is how to do this.</p>
+
+<p><strong><em>Go:</em></strong></p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class='go'><span class='line'><span class="nx">divider</span> <span class="o">:=</span> <span class="mi">3</span>
+</span><span class='line'><span class="nx">mod</span> <span class="o">:=</span> <span class="o">-</span><span class="mi">5</span> <span class="o">%</span> <span class="nx">divider</span>
+</span><span class='line'><span class="k">if</span> <span class="nx">mod</span> <span class="p">&lt;</span> <span class="mi">0</span> <span class="p">{</span>
+</span><span class='line'>  <span class="nx">mod</span> <span class="p">=</span> <span class="nx">mod</span> <span class="o">+</span> <span class="nx">divider</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Note that values returnd by Ruby and Go are both mathematically correct. It&rsquo;s just there are two ways to define negative modulo.</p>
+
+<h2>Misc</h2>
+
+<p><a id="nil_checking"></a></p>
+
+<h3>Nil checking</h3>
+
+<p><strong><em>Ruby:</em></strong></p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="k">if</span> <span class="n">val</span><span class="o">.</span><span class="n">nil?</span>
+</span><span class='line'>  <span class="nb">puts</span> <span class="s2">&quot;val is nil&quot;</span>
+</span><span class='line'><span class="k">end</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p><strong><em>Go:</em></strong></p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+</pre></td><td class='code'><pre><code class='go'><span class='line'><span class="kd">var</span> <span class="nx">str</span> <span class="kt">string</span>
+</span><span class='line'><span class="k">if</span> <span class="nx">str</span> <span class="o">==</span><span class="s">&quot;&quot;</span> <span class="p">{</span>
+</span><span class='line'>  <span class="nx">fmt</span><span class="p">.</span><span class="nx">Println</span><span class="p">(</span><span class="s">&quot;str is empty&quot;</span><span class="p">)</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="kd">var</span> <span class="nx">i</span> <span class="kt">int</span>
+</span><span class='line'><span class="k">if</span> <span class="nx">i</span> <span class="o">==</span> <span class="mi">0</span> <span class="p">{</span>
+</span><span class='line'>  <span class="nx">fmt</span><span class="p">.</span><span class="nx">Println</span><span class="p">(</span><span class="s">&quot;i is zero&quot;</span><span class="p">)</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>When you declear a variable without intialization, the variable is set to zero value for its type.
+Below is default zero value for primitive types.</p>
+
+<table>
+<thead>
+<tr>
+<th></th>
+<th> Type </th>
+<th align="center"> Value </th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td></td>
+<td> string </td>
+<td align="center"> <strong>&lsquo;&rsquo;</strong></td>
+</tr>
+<tr>
+<td></td>
+<td> int    </td>
+<td align="center"> <strong>0</strong></td>
+</tr>
+<tr>
+<td></td>
+<td> float  </td>
+<td align="center"> <strong>0.0</strong></td>
+</tr>
+<tr>
+<td></td>
+<td> boolean </td>
+<td align="center"> <strong>false</strong></td>
+</tr>
+<tr>
+<td></td>
+<td> pointer </td>
+<td align="center"> <strong>nil</strong></td>
+</tr>
+<tr>
+<td></td>
+<td> interface </td>
+<td align="center"> <strong>nil</strong></td>
+</tr>
+<tr>
+<td></td>
+<td> slice </td>
+<td align="center"> <strong>nil</strong></td>
+</tr>
+<tr>
+<td></td>
+<td> map </td>
+<td align="center"> <strong>nil</strong></td>
+</tr>
+</tbody>
+</table>
+
+
+<p><a id="checking_the_class"></a></p>
+
+<h3>Checking the class</h3>
+
+<p><strong><em>Ruby:</em></strong></p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="nb">puts</span> <span class="s2">&quot;abc&quot;</span><span class="o">.</span><span class="n">class</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p><strong><em>Go:</em></strong></p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='go'><span class='line'><span class="kn">import</span> <span class="s">&quot;reflect&quot;</span>
+</span><span class='line'>
+</span><span class='line'><span class="nx">fmt</span><span class="p">.</span><span class="nx">Println</span><span class="p">(</span><span class="nx">reflect</span><span class="p">.</span><span class="nx">TypeOf</span><span class="p">(</span><span class="s">&quot;abc&quot;</span><span class="p">))</span>
+</span></code></pre></td></tr></table></div></figure>
+
+</div>
+  
+    <section>
+      <h1>Comments</h1>
+      <div id="disqus_thread"><div id="disqus_thread"></div>
+<script type="text/javascript">
+  var disqus_shortname = 'kimstechblog';
+  var disqus_identifier = 'http://kimh.github.io/blog/en/go/how-can-i-do-x-in-ruby-with-go-part-1/';
+  var disqus_url = 'http://kimh.github.io/blog/en/go/how-can-i-do-x-in-ruby-with-go-part-1/';
+  //var disqus_developer = 1;
+  (function() {
+    var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+    dsq.src = 'http://' + disqus_shortname + '.disqus.com/embed.js';
+    (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+  })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+</div>
+    </section>
+  
+
+</article>
+
+
+      <p class="meta">
+      
+        <a class="basic-alignment left nav" href="/blog/jp/security/protect-your-secret-key-with-shamirs-secret-sharing-jp/" title="Previous Post: シャミアの秘密分散法で秘密のデータを分割管理する">&laquo; シャミアの秘密分散法で秘密のデータを分割管理する</a>
+      
+      
+        <a class="basic-alignment right nav" href="/blog/en/criu/experiment-to-suspend-and-resume-docker-container-with-criu/" title="Next Post: Experiment To Suspend/Resume Docker Container With CRIU">Experiment To Suspend/Resume Docker Container With CRIU &raquo;</a>
+      
+    </p>
+  </div>
+    <script>
+      var name = document.getElementById('name-helper').innerHTML;
+
+      var canvas = document.getElementById('myCanvas');
+
+      //The name (up to 28 characters long, including white space)
+      var length = name.length;
+      if (length>28){//Exceed character length limit, remove canvas
+          canvas.remove();
+      }
+      else{
+            
+
+        var context = canvas.getContext('2d');
+
+        //calculate width and length
+        var width=700/1.25/length;
+        var start;
+        if (width>40){
+          width=40;
+        }
+
+        var height= width/2;
+
+        //the start postion of the link list
+        var start = (700-width*length*1.25)/2;
+        var horizon = 5;
+
+        //DO NOT CHANGE THOSE
+        var mid_horizon = horizon+height/2;
+        var name_counter =0;
+
+        var x = height/5;
+        var y = height/5;
+        var interval=width/4;
+        
+        var radius = 0.75*width;
+        
+        var text_pos=width*1.1;
+
+
+        canvas.height=mid_horizon+width/2+width/2.1+5;
+        
+        for (var i=1;i<name.length+1;i++){
+
+          context.beginPath();
+          context.strokeStyle='#F9BF3B';
+          
+          //the rectangle
+          context.rect(start, horizon, width, height);
+
+          //the middle line
+          context.moveTo(start+width/2,horizon);
+          context.lineTo(start+width/2,horizon+height);
+
+          //if this is the last element
+          if (i==name.length){
+            context.moveTo(start+width/2,horizon+height);
+            context.lineTo(start+width,horizon);
+
+          }
+          else{
+            //the arrow
+            context.moveTo(start+0.75*width,mid_horizon);
+            context.lineTo(start+width+interval,mid_horizon);
+
+            context.moveTo(start+width+interval,mid_horizon);
+            context.lineTo(start+width+interval-x,mid_horizon+y);
+          
+            context.moveTo(start+width+interval,mid_horizon);
+            context.lineTo(start+width+interval-x,mid_horizon-y); 
+          }
+          
+       
+        
+          var startAngle = 1.2 * Math.PI;
+          var endAngle = 1 * Math.PI;
+          var counterClockwise = true;
+      
+          context.stroke();
+            
+          context.beginPath();
+          context.arc(start+width/4+radius*0.81, mid_horizon+width/2, radius, startAngle, endAngle, counterClockwise);
+
+          context.moveTo(start+width/4+radius*0.81-radius,mid_horizon+width/2);
+          context.lineTo(start+width/4+radius*0.81-radius-x,mid_horizon-y+width/2);
+
+          context.moveTo(start+width/4+radius*0.81-radius,mid_horizon+width/2);
+          context.lineTo(start+width/4+radius*0.81-radius+x,mid_horizon-y+width/2); 
+
+          context.font = ' 15pt Calibri';
+          context.fillStyle = '#859900';
+          context.fillText(name.charAt(name_counter), start+width/4+radius*0.81-radius-width/14, mid_horizon+width/2+width/2.1);
+
+          context.lineWidth=1;
+          context.strokeStyle='#F9BF3B';
+          context.stroke();
+          start+=width/2*2+interval;      
+          name_counter+=1;
+        }
+      }
+
+    </script>
+
+  <!-- JavaScript at the bottom for fast page loading -->
+
+  <!-- Grab Google CDN's jQuery, with a protocol relative URL; fall back to local if offline -->
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.6.2/jquery.min.js"></script>
+  <script>window.jQuery || document.write('<script src="js/libs/jquery-1.6.2.min.js"><\/script>')</script>
+
+
+  <!-- scripts concatenated and minified via ant build script-->
+  <script defer src="/javascripts/app.js"></script>
+  <!-- end scripts-->
+
+	
+
+  <!-- Prompt IE 6 users to install Chrome Frame. Remove this if you want to support IE 6.
+       chromium.org/developers/how-tos/chrome-frame-getting-started -->
+  <!--[if lt IE 7 ]>
+    <script src="//ajax.googleapis.com/ajax/libs/chrome-frame/1.0.3/CFInstall.min.js"></script>
+    <script>window.attachEvent('onload',function(){CFInstall.check({mode:'overlay'})})</script>
+  <![endif]-->
+ 
+
+  <script type="text/javascript">
+    (function(){
+      var twitterWidgets = document.createElement('script');
+      twitterWidgets.type = 'text/javascript';
+      twitterWidgets.async = true;
+      twitterWidgets.src = 'http://platform.twitter.com/widgets.js';
+      document.getElementsByTagName('head')[0].appendChild(twitterWidgets);
+    })();
+  </script>
+
+
+
+
+
+
+
+</body>
+</html>
+

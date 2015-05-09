@@ -1,0 +1,883 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+  <title><![CDATA[Category: javascript | Program Is Made At Night]]></title>
+  <link href="http://kimh.github.io/blog/categories/javascript/atom.xml" rel="self"/>
+  <link href="http://kimh.github.io/"/>
+  <updated>2015-05-09T15:17:33+09:00</updated>
+  <id>http://kimh.github.io/</id>
+  <author>
+    <name><![CDATA[Kim, Hirokuni]]></name>
+    <email><![CDATA[yangkookkim@gmail.com]]></email>
+  </author>
+  <generator uri="http://octopress.org/">Octopress</generator>
+
+  
+  <entry>
+    <title type="html"><![CDATA[The Practices of Backbone.Marionette That I believe The Best]]></title>
+    <link href="http://kimh.github.io/blog/en/javascript/the-practices-of-backbone-marionette-that-i-believe-the-best-en/"/>
+    <updated>2014-12-12T14:08:00+09:00</updated>
+    <id>http://kimh.github.io/blog/en/javascript/the-practices-of-backbone-marionette-that-i-believe-the-best-en</id>
+    <content type="html"><![CDATA[<h1>On Marionette.Module</h1>
+
+<h2>Dividing app into sub-modules</h2>
+
+<p>You can create sub-modules as many as you want inside one Marionette app. I higly enoucurage to take the advantage of sub-modules.</p>
+
+<p>You can also say that sub-module is sub-application. The easiest way to imagine is Gmail. Gmail has many features: email, chat, contacts list, etc. You can construct each component as sub-modules in Marionette.</p>
+
+<p>Let&rsquo;s look at how we define sub-modules.</p>
+
+<p><code>js
+var MyApp = new Backbone.Marionette.Application();
+MyApp.module("ModuleA", function(ModuleA, MyApp, Backbone, Marionette, $, _){
+  // your module code goes here //
+})
+</code></p>
+
+<p>You may wonder about parameters in callback function. This is automatically passed in this order:</p>
+
+<ul>
+<li>The module itself</li>
+<li>The Application object</li>
+<li>Backbone</li>
+<li>Backbone.Marionette</li>
+<li>jQuery</li>
+<li>Underscore</li>
+</ul>
+
+
+<p>They are defined in local scope and only accessbile from the callback function.</p>
+
+<p>One of the benefits of using sub-modules is you can write codes of a module into separate files with ease.</p>
+
+<p>Let&rsquo;s say you define a <code>ShoppingCart</code> module.</p>
+
+<p>```js
+var MyApp = new Backbone.Marionette.Application();
+MyApp.module(&ldquo;ShoppingCart&rdquo;, function(ModuleA, MyApp, Backbone, Marionette, $, _){</p>
+
+<pre><code>// your module code goes here //
+</code></pre>
+
+<p>})
+```</p>
+
+<p>You can easily guess what the module does: it takes care everything about shopping cart feature in your app.</p>
+
+<p>One single <code>ShoppingCart</code> module is still too big to be written in a file. So, let&rsquo;s divide them into separate files based on functionality: <code>Controller</code> and <code>View</code>.</p>
+
+<p><strong><em>shopping_cart_controller.js</em></strong>
+```js
+MyApp.module(&ldquo;ShoppingCart&rdquo;, function(ShoppingCart, MyApp, Backbone, Marionette, $, _){</p>
+
+<pre><code>ShoppingCart.Controller = Marionette.Controller.extend({
+    // controller implementation goes here
+});
+</code></pre>
+
+<p>})
+```</p>
+
+<p><strong><em>shopping_cart_view.js</em></strong>
+```js
+MyApp.module(&ldquo;ShoppingCart&rdquo;, function(ShoppingCart, MyApp, Backbone, Marionette, $, _){</p>
+
+<pre><code>ShoppingCart.View = Marionette.ItemView.extend({
+    // view implementation goes here
+});
+</code></pre>
+
+<p>})
+<code>``
+When you create modules, you don't have to worry whether your module is already defined or not. If not defined, Marionette defines for you. So, in the previous case,</code>ShoppingCart` module is defined in <strong><em>shopping_cart_controller.js</em></strong> and <strong><em>shopping_cart_view.js</em></strong> just adds things to the module.</p>
+
+<p>Maybe <code>ShoppingCart.View</code> still contains too many views to be in a single file such as <code>show_view</code> or <code>new_view</code>. You can further divide your <code>ShoppingCart</code> sub-module like this.</p>
+
+<p><strong><em>show/shopping_cart_view.js</em></strong>
+```js
+MyApp.module(&ldquo;ShoppingCart.View&rdquo;, function(View, MyApp, Backbone, Marionette, $, _){</p>
+
+<pre><code>View.ShowView = Marionette.ItemView.extend({
+    // show view implementation goes here
+});
+</code></pre>
+
+<p>})
+```</p>
+
+<p><strong><em>new/shopping_cart_view.js</em></strong>
+```js
+MyApp.module(&ldquo;ShoppingCart.View&rdquo;, function(View, MyApp, Backbone, Marionette, $, _){</p>
+
+<pre><code>View.NewView = Marionette.ItemView.extend({
+    // new view implementation goes here
+});
+</code></pre>
+
+<p>})
+```</p>
+
+<p>I create separate directories for <code>show</code> and <code>new</code> and put each file there. You can continue this process until you are satisfied.</p>
+
+<p>Probalby enough words are spoken to introduce sub-modules.</p>
+
+<p>So here is the pattern statement. <strong>Use sub-modules to seperate codes</strong></p>
+
+<!--
+Now, let's see the benifits of using sub-modules.
+
+### Encapsulation
+
+You can define public and private methods easily inside a module.
+
+```js
+var MyApp = new Backbone.Marionette.Application();
+
+MyApp.module("ModuleA", function(ModuleA, MyApp, Backbone, Marionette, $, _){
+  // Defining public method
+  ModuleA.publicMethod = function() {
+    return privateMethod();
+  }
+
+  // Defining private method
+  var privateMethod = function() {
+    return "some value"
+  }
+
+})
+```
+
+Now other sub-modules can access public method but not private one.
+
+```js
+MyApp.ModuleA.publicMethod() // => "some value"
+MyApp.ModuleA.privateMethod() // => "Uncaught TypeError: undefined is not a function"
+```
+-->
+
+
+<h2>Starting and stopping sub-modules</h2>
+
+<p>You can start and stop your sub-modules individually. By default, sub-modules is automatically started when Marionette parent app is started. You can change this behavior by <code>startWithParent</code> option.</p>
+
+<p>```js
+MyApp.module(&ldquo;ModuleA&rdquo;, function(ModuleA, MyApp, Backbone, Marionette, $, _){</p>
+
+<pre><code>this.startWithParent = false;
+</code></pre>
+
+<p>})</p>
+
+<p>MyApp.start() // this doesn&rsquo;t start ModuleA
+MyApp.ModuleA.start() // you have to start by yourself</p>
+
+<p>```</p>
+
+<p>Why is this important? Because sometimes you want to execute some codes before starting other modules. Let&rsquo;s say you need to load some resources from a remote server when user enters your app and other modules are dependent on that resources.</p>
+
+<p>```js
+MyApp.on(&ldquo;start&rdquo;, function() {</p>
+
+<pre><code>// Let's say deferredFetchihg grubs some data from remote server
+$.when(deferredFetching()).done(function(data) {
+    // Set data to Module1
+    MyApp.Module1.setData(data);
+
+    // Now Module1 is ready to start
+    MyApp.Module1.start()
+});
+</code></pre>
+
+<p>})
+```</p>
+
+<p>How about <code>stop()</code>? I don&rsquo;t think you need to use <code>stop()</code> unless your app is huge so that you need to pay careful attention to memory usage.</p>
+
+<p>However, <code>stop()</code> is very useful when it comes to testing. I will cover this in the following post.</p>
+
+<h2>Organize your files by module base</h2>
+
+<p>There is no canonical way to organize your files in Backbone.Marionette. However, it is good to agree on a convetion for how to name and organize files in project if you are working in a team. This is the pattern that works for me.</p>
+
+<p>```
+project_root/</p>
+
+<pre><code>|
+|---application.js
+|
+|---small_module/
+|      |
+|      |---small_module.js
+|      |
+|      |---small_module_controller.js
+|      |
+|      |---small_module_model.js
+|      |
+|      |---small_module_view.js
+|      |
+|      |---templates/
+|              |
+|              |---template1.hbs
+|
+|---big_module/
+       |
+       |---big_module.js
+       |
+       |---big_module_controller.js
+       |
+       |---big_module_model.js
+       |
+       |---new
+       |    |
+       |    |---big_module_new_view.js
+       |    |
+       |    |---templates/
+       |            |
+       |            |---template1.hbs
+       |            |---template2.hbs
+       |---edit
+       |    |
+       |    |---big_module_edit_view.js
+       |    |
+       |    |---templates/
+       |            |
+       |            |---template1.hbs
+       |            |---template2.hbs
+</code></pre>
+
+<p>```</p>
+
+<p><code>application.js</code> is where you want to decalre global things of your app. This includes</p>
+
+<ul>
+<li>App initialization code</li>
+<li>App starting code (Ex: <code>App.start()</code>)</li>
+<li>Route definition and initilalization</li>
+<li>Useful global helper (Ex: <code>App.currentUser()</code>, <code>App.showSuccessNotification()</code>)</li>
+</ul>
+
+
+<p>I like module-based file hierarchy.</p>
+
+<p>In module based organization, files other than application.js goes under each module directory. If the module is big one, they are further broken down into seperate directories by action.</p>
+
+<p>The role of each file under module direclty is self-explanatory except <code>&lt;module_name&gt;.js</code>.</p>
+
+<p><code>&lt;module_name&gt;.js</code> is used to define basic things for the entier module. These includes:</p>
+
+<ul>
+<li>module option (Ex. <code>this.startWithParent = false</code>)</li>
+<li>module initilaization (Ex. <code>addInitializer({})</code> )</li>
+<li>event listener (Ex. <code>Module1.on("event", function({}))</code>)</li>
+</ul>
+
+
+<p>Maybe it is fair to explain <code>&lt;module_name&gt;_controller.js</code> since it does not exist in Backbone as well.</p>
+
+<p><code>&lt;module_name&gt;_controller.js</code> holds methods that redpond to user entry to your app. One example of such method is something like <code>showItem()</code>. What <code>showItem()</code> does is that instantiate a view, fetch model, pass it to view, and call <code>render()</code> of view to display html. It is similar to what Rails ActionController does.</p>
+
+<p>At last, you may think it is redudant to prefix every files with module name, but this makes it easy to search files by module name. Not must to have, but it is useful once your project becomes bigger where you have many <code>controller.js</code> or <code>view.js</code>.</p>
+
+<h1>About View</h1>
+
+<h2>Organizing DOM with ui</h2>
+
+<p>This pattern is inspired by <a href="http://lxyuma.hatenablog.com/entry/2014/01/23/002644">the blog post</a>.</p>
+
+<p><a href="https://github.com/marionettejs/backbone.marionette/blob/master/docs/marionette.itemview.md#organizing-ui-elements">ui</a> is simple yet very powerful feature of Marionette. You can organize view&rsquo;s DOM by using <code>ui</code>. Here is simple example. Say your have a template.</p>
+
+<p>```html</p>
+
+<div id="edit_form">
+  <input class="name_input">Name
+  <input class="email_input">Name
+  <button type="submit" class="js-submit">Submit</button>
+</div>
+
+
+<p>```</p>
+
+<p>And your view code looks like this.</p>
+
+<p>```js
+MyView = Marionette.ItemView.extend({</p>
+
+<pre><code>template: "#edit_form",
+
+ui: {
+    nameInput: "input.name_input",
+    emailInput: "input.email_input",
+    submitButton: "button.js-submit"
+}
+</code></pre>
+
+<p>});
+```</p>
+
+<p>If you don&rsquo;t have ui, you can access name input by using jQuery like this.</p>
+
+<p><code>js
+var myView = new MyView()
+var input = myView.$el.find("input.name_input");
+</code></p>
+
+<p>By using <code>ui</code>, you can access this way.</p>
+
+<p><code>js
+var myView = new MyView()
+var input = myView.ui.nameInput;
+</code></p>
+
+<p>The difference is subtle, but later one is more maintainable. Here is why.</p>
+
+<p>Html markups are the subject of frequent changes. This is not an issue if the DOM is referenced from a single place. However, when multiple places look at a single DOM, it becomes difficult to maintain.</p>
+
+<p>Suppose one person changes the class name of a input field from <code>name_input</code> to <code>name_field</code>. Also suppose that many codes refer the DOM by using jQuery: <code>myView.$el.find("input.name_input")</code>. Now, you have to change every codes that uses jQuery to  access the DOM. If the DOM is referenced from tests codes, these tests all suddenly break  and updating every places is the nightmare.</p>
+
+<p><code>ui</code> solves the issue. If your codes refer the DOM by using <code>myView.ui.nameInput</code>, then the person who changes the html only needs to change <code>ui</code> object.</p>
+
+<p>```js
+ui: {</p>
+
+<pre><code>nameInput: "input.name_field",
+// edited for brevity //
+</code></pre>
+
+<p>}
+```</p>
+
+<p>And the rest of codes stay the same. Huge improvement.</p>
+
+<p>So here is the pattern statement. <strong>Avoid jQuery and always use ui to access view&rsquo;s DOM</strong></p>
+
+<h2>Using LayoutView to create nested sub-views</h2>
+
+<p>This pattern is inspired by <a href="http://lostechies.com/derickbailey/2012/03/22/managing-layouts-and-nested-views-with-backbone-marionette/">the blog post</a>.</p>
+
+<p>I saw different people use different ways to create nested views in vanilla Backbone app. Marionette however provides us a nice pattern to archive this.</p>
+
+<p>We will use Marionette <a href="https://github.com/marionettejs/backbone.marionette/blob/master/docs/marionette.layoutview.md#marionettelayoutview">LayoutView</a> and <a href="https://github.com/marionettejs/backbone.marionette/blob/master/docs/marionette.region.md#marionetteregion">Region</a>.</p>
+
+<p>Let&rsquo;s take a example of creating shopping car page. The page contains two sub-views: item list view and pricing view.</p>
+
+<p><img src="/images/shopping_cart1.png" alt="" /></p>
+
+<p>Here is our code that creates this shopping cart page. First we create a layout html and layout view.</p>
+
+<p><strong>shopping_cart_layout.html</strong>
+```html</p>
+
+<div id="shopping_cart_layout">
+  <div id="itemlist_region"></div>
+  <div id="price_region"></div>
+</div>
+
+
+<p>```</p>
+
+<p><strong>shopping_cart_layout_view.js</strong>
+```js
+ShoppingCartLayoutView = Marionette.LayoutView.extend({</p>
+
+<pre><code>template: "#shopping_cart_layout",
+
+regions: {
+    itemListRegion: "#itemlist_region",
+    priceListRegion: "#price_region",
+}
+</code></pre>
+
+<p>});
+```</p>
+
+<p>Let&rsquo;s talk briefly about what <code>LayoutView</code> is. According to <a href="https://github.com/marionettejs/backbone.marionette/blob/master/docs/marionette.layoutview.md#marionettelayoutview">official doc</a>,</p>
+
+<blockquote><p>A LayoutView is a hybrid of an ItemView and a collection of Region objects.</p></blockquote>
+
+<p>So, it is simply extended from <code>ItemView</code> and add <code>Region</code> objects. Since it is extended from <code>ItemView</code>, you can attach template where you can speficy region container DOM. Layout can hold as many region objects as you want so they are suitable to create a parent view.</p>
+
+<p>Now, let&rsquo;s quickly create our sub-views. The template for these views are not important at this subject so let&rsquo;s imagine we have templates for them.</p>
+
+<p><strong>item_list_view.js</strong>
+```js
+ItemView = Marionette.ItemView.extend({</p>
+
+<pre><code>template: ItemTpl,
+</code></pre>
+
+<p>});</p>
+
+<p>ItemListView = Marionette.CollectionView.extend({</p>
+
+<pre><code>childView: ItemView
+</code></pre>
+
+<p>});
+```</p>
+
+<p><strong>price_view.js</strong>
+```js
+PriceListView = Marionette.ItemView.extend({</p>
+
+<pre><code>template: PriceTpl,
+</code></pre>
+
+<p>});
+```</p>
+
+<p>Now we are ready to put all things together. Here is the code that renders the shopping cart page. Again, model and collection are not important at this subject, so let&rsquo;s assume we have <code>items</code> collections already.</p>
+
+<p>```js
+// Instantiate views
+layoutView = new ShoppingCartLayoutView()
+itemListView = new ItemListView({collections: items}) // We assume that items is the collection
+priceListView = new PriceListView()</p>
+
+<p>// Put them into layout regions
+layoutView.itemListRegion.show(itemListView);
+layoutView.priceListRegion.show(priceview);
+```</p>
+
+<p>That&rsquo;s it. Marionette region provides a convenient method called <code>show()</code> where you can pass any views to be rendered. <code>el</code> property of passed views are automatically provided by region. This is the reason why you don&rsquo;t see <code>el</code> object often when using Marionette.</p>
+
+<p>Creating further nested sub-view is easy. Let&rsquo;s say you want to divide <code>PriceListView</code> into <code>TotalPriceListView</code> and <code>SubTotalPriceListView</code>.</p>
+
+<p><img src="/images/shopping_cart2.png" alt="" /></p>
+
+<p>What you have to do is extending <code>PriceListView</code> from <code>LayoutView</code> instead of <code>ItemView</code> and add region objects.</p>
+
+<p><strong>price_view.js</strong>
+```js
+PriceListView = Marionette.Layout.extend({</p>
+
+<pre><code>// Let's assume the template has #total_price_region and #sub_total_price_region
+template: PriceTpl,
+
+regions: {
+    totalRegion: "#total_price_region",
+    subTotalRegion: "#sub_total_price_region",
+}
+</code></pre>
+
+<p>});</p>
+
+<p>totalPriceListView = Marionette.ItemView.extend({</p>
+
+<pre><code>template: totalPriceTpl,
+</code></pre>
+
+<p>});</p>
+
+<p>subTotalPriceListView = Marionette.ItemView.extend({</p>
+
+<pre><code>template: subTotalPriceTpl,
+</code></pre>
+
+<p>});
+```</p>
+
+<p>And put them together.</p>
+
+<p>```js
+priceListView = new PriceListView()
+totalPriceListView = new TotalPriceListView()
+subTotalPriceListView = new SubTotalPriceListView()</p>
+
+<p>priceListView.totalRegion.show(totalPriceListView)
+priceListView.subTotalRegion.show(subTotalPriceListView)
+```</p>
+
+<p>It&rsquo;s a piece of cake.</p>
+
+<p>Before closing this section, let me introduce how to access views rendered inside region because you will often use it.</p>
+
+<p>Let&rsquo;s say you want to access <code>&lt;div id="total_price"&gt;$10000&lt;/div&gt;</code> DOM to get the total price of the shopping cart from your code. In this case, you will use <code>currentView()</code> API. The code looks like this:</p>
+
+<p><code>js
+layoutView.priceListRegion.currentView.totalRegion.currentView.ui.totalPrice
+</code></p>
+
+<p>As you can see, it&rsquo;s easy to access the value of nested sub-views.</p>
+
+<p>So here is the pattern statement. <strong>Use LayoutView to create sub-views over simple ItemView.</strong></p>
+
+<h1>About Controller</h1>
+
+<p>If you come from vanilla Backbone, you are not sure what the role of Controller in Marionette. Unforunately, official doc doesn&rsquo;t help you either.</p>
+
+<p>Quoted from <a href="https://github.com/marionettejs/backbone.marionette/blob/master/docs/marionette.controller.md">here</a></p>
+
+<blockquote><p>Its name can be a cause for confusion, as it actually has nothing to do with the popular MVC architectural pattern. Instead, it&rsquo;s better to think of the Controller as a base object from which you can build.</p>
+
+<p>Controllers should be used when you have a task that you would like an object to be responsible for, but none of the other Marionette Classes quite make sense to do it. It&rsquo;s a base object for you to use to create a new Class altogether.</p></blockquote>
+
+<p>This makes you further puzzled. How should I use Controller?</p>
+
+<p>Here is how I use Controller.</p>
+
+<h2>Use Controller as integrator</h2>
+
+<p>This pattern is inspired by <a href="https://leanpub.com/marionette-gentle-introduction">the book</a>.</p>
+
+<p>The role of Controller is to instantiate objects, access backend, and build complex vies: performs everything required to render a complete page in a browser.</p>
+
+<p>Let&rsquo;s imagine that we want to render previous shopping cart page.</p>
+
+<p><img src="/images/shopping_cart1.png" alt="" /></p>
+
+<p>To render the page, several things has to be done.</p>
+
+<ul>
+<li>Instantiate views (layout views, item list views, etc)</li>
+<li>Retrieve items and prices (ajax call to backend server)</li>
+<li>Render views (call show() method of views)</li>
+<li>Error handling (when ajax call fail )</li>
+</ul>
+
+
+<p>I will perform these things in a single method <code>showShoppingCart()</code> and this method goes to our imaginary ShoppingCart module.</p>
+
+<p>```js
+MyApp.module(&ldquo;ShoppingCart&rdquo;, function(ShoppingCart, MyApp, Backbone, Marionette, $, _){</p>
+
+<pre><code>ShoppingCart.Controller = {
+    showShoppingCart: function() {
+        // implementation of this methods
+    }
+}
+</code></pre>
+
+<p>})
+```</p>
+
+<p>Inside the method, you write codes that perform things that I mentioned above.</p>
+
+<p>```js
+MyApp.module(&ldquo;ShoppingCart&rdquo;, function(ShoppingCart, MyApp, Backbone, Marionette, $, _){</p>
+
+<pre><code>ShoppingCart.Controller = Marionette.Controller.extend({
+    showShoppingCart: function() {
+        // Let's suppose that items and its prices are saved in backend.
+        // So, we need to retrive them from backend server asynchronously.
+        // Imaginary MyApp.request("items") and MyApp.request("price")
+        // returns promise object that fetches items and prices respectively.
+        var fetchingItems = MyApp.request("items");
+        var fetchingPrice = MyApp.request("prices");
+
+        // Instantiate a layout view that provides regions
+        var layoutView = new ShoppingCartLayoutView();
+
+        $.when(fetchingItems, fetchingPrice).done(function(items, prices){
+            // Add callback method when ajax call is successfully done.
+            // First, we will build collections
+            var itemList = new ItemList([items]);
+            var priceList = new PriceList([prices]);
+
+            // Now we can instantiate views and pass colletion to them
+            var itemListView = new ItemListView({collection: itemList});
+            var priceListView = new PriceListView({collection: priceList});
+
+            // At this point we are ready to render a complete paga for user
+            layoutView.itemListRegion.show(itemListView);
+            layoutView.priceListRegion.show(priceListView);
+        });
+
+        // We don't want user to see nasty error, so let's add error handling
+        $.when(fetchingItems, fetchingPrice).fail(function() {
+            // OopsView will show error message to user
+            var oopsView = new OopsView({error: "oops, something went wrong"});
+            layoutView.render(oopsView);
+        });
+    }
+});
+</code></pre>
+
+<p>})
+```</p>
+
+<p>The example above is pseudo code so it doesn&rsquo;t work, but should be easy enough to demonstrate my idea.</p>
+
+<p>As you can see, my <code>showShoppingCart()</code> method does everthing including error handling required to show a shopping cart page to user. Now, somebody must call the method. Who will it be?</p>
+
+<p>It is the responsibility of <code>Marionette.AppRouter</code>. Router is the first one that responds when user enters your app. It&rsquo;s job is to look at url and call Controller&rsquo;s methods. Here is how you can pass your <code>ShoppingCart.Controller</code> to router.</p>
+
+<p>```js
+// First we need to define router
+MyApp.Router = Marionette.AppRouter.extend({</p>
+
+<pre><code>appRoutes: {
+    "shopping_cart": "showShoppingCart",
+}
+</code></pre>
+
+<p>});</p>
+
+<p>// Instantiate controller object
+var shoppingCartController = new ShoppingCat.Controller();</p>
+
+<p>// Register controller
+new MyApp.Router({</p>
+
+<pre><code>controller: shoppingCartController
+</code></pre>
+
+<p>});
+```</p>
+
+<p>Now, if user accesses <code>/shopping_cart</code> page, router will call <code>showShoppingCart()</code> method of <code>ShoppingCat.Controller</code>.</p>
+
+<p>There is one implicit thing involved here. The object you pass to <code>controller</code> property of router must implement the method that you define in <code>appRoutes</code> objects.</p>
+
+<p>In this case, since you define <code>"shopping_cart": "showShoppingCart"</code> in routing, <code>shoppingCartController</code> object must implement <code>showShoppingCart()</code> method, which is exactly how we implemented our controller earlier.</p>
+
+<p>If you have experiences with server side MVC frameworks, like RoR, then you may notice that I am using the Marionette Controller like the way I use ActionController of Rails: called by router and does everything needed to render a view. Isn&rsquo;t this contradictory to what <a href="[here](https://github.com/marionettejs/backbone.marionette/blob/master/docs/marionette.controller.md">official doc</a> says?</p>
+
+<p><strong><em>Yes and no</em></strong>. Yes, because it is used by router and both performs similar tasks. No, because the role of server side Controller is providing HTTP terminal point whereas client side Controller does not do this.</p>
+
+<p>Anyway, I am currently satisfied with the way I use Controller.</p>
+
+<p>So here is the pattern statement. <strong>Use Controller to provide public methods to router that integrates different componetns</strong></p>
+
+<h2>Add event listener on view inside Controller</h2>
+
+<p>I often ask this question myself: <em>Is it ok that my View does ajax call?</em> Can you imagine what I am talking about? The View that makes ajax call looks like this.</p>
+
+<p>```js
+FormView = Marionette.ItemView.extend({</p>
+
+<pre><code>events: {
+    'click button.submit': 'submitForm'
+},
+
+submitForm: function() {
+    // Get form data somehow//
+    var data = getFormData();
+
+    // Model.save fires ajax call to remote server
+    this.model.save(data, {
+        success: function(){
+            console.log("form is submitted");
+        },
+        error: function(){
+            console.log("error");
+        }
+    });  
+}
+</code></pre>
+
+<p>})
+```</p>
+
+<p>So, the code above does:</p>
+
+<ul>
+<li>Listens on <code>click</code> event and call <code>submitForm</code> method</li>
+<li>Makes ajax call to save form data to backend server</li>
+<li>Execute callbacks for ajax call</li>
+</ul>
+
+
+<p>This is perfectly valid code in Backbone. However, having Controller in Marionette now, I&rsquo;d rather want to push this task to Controller and let View simply listening and triggering event.</p>
+
+<p>```js
+FormView = Marionette.ItemView.extend({</p>
+
+<pre><code>events: {
+    'click button.submit': 'submitForm'
+},
+
+submitForm: function() {
+    this.trigger("form:submit");
+}
+</code></pre>
+
+<p>});</p>
+
+<p>FormController = Marionette.Controller.extend({</p>
+
+<pre><code>showForm: function(options){
+    var formView = FormView.new();
+
+    formView.on("form:submit", function(data) {
+        model.save(data, {
+            success: function() {
+                console.log("form is submitted");
+            },
+
+            error: function(){
+                console.log("error");
+            }
+        })
+    })
+
+    MyApp.region.show(formView);
+},
+</code></pre>
+
+<p>});
+```</p>
+
+<p>So, I simply move codes from View to Controller. What&rsquo;s the benefits of doing this? One thing is that View code gets slimed and it can focus on the mapping of DOM and event.</p>
+
+<p>Our Controller instead gets messy but that&rsquo;s the tradeoff. After all, that&rsquo;s how Controller is designed to be used: <strong><em>put things that fit nowhere else</em></strong>.</p>
+
+<p>It also makes sense to put codes to Controller because Controller has more accesses to other components than a view. Imagine a case where you have to access other views inside the event listener.
+You can&rsquo;t access other views directly from a view. Instead, you need to use App level event publishing to archive this.</p>
+
+<p>On the other hand, Controller has an access to everything needed to render the page so it can easily talk to other views.</p>
+
+<p>Before, finishing this section, let me slightly imporve the code above. We will use <a href="https://github.com/marionettejs/backbone.marionette/blob/master/docs/marionette.view.md#viewtriggers">View.triggers</a>.</p>
+
+<p>Here is the new version of View:</p>
+
+<p>```js
+FormView = Marionette.ItemView.extend({</p>
+
+<pre><code>triggers: {
+    'click button.submit': 'form:submit'
+}
+</code></pre>
+
+<p>});
+```</p>
+
+<p>We removed <code>submitForm</code> method and <code>event</code> objects. Instead, we use <code>trigger</code> object that does the two thing at the same time: <em>listen on events</em> and <em>trigger events</em>. Now, our view is much cleaner than before!!</p>
+
+<p>So here is the pattern statement. <strong>Add event listener on Views inside Controller</strong></p>
+
+<!--
+## Responsibility of MVC Components
+
+Marionette brings consistency to your Backbone app. However, this is not enough if you are working in a team. Marionette still allows developrs to write codes whatever they want which rapidly makes your project spaghetti. It's important to understand your codes must go where. To understand this, let's clarify the role of MVC components in Marionette.
+
+### M
+The responsibility of model is clearer than other components, so I will go quickly.
+
+#### Business logic
+Just like model of server side, this is the place where you write code for business logic.
+
+**Ex.** Calculate and return total price by adding tax to sub-total.
+
+#### Ajax ####
+When modle is mapped to external resource, it fetches resource from external servers.
+
+#### Validation ####
+Before modle is saved into exteranl database, it needs to validate data. When validation fails, it must notifies by using event. View must respond to validation event and notifies user.
+
+### V
+This is the place which easily becomes chaotic because vanilla Backbone puts much burden to View.
+
+#### Render html
+When you define View, you will speficy which template to use. Template value is fetched by a model that View holds and rendered as html document.
+
+#### Define mapping of DOM and event
+You can define what action of user for DOM elements do what in View. This is done by `events` propety. I don't want to go detail about this since implementation is not the the subject of post, but just briefly showing an example.
+
+```js
+var MyView = Marionette.ItemView.extend({
+    ui: {
+        paragraph: 'p',
+        button: '.my-button'
+    },
+
+    events: {
+        'click ui.button': 'clickedButton'
+    },
+
+    clickedButton: function() {
+        console.log('I clicked the button!');
+    }
+});
+```
+
+View listens on click event of `ui.button` and trigger clickedButton() event. Notice `ui` propety. This does not exist in Backbone. You can pass a object that mappes properties and jQuery DOM. You can access the DOM like this.
+
+```js
+ MyView.ui.paragraph
+```
+
+This is simple yet very powerful feature. I will write more about this in subsequent post.
+
+#### Listens on Model/Collection change event
+Most of Views are passed model or collection. Whenever there are changes to model/collection (Ex. setting new value to the field of model / model is removed from collection ), View responds to the event, changes its $el, and modifies its own html.
+
+### C
+Controller is loosely defined even in official doc.
+
+Quoted from [here](https://github.com/marionettejs/backbone.marionette/blob/master/docs/marionette.controller.md)
+> Its name can be a cause for confusion, as it actually has nothing to do with the popular MVC architectural pattern. Instead, it's better to think of the Controller as a base object from which you can build.
+>
+> Controllers should be used when you have a task that you would like an object to be responsible for, but none of the other Marionette Classes quite make sense to do it. It's a base object for you to use to create a new Class altogether.
+
+So, as the doc says, Controller is the place where you can put things that fit nowhere else.
+
+But, what exactly are they?
+
+#### Executing action for router
+When user enters your app, router will invoke controller actions. Let's assume you have controller like so:
+
+```js
+MyApp.module("ModuleA", function(ModuleA, MyApp, Backbone, Marionette, $, _){
+    ModuleA.Controller = Marionette.Controller.extend({
+        listItem: function() {
+            // Some codes to show item here
+        }
+    })
+
+    return ModuleA
+})
+```
+
+Now you can pass your controller to `controller` property of router.
+```js
+MyApp.module("ModuleA", function(ModuleA, MyApp, Backbone, Marionette, $, _){
+    var controller = new ModuleA.Controller();
+
+    ModuleA.Router = Marionette.AppRouter.extend({
+        controller: controller,
+        appRoutes: {
+            "items": "listItem"
+        },
+    });
+})
+
+```
+Then when user enters your app from `/items`, router will execute `controller.listItem()` method which is defined at `ModuleA.Controller`.
+
+So, as you can see, I am using Controller pretty much like the way I use Rails ActionController. I don't see no reason why this is wrong even if doc says it is nothing to do with server side MVC.
+
+#### Assemble things together
+You saw how router invokes Controller methods. Now, let's look at `listItem()` method. The method looks something like this:
+
+```js
+listItem: function() {
+    var deferredFetch = MyApp.request("items")
+    var collectionView = new ItemCollectionView()
+
+    // Let's assume you have Spinner class.
+    // This will show loading spinner until items are fetched from server.
+    MyApp.mainRegion.show(new Spinner())
+
+    $.when(deferredFetch).done(function(items) {
+        var collectionView = new ItemCollectionView({collection: items});
+
+        // Once fetching is done, show items
+        MyApp.mainRegion.show(collectionView)
+    })/
+
+    $.when(deferredFetch).fail(function() {
+        // Let's assume you have OopsView.
+        // This will show "oops, something went wrong" when fethcing fails
+        var oopsView = new OopsView()
+    });
+```
+
+As you can see, `listItem()` method interacts many things. It also takes care of showing loading spinner as well as error handling. This is the main responsibility of Controller. It assemble many parts defined in different modules and control the flow of action.
+
+-->
+
+]]></content>
+  </entry>
+  
+</feed>

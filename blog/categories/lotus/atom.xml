@@ -1,0 +1,549 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+  <title><![CDATA[Category: lotus | Program Is Made At Night]]></title>
+  <link href="http://kimh.github.io/blog/categories/lotus/atom.xml" rel="self"/>
+  <link href="http://kimh.github.io/"/>
+  <updated>2015-05-09T15:17:33+09:00</updated>
+  <id>http://kimh.github.io/</id>
+  <author>
+    <name><![CDATA[Kim, Hirokuni]]></name>
+    <email><![CDATA[yangkookkim@gmail.com]]></email>
+  </author>
+  <generator uri="http://octopress.org/">Octopress</generator>
+
+  
+  <entry>
+    <title type="html"><![CDATA[Ruby LotusでWeb Appを作ってみる]]></title>
+    <link href="http://kimh.github.io/blog/jp/lotus/creating-web-application-with-ruby-lotus-ja/"/>
+    <updated>2014-09-11T18:40:00+09:00</updated>
+    <id>http://kimh.github.io/blog/jp/lotus/creating-web-application-with-ruby-lotus-ja</id>
+    <content type="html"><![CDATA[<p><img src="/images/lotus.jpeg" alt="" /></p>
+
+<p><strong><em>注意</em></strong>  この記事はIBM製のコラボレーションソフトについてのページではありません。Rubyで書かれた<a href="http://lotusrb.org/">Lotus</a>というWebフレームワークについての記事です。</p>
+
+<h2>内容</h2>
+
+<ul>
+<li><a href="#what_is_lotus">Lotusとは何か</a></li>
+<li><a href="#why_lotus_instead_of_rails">なぜRailsじゃなくLotusか</a></li>
+<li><a href="#creating_one_file_application">One-fileアプリを作る</a></li>
+</ul>
+
+
+<p><a id="what_is_lotus"></a></p>
+
+<h2>Lotusとは何か</h2>
+
+<p><a href="http://lotusrb.org/">Lotus</a>は新しいRubyで書かれたWebフレームワークです。比較的少人数の<a href="https://github.com/lotus">lotusチーム</a>が開発しています。
+2014年9月の時点ではまだ本番環境では使えませんが、簡単なアプリを作るには十分に動作します。</p>
+
+<p>Lotusのプロジェクトページに書かれているスローガンを見たときに一瞬で一目惚れしました。</p>
+
+<p>ページにはこう書いてあります。(かなり意訳です)</p>
+
+<blockquote><p>Lotusは軽量で高速かつテストが容易なフレームワークです。Lotusはオブジェクト指向プログラミングのエッセンスを取り戻し、安定したAPI、最小限のDSLを提供してシンプルなオブジェクトに基づいたWeb開発を可能にします。</p></blockquote>
+
+<p>このスローガンを読んだ時、探していたものはこれだと思いました。（後で詳しく説明します）ちょうど個人でやっているプロジェクトでシンプルなAPIサーバを作ろうとしていたので早速Lotusを使ってみることにしました。
+まだ情報がほとんど世の中に存在しないので色々苦労しましたが、最近は少しずつ <strong><em>Lotus Way</em></strong> がわかってきたのでこの記事で紹介しようと思います。</p>
+
+<p><a id="why_lotus_instead_of_rails"></a></p>
+
+<h2>なぜRailsではなくLotusか</h2>
+
+<p>最近はアプリケーションをモジュール方式で開発する機会が増えてきました。この開発方法をSOAと呼ぼうがMicroserviceと呼ぼうがなんでもいいですが、多くのプロジェクトがこの開発方式を採用するようになってきています。
+<a href="https://github.com/flynn">(Fylnnはお気に入りの例です)</a></p>
+
+<p>アプリをモジュール方式で開発する利点はいくつかあります。</p>
+
+<ul>
+<li>テストがしやすい</li>
+<li>高いポータビリティ</li>
+<li>再利用しやすい</li>
+<li>デプロイが容易</li>
+</ul>
+
+
+<p>Railsを使ってこれらのことを実現するのは簡単ではありません。Railsは素晴らしいですが、フレームワークスタックは巨大で沢山の機能が最初からビルトインされています。
+要するにRailsは小さいコンポーネントを沢山作るには大きすぎます。</p>
+
+<p><a href="https://github.com/sinatra/sinatra">Sinatra</a>や<a href="https://github.com/rails-api/rails-api">rails-api</a>が使えるのでは？と思う人もいると思います。
+確かにSinatraは軽量です。ただ最近個人的にはDSLよりも <strong><em>純粋なRubyのコード</em></strong> を好むようになってきました。学習コストを低く抑えれるからです。
+正直rails-apiは使ったことがないのでよくわかりません。ただ、Railsがベースなのでそこまで軽量ではないのではないかと思っています。もし、知ってる人がいたら教えてください。</p>
+
+<p><a href="https://github.com/lotus">LotusのGithubページ</a>を見ればわかりますが、Lotusは複数のコンポーネントからできているので、この中の一つだけを自分のプロジェクトで使うことも可能です。
+例えば、<a href="https://github.com/lotus/router">lotus-router</a>だけを自分のRackアプリに組み込んでHTTPルーターとして使うことができます。</p>
+
+<p>またLotusはRailsのようにフルスタックなフレームワークとして使うこともできます。LotusはRailsのいいとこ取りをしているので(例えばCoCの積極的に採用)比較的少ないコードでアプリケーションを作ることもできます。</p>
+
+<p>つまり、LotusはSinatraのように軽量なアプリを作ることができる一方で、Railsのようにフルスタックなアプリも作ることができるということです。</p>
+
+<p><a id="creating_one_file_application"></a></p>
+
+<h2>One-fileアプリケーションを作る</h2>
+
+<p>Lotusを使ってOne-fileアプリケーションを作ってみます。LotusのGithubに掲載されている<a href="https://github.com/lotus/lotus#one-file-application">one file application</a>を参考にします。</p>
+
+<p>まずは、プロジェクト用のディレクトリを作成します。今後の説明はこのディレクトリをカレントディレクトリに設定しているいう前提で進めます。</p>
+
+<p><code>
+mkdir onefileapp &amp;&amp; cd onefileapp
+</code></p>
+
+<p>Lotusの公式なgemはまだ配布されていません。<a href="https://rubygems.org/gems/lotusrb">ここ</a>にありますが更新日は2014年1月となっています。最新のmasterブランチは
+これよりずっと進んでいるので、ソースからインストールします。そのために、まずLotusレポジトリをクローンします。</p>
+
+<p><code>
+git clone https://github.com/lotus/lotus.git
+</code></p>
+
+<p>Gemの管理にbundlerを使います。Gemfileを作成しましょう。</p>
+
+<p><code>
+bundle init
+</code></p>
+
+<p>次にGemfileを編集します。<code>&lt;your-path-to-lotus-repo&gt;</code>をクローンしてきたLotusのレポジトリのディレクトリに適宜変更してください。</p>
+
+<p><code>ruby
+source "https://rubygems.org"
+gem 'lotusrb', :path =&gt; &lt;your-path-to-lotus-repo&gt;
+</code></p>
+
+<p>Gemをインストールします。</p>
+
+<p><code>
+bundle install --path vendor/
+</code></p>
+
+<p>これでアプリケーションを書く準備が整いました(といっても１ファイルですが)。以下のコードを <strong><em>config.ru</em></strong> として保存してください。</p>
+
+<p><strong><em>config.ru</em></strong>
+```ruby
+require &lsquo;lotus&rsquo;</p>
+
+<p>module OneFile
+  class Application &lt; Lotus::Application</p>
+
+<pre><code>configure do
+  routes do
+    get '/', to: 'home#index'
+  end
+end
+load!
+</code></pre>
+
+<p>  end</p>
+
+<p>  module Controllers</p>
+
+<pre><code>module Home
+  include OneFile::Controller
+
+  action 'Index' do
+    def call(params)
+    end
+  end
+end
+</code></pre>
+
+<p>  end</p>
+
+<p>  module Views</p>
+
+<pre><code>module Home
+  class Index
+    include OneFile::View
+
+    def render
+      "Hello, Lotus"
+    end
+  end
+end
+</code></pre>
+
+<p>  end
+end</p>
+
+<p>run OneFile::Application.new
+```</p>
+
+<p>保存したらアプリを起動してみましょう。最新のmasterブランチには <code>lotus server</code> コマンドがあるのでこれを使います。</p>
+
+<p><code>
+bundle exec lotus server
+</code></p>
+
+<p>起動できましたか？それではブラウザで <a href="http://localhost:2300">http://localhost:2300</a> にアクセスしてみてください。 <code>Hello, Lotus</code> と表示されるはずです。</p>
+
+<p>コードの説明をします。</p>
+
+<p>まず、最初に気づくことは<code>Controllers</code>と<code>Views</code>モジュール内で定義されているクラスは継承を使っていないということです。
+Lotusの哲学の一つに<code>モジュールをインクルードして最小限のインターフェースを実装する</code>というものがあります。
+この哲学は開発者に本当に必要なものだけをMixinして使うことを推奨します。</p>
+
+<p>次に<code>Application</code>クラスを見てみましょう。今回の例ではこのクラスはルートの設定をしているだけです。
+<code>get '/', to: 'home#index'</code>とすることで<code>GET /</code>のルートは<code>Home::Index</code>コントローラを使うように設定しています。
+今回はひとつだけしかルートを設定していませんが他のHTTPメソッドも同じように設定できます。</p>
+
+<p>```ruby
+routes do
+  post   &lsquo;/books&rsquo;,             to: &lsquo;book#create&rsquo;
+  put    &lsquo;/books/:id&rsquo;,         to: &lsquo;book#update&rsquo;
+  delete &lsquo;/books/:id&rsquo;,         to: &lsquo;book#destroy&rsquo;</p>
+
+<p>  # ワンライナーレスポンス
+  get    &lsquo;/ping&rsquo;,              to: &ndash;>(env) {[200, {}, [&lsquo;pong&rsquo;]]}
+end
+```</p>
+
+<p>次に<code>Controllers</code>を見てみましょう。<code>action</code>を呼んでいる以外は何もしていません。</p>
+
+<p><code>action</code>とは何でしょうか？<code>action</code>はHTTPリクエストのエンドポイントとして動き、ここでリクエストの中身を見たりレスポンスを生成したりします。
+リクエストに対するビジネスロジックもここに書きます。多分、<code>action</code>はRailsのControllerとほとんど同じものだと考えていいと思います。
+ここでは先ほどみたルートから呼び出される<code>Index</code> actionを定義しています。</p>
+
+<p>最後に<code>Views</code>を見ましょう。このクラスの仕事はRailsのViewとは異なります。
+RailsではViewはブラウザでレンダリングされるコンテンツを吐き出すコードを書く場所でした。Lotusではこれは<code>Template</code>で行います。(今回の例ではTemplateはでてきません)</p>
+
+<p>LotusではViewはPresenterレイヤーとして動きます。RailsではPresenterは標準ではありません。(Draperなどのgemで使えるようになります)
+Presenterの仕事はデータをControllerから受け取って抽象化してTemplateに見せることです。
+このようにすることでコンテンツ描画コードをクリーンに保つことができるので最近では有名なデザインパターンです。</p>
+
+<p>コードの説明に戻ります。ここでは<code>render</code>メソッドを実装して<code>Hello, Lotus</code>というメッセージを表示しています。</p>
+
+<p>この例はあまり面白くないですね。ViewとControllerを連携させてデータのやりとりをさせてみましょう。</p>
+
+<p>Controllerのコードを以下のように編集します。</p>
+
+<p>```ruby
+module Controllers
+  module Home</p>
+
+<pre><code>include OneFile::Controller
+action 'Index' do
+
+  expose :time
+
+  def call(params)
+    @time = Time.now
+  end
+end
+</code></pre>
+
+<p>  end
+end
+```</p>
+
+<p>２つ新しいメソッドが出てきました。<code>expose</code>と<code>call</code>です。</p>
+
+<p>ControllerからViewにデータを渡すには、exposeを使って明示的に公開する変数を指定しないといけません。
+これも<code>本当に必要なものだけを使う</code>というLotusの哲学の現れです。</p>
+
+<p> <code>call</code>はHTTPリクエストのエントリーポイントとして動きます。さっきも少し触れたようにこの中にビジネスロジックやレスポンス生成のコードを書きます。</p>
+
+<p>ViewをControllerからデータを受け取るように変更しましょう。</p>
+
+<p>```ruby
+module Views
+  module Home</p>
+
+<pre><code>class Index
+  include OneFile::View
+
+  def render
+    "Current time: #{time}"
+  end
+end
+</code></pre>
+
+<p>  end
+end
+```</p>
+
+<p>Controllerが<code>@time</code>を<code>expose</code>で公開しているので、Viewはこのデータに<code>time</code>変数経由でアクセスすることができます。</p>
+
+<p>アプリケーションを再起動してください。ブラウザで同じページにアクセスすると<code>Current time: 2014-09-11 23:18:30 +0900</code>のように表示されるはずです。</p>
+
+<h2>まとめ</h2>
+
+<p>LotusでWebアプリを書くのはとても簡単だということがわかってもらえたでしょうか？</p>
+
+<p>ええ、あなたの心の声が聞こえてきますよ。<em>この例は単純すぎて全然実用的ではないじゃないか</em> という声が、、、</p>
+
+<p>確かにその通りです。ですが、それは次の記事で紹介させてください。本当はFull stackアプリケーションに作り方まで紹介する予定だったのですが
+この記事を書くのに予想より手間取ってしまいました。</p>
+
+<p>次の記事は、<strong><em>Ruby LotusでフルスタックWeb Appを作ってみる</em></strong> みたな感じになる予定です。</p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Creating Web Application with Ruby Lotus]]></title>
+    <link href="http://kimh.github.io/blog/en/lotus/creating-web-application-with-ruby-lotus/"/>
+    <updated>2014-09-11T18:40:00+09:00</updated>
+    <id>http://kimh.github.io/blog/en/lotus/creating-web-application-with-ruby-lotus</id>
+    <content type="html"><![CDATA[<p><img src="/images/lotus.jpeg" alt="" /></p>
+
+<p><strong><em>WARNING</em></strong>  This is not your article if you are looking for information about the collaboration software made by IBM.
+Instead, this article is about <a href="http://lotusrb.org/">Lotus</a>, a new web framework written in Ruby.</p>
+
+<h2>Contents</h2>
+
+<ul>
+<li><a href="#what_is_lotus">What is Lotus</a></li>
+<li><a href="#why_lotus_instead_of_rails">Why Lotus instead of Rails</a></li>
+<li><a href="#creating_one_file_application">Creating one file aplication</a></li>
+</ul>
+
+
+<p><a id="what_is_lotus"></a></p>
+
+<h2>What is Lotus</h2>
+
+<p><a href="http://lotusrb.org/">Lotus</a> is a web framework that is being developed by relatively small team of <a href="https://github.com/lotus">lotus team</a>.
+You can use Lotus and build a complete MVC web application just like Rails.
+Lotus is still under active development and not production ready as of Sep, 2014, but you can definitely use it to create a web application.</p>
+
+<p>I fell in love with Lotus at first sight of the mission that Lotus tries to archive in the project page.</p>
+
+<p>The page reads</p>
+
+<blockquote><p>Lotus is lightweight, fast and testable. It aims to bring back Object Oriented Programming to web development, leveraging on a stable API, a minimal DSL, and plain objects.</p></blockquote>
+
+<p>I felt this is what I was looking for (explained more later) and decided to use Lotus to create a small API server in my private project.
+Since there are not much documentation and information about Lotus in the wild yet, I sometimes had a hard time to figure out how to use it.
+But, I am recently getting used to the <strong><em>Lotus way</em></strong> so I&rsquo;d like to share them in this and subsequent posts.</p>
+
+<p><a id="why_lotus_instead_of_rails"></a></p>
+
+<h2>Why Lotus instead of Rails</h2>
+
+<p>Recent applications are built in modular way more than ever before.
+Whether you call this type of application architecture SOA or microservices,
+it is true that many recent great projects <a href="https://github.com/flynn">(my favorite example is Fylnn)</a> are taking this design approach.</p>
+
+<p>There are a few major benefits of taking this approach</p>
+
+<ul>
+<li>more testability</li>
+<li>more portability</li>
+<li>more reusability</li>
+<li>easier deployment</li>
+</ul>
+
+
+<p>You will realize that it is not easy to accomplish all of these with Rails.
+Rails is definitely great, but the framework stack is huge and lots of things are built in. After all, Rails is a big framework, so not a good option if you want to create lots of small components.</p>
+
+<p>You may think there are small frameworks such as <a href="https://github.com/sinatra/sinatra">Sinatra</a> or <a href="https://github.com/rails-api/rails-api">rails-api</a>.
+Yes, Sinatra is lightweight, but I recently prefer to <strong><em>pure ruby code</em></strong> than DSL because it gives me steep learning curve (meaning easy to learn).
+To be honest, I never tried rails-api by myself, but I am suspicious that it is lightweight because the base is still Rails. Let me know if you have different opinions.</p>
+
+<p>As you can tell from <a href="https://github.com/lotus">Lotus github page</a>, it is made of many components. You can easily bring one of components into your application.
+For example, you can just grab <a href="https://github.com/lotus/router">lotus-router</a> and mixin to your Rack application to handle http request.</p>
+
+<p>Although, Lotus is made modular way, you can still use it as fullstack web-framework with relatively small amount of codes.
+Apparently, Lotus steals many good designs from Rails such as CoC and that allows you to build applications easy.</p>
+
+<p>So, my point in this section is this: <strong>Lotus is flexible but easy to use, so why not give it a shot?</strong></p>
+
+<p>Hopefully, this article helps you starting Lotus.</p>
+
+<p><a id="creating_one_file_application"></a></p>
+
+<h2>Creating one file application</h2>
+
+<p>Let&rsquo;s make our first Lotus application. We will follow the example of <a href="https://github.com/lotus/lotus#one-file-application">one file application</a>.</p>
+
+<p>First, create a project directory. I am assuming that you set your current directory to this directory in the subsequent instructions.</p>
+
+<p><code>
+mkdir onefileapp &amp;&amp; cd onefileapp
+</code></p>
+
+<p>Lotus does not publish official gem as far as I know. There is <a href="https://rubygems.org/gems/lotusrb">one</a> here but the last update was on Jan, 2014.
+Current master branch is far ahead of this release. So, clone the Lotus project in order to install from source.</p>
+
+<p><code>
+git clone https://github.com/lotus/lotus.git
+</code></p>
+
+<p>We need bundler to manage gem dependancy. Let&rsquo;s create a Gemfile.</p>
+
+<p><code>
+bundle init
+</code></p>
+
+<p>Edit your Gemfile. Change <code>&lt;your-path-to-lotus-repo&gt;</code> to the directory where you clone Lotus repo.</p>
+
+<p><code>ruby
+source "https://rubygems.org"
+gem 'lotusrb', :path =&gt; &lt;your-path-to-lotus-repo&gt;
+</code></p>
+
+<p>Then install gems.</p>
+
+<p><code>
+bundle install --path vendor/
+</code></p>
+
+<p>Now, we can start writing our application which is just one file. Save below codes as <strong><em>config.ru</em></strong>.</p>
+
+<p><strong><em>config.ru</em></strong>
+```ruby
+require &lsquo;lotus&rsquo;</p>
+
+<p>module OneFile
+  class Application &lt; Lotus::Application</p>
+
+<pre><code>configure do
+  routes do
+    get '/', to: 'home#index'
+  end
+end
+load!
+</code></pre>
+
+<p>  end</p>
+
+<p>  module Controllers</p>
+
+<pre><code>module Home
+  include OneFile::Controller
+
+  action 'Index' do
+    def call(params)
+    end
+  end
+end
+</code></pre>
+
+<p>  end</p>
+
+<p>  module Views</p>
+
+<pre><code>module Home
+  class Index
+    include OneFile::View
+
+    def render
+      "Hello, Lotus"
+    end
+  end
+end
+</code></pre>
+
+<p>  end
+end</p>
+
+<p>run OneFile::Application.new
+```</p>
+
+<p>You can run the app with rackup command.</p>
+
+<p><code>
+bundle exec lotus server
+</code></p>
+
+<p>Successfully run? Then, access <a href="http://localhost:2300">http://localhost:2300</a> from your browser. You should see <code>Hello, Lotus</code>.</p>
+
+<p>Let me explain what is doing.</p>
+
+<p>First, you will notice that classes inside <code>Controllers</code> and <code>Views</code> modules not using inheritance.
+One important philosophy of Lotus is this:<code>include a module and implement a minimal interface.</code>
+This philosophy encourages developers to use only what you need with mixin.</p>
+
+<p>Now let&rsquo;s look at <code>Application</code> class. In our application, the class only configures routes.
+We use <code>get</code> method to configure a route for http <code>GET /</code> method that uses <code>Home::Index</code> controller.
+Here we only configure <code>get</code> http method, but you can configure other methods easily such as these:</p>
+
+<p>```ruby
+routes do
+  post   &lsquo;/books&rsquo;,             to: &lsquo;book#create&rsquo;
+  put    &lsquo;/books/:id&rsquo;,         to: &lsquo;book#update&rsquo;
+  delete &lsquo;/books/:id&rsquo;,         to: &lsquo;book#destroy&rsquo;</p>
+
+<p>  # You can also define one liner response
+  get    &lsquo;/ping&rsquo;,              to: &ndash;>(env) {[200, {}, [&lsquo;pong&rsquo;]]}
+end
+```</p>
+
+<p>Next, let&rsquo;s look at <code>Controllers</code>. We are not doing anything but defining <code>action</code>.
+What is <code>action</code>? <code>action</code> is the HTTP endpoint where you can handle incoming request and creating response.
+This is also the place where you can implement your business logic. I think it is safe to think that the responsibility of Lotus action is very similar to Rails controller.
+We define <code>Index</code> action so that we can use it from our router code that we looked at previously.</p>
+
+<p>Last thing to look at is <code>Views</code>. The responsibility of the class is not the same as the Rails view class.
+In Rails, you write codes that is actually rendered by browser (if html format) in view. This is done by <code>Template</code> in Lotus which I don&rsquo;t cover in this post.
+In Lotus, the responsibility of view is more like of presenter which does not come with Rails by default (you can use gems such as Draper to implement presetation layer in Rails, too.)
+What presenter does is receiving data from controller and abstracts them to template layer.
+In this way, your template layer gets clean and can focus on redning content.</p>
+
+<p>Let&rsquo;s go back to our code. Here we define <code>render</code> method and simply print <code>Hello, Lotus</code> message.</p>
+
+<p>This is neither interesting nor useful. We will make view to interact with controller by via data.</p>
+
+<p>Let&rsquo;s modify your controller.</p>
+
+<p>```ruby
+module Controllers
+  module Home</p>
+
+<pre><code>include OneFile::Controller
+action 'Index' do
+
+  expose :time
+
+  def call(params)
+    @time = Time.now
+  end
+end
+</code></pre>
+
+<p>  end
+end
+```</p>
+
+<p>Now, we see two new things <code>expose</code> and <code>call</code>.</p>
+
+<p>To pass data from controller to view, you need to manually expose what you want to pass.
+Again, here you see Lotus philosophy: <code>only use what you need</code>.</p>
+
+<p><code>call</code> is the entry point of http request. As I mentioned earlier, you can write business logic as well as response handling codes here.</p>
+
+<p>Let&rsquo;s modify your view to get data from the controller.</p>
+
+<p>```ruby
+module Views
+  module Home</p>
+
+<pre><code>class Index
+  include OneFile::View
+
+  def render
+    "Current time: #{time}"
+  end
+end
+</code></pre>
+
+<p>  end
+end
+```</p>
+
+<p>Since our controller exposes <code>@time</code>, you can access the data via <code>time</code> from your view.
+Now, restart your Rack process and access from your browser. Now you should see something like this: <code>Current time: 2014-09-11 23:18:30 +0900</code></p>
+
+<h2>Wrap up</h2>
+
+<p>Did you see it is quite easy to write Lotus application?</p>
+
+<p>Ok, I can hear your voice: <em>this example is too simple. I want to see real Lotus application.</em></p>
+
+<p>Yes, let me do that in the next post. I thought I can do that in the same post, but writing this takes more time than I thought&hellip;</p>
+
+<p>Next post will be something like this: <strong><em>Creating Full Stack Web Application with Lotus</em></strong></p>
+]]></content>
+  </entry>
+  
+</feed>

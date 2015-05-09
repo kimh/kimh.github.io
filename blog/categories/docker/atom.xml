@@ -1,0 +1,1271 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+  <title><![CDATA[Category: docker | Program Is Made At Night]]></title>
+  <link href="http://kimh.github.io/blog/categories/docker/atom.xml" rel="self"/>
+  <link href="http://kimh.github.io/"/>
+  <updated>2015-05-09T15:17:33+09:00</updated>
+  <id>http://kimh.github.io/</id>
+  <author>
+    <name><![CDATA[Kim, Hirokuni]]></name>
+    <email><![CDATA[yangkookkim@gmail.com]]></email>
+  </author>
+  <generator uri="http://octopress.org/">Octopress</generator>
+
+  
+  <entry>
+    <title type="html"><![CDATA[Dockerfileを書く時の注意とかコツとかハックとか]]></title>
+    <link href="http://kimh.github.io/blog/jp/docker/gothas-in-writing-dockerfile-jp/"/>
+    <updated>2014-01-20T22:20:00+09:00</updated>
+    <id>http://kimh.github.io/blog/jp/docker/gothas-in-writing-dockerfile-jp</id>
+    <content type="html"><![CDATA[<h2>目次</h2>
+
+<h4><a href="#why_do_we_need_to_use_dockerfile">なぜDockerfileを使うのか？</a></h4>
+
+<h4><a href="#add_and_understanding_context_in_dockerfile">ADDとDockerfileにおいてのコンテキストを理解する</a></h4>
+
+<h4><a href="#treat_your_container_like_a_binary_with_cmd">CMDでコンテナをバイナリのように扱う</a></h4>
+
+<h4><a href="#difference_between_cmd_and_entrypoint">CMDとENTRYPOINTの違い</a></h4>
+
+<ul>
+<li><a href="#exec_format_error">exec format error</a></li>
+</ul>
+
+
+<h4><a href="#build_caching_what_invalids_cache_and_not">ビルド時のキャッシュについて: キャッシュが有効なときと無効なとき</a></h4>
+
+<ul>
+<li><a href="#cache_invalidation_at_one_instruction_invalids_cache_of_all_subsequent_instructions">ある一行でキャッシュが使われなかったらそれ以降のすべての行でキャッシュは使われない</a></li>
+<li><a href="#cache_is_invalid_even_when_adding_commands_that_dont_do_anything">何もしないコマンドを追加してもキャッシュは無効になる</a></li>
+<li><a href="#cache_is_invalid_when_you_add_spaces_between_command_and_arguments_inside_instruction">コマンドと引数の間に意味のないスペースの入れてもキャッシュは無効となる</a></li>
+<li><a href="#cache_is_used_when_you_add_spaces_around_commands_inside_instruction">Dockerfileの行に意味のないスペースを入れてもキャッシュは有効</a></li>
+<li><a href="#cache_is_used_for_non_idempotent_instructions">冪等ではない命令でもキャッシュは効いてしまう</a></li>
+<li><a href="#instructions_after_add_never_cached_only_versions_prior_to_0.7.3">ADD以降にある命令はキャッシュされない (ただし、0.7.3以前のバージョンを使っている場合のみ)</a></li>
+</ul>
+
+
+<h4><a href="#hack_to_run_container_in_the_background"> コンテナをバックグラウンドで動かすハック</a></h4>
+
+<p><a id="why_do_we_need_to_use_dockerfile"></a></p>
+
+<h2>なぜDockerfileを使うのか？</h2>
+
+<p>DockerfileはYet Anotherシェルではありません。Dockerfileは特別なミッションを持っています。それは、<em>Dockerイメージ作成の自動化</em>です。</p>
+
+<p>一度Dockerfileにイメージ作成の手順を記述すれば、それ以降は<code>docker build</code>コマンド一つで同じイメージを作ることができます。</p>
+
+<p>Dockerfileはコンテナが何をしているかを別の人の伝える手段でもあります。Dockerfileにはイメージを作って動かすまでのすべてが書かれているので、Dockerfileを読むだけでそのコンテナのやるべき仕事がすぐにわかります。こうすれば、コンテナが何をしているかを調べるためにわざわざログインしてpsコマンドを駆使しなくてもいいというわけです。</p>
+
+<p>簡単に述べましたが、これらの理由で、Dockerイメージを作るなら<strong>必ず</strong>Dockerfileを使ってください。しかし、Dockerfileを書くのは時々嫌になってしまうことがあるのも事実です。このポストではDockerfileを書く時に注意することわかりにくいことを解説します。この記事を読んでDockerfileに慣れてもらえればと思います。</p>
+
+<p><a id="add_and_understanding_context_in_dockerfile"></a></p>
+
+<h2>ADDとDockerfileにおいてのコンテキストを理解する</h2>
+
+<p><strong><em>ADD</em></strong> is the instruction to add local files to Docker image.  The basic usage is very simple. Suppose you want to add a local file called <em>myfile.txt</em> to /myfile.txt of image.
+<strong><em>ADD</em></strong>はローカルファイルシステムのファイルやディレクトリをDockerイメージにコピーするために使います。使い方は至って簡単。もし、ローカルにある<em>myfile.txt</em>をイメージの<em>/myfile.txt</em>にコピーしたい場合を説明します。</p>
+
+<p><code>bash
+$ ls
+Dockerfile  mydir  myfile.txt
+</code></p>
+
+<p>上記のようなディレクトリ構成の場合、Dockerfileは次のようになります。</p>
+
+<p><code>
+ADD myfile.txt /
+</code></p>
+
+<p>簡単ですね。しかし、<em>/home/vagrant/myfile.txt</em>を追加しようとすると失敗します。</p>
+
+<p>```bash</p>
+
+<h1>以下の行がDockerfileにあるとします</h1>
+
+<h1>ADD /home/vagrant/myfile.txt /</h1>
+
+<p>$ docker build -t blog .
+Uploading context 10240 bytes
+Step 1 : FROM ubuntu
+ &mdash;&ndash;> 8dbd9e392a96
+Step 2 : ADD /home/vagrant/myfile.txt /
+Error build: /home/vagrant/myfile.txt: no such file or directory
+```</p>
+
+<p><code>no such file or directory</code> と言われてしまいました。確かにファイルは存在するのになぜでしょうか？理由は <em>/home/vagrant/myfile.txt</em> がDockerfileのコンテキスト外だからです。DockerfileでのコンテキストとはDockerfile内の命令からアクセス可能なファイルやディレクトリの範囲のことです。そして、コンテキスト内のファイルとディレクトリしかイメージに追加することはできません。
+カレントディレクトリ配下のファイルとディレクトリは自動的にコンテキストに追加されます。これは <code>build</code> コマンドを実行した時に確認できます。</p>
+
+<p><code>
+$ docker build -t blog .
+Uploading context 10240 bytes
+</code></p>
+
+<p>ここで <code>build</code> コマンドが何をしているかというと、Dockerクライアントがカレントディレクトリ配下のファイルとディレクトリをtarballにまとめてDockerデーモンへ送信しています。なぜわざわざ送信する必要があるかというと、DockerクライアントとDockerデーモンは違うホストで動いている可能性があるからです。これが上記のコマンドを実行した時に <em>Uploading</em> と表示されている理由です。</p>
+
+<p>ひとつ落とし穴があります。Dockerは自動的にカレントディレクトリ配下のファイルとディレクトリをコンテキストに追加するので、もし巨大なファイルやディレクトリを間違っておいておくと使う必要もないのにそれらのtarballを作ろうとします。</p>
+
+<p>```bash
+$ ls
+Dockerfile  very_huge_file</p>
+
+<p>$ docker build -t blog .
+Uploading context xxxxxx bytes
+&hellip;.. # すごく時間がかかる、、、
+```</p>
+
+<p>ベストプラクティスとしては、イメージに追加したいファイルとディレクトリのみをbuildを実行するディレクトリに置くべきです。</p>
+
+<p><a id="treat_your_container_like_a_binary_with_cmd"></a></p>
+
+<h2>CMDでコンテナをバイナリのように扱う</h2>
+
+<p>CMDをDockerfileで使うことで、コンテナを一つのバイナリのように扱うことができます。以下のようなDockerfileがあるとします。</p>
+
+<p>```</p>
+
+<h1>run.shがDockerfileと同じディレクトリにあるとします</h1>
+
+<p>ADD run.sh /usr/local/bin/run.sh
+CMD [&ldquo;/usr/local/bin/run.sh&rdquo;]
+```</p>
+
+<p>このDockerfileからコンテナを作って、<code>docker run -i run_image</code>で起動すると<code>/usr/local/bin/run.sh</code>スクリプトを実行してコンテナは終了します。</p>
+
+<p>もし、<code>CMD</code>を使わなかった場合、毎回起動する度に、<code>docker run -i run_image /usr/local/bin/run.sh</code>とコマンドラインで指定しないといけません。</p>
+
+<p>これは、面倒なだけではなく、コンテナの運用の観点からもバッドプラクティスです。</p>
+
+<p>もし、<code>CMD</code>がDockerfileにあればそのコンテナが何をするのか明確になります。
+しかし、もしなかった場合コンテナを作った人以外の人がこのコンテナを正しく起動するためには外部のドキュメントに頼らなければいけません。</p>
+
+<p>なので一般的には常に<code>CMD</code>はDockerfileに指定すべきです。</p>
+
+<p><a id="difference_between_cmd_and_entrypoint"></a></p>
+
+<h2>CMDとENTRYPOINTの違い</h2>
+
+<p>  <code>CMD</code>と<code>ENTRYPOINT</code>はとても紛らわしいです。</p>
+
+<p>コマンドラインから引数として渡されたものでも<code>CMD</code>から指定されたものでも、すべてのコマンドは<code>ENTRYPOINT</code>で指定されたバイナリの引数として渡されます。</p>
+
+<p>  <code>/bin/sh -c</code> はデフォルトのエントリーポイントです。もし、エントリーポイントなしで<code>CMD date</code>と書いた場合、Dockerはこれを<code>/bin/sh -c date</code>として実行します。</p>
+
+<p>エントリーポイントを使うことによってコンテナの挙動を実行時に変えることができるので、運用を柔軟にすることができます。</p>
+
+<p><code>
+ENTRYPOINT ["/bin/date"]
+</code></p>
+
+<p>上記のようなエントリーポイントがあった場合、このコンテナは現在時刻を違うフォーマットで出力することができます。</p>
+
+<p>```bash
+$ docker run -i clock_container +&ldquo;%s&rdquo;
+1404214000</p>
+
+<p>$ docker run -i clock_container +&ldquo;%F&rdquo;
+2014-07-01
+```</p>
+
+<p><a id="exec_format_error"></a></p>
+
+<h3>exec format error</h3>
+
+<p>デフォルトにエントリーポイントに関して、一つ注意することがあります。例えば以下のようなシェルスクリプトを実行したいとします。</p>
+
+<p><strong><em>/usr/local/bin/run.sh</em></strong>
+<code>bash
+echo "hello, world"
+</code></p>
+
+<p><strong><em>Dockerfile</em></strong>
+<code>
+ADD run.sh /usr/local/bin/run.sh
+RUN chmod +x /usr/local/bin/run.sh
+CMD ["/usr/local/bin/run.sh"]
+</code></p>
+
+<p>このコンテナを起動すると、<code>hello, world</code>と出力することをあなたは期待すると思いますが、実際は意味のわからないエラーになります。</p>
+
+<p><code>bash
+$ docker run -i hello_world_image
+2014/07/01 10:53:57 exec format error
+</code></p>
+
+<p>これは、シェルスクリプトにシェバングを忘れたため、デフォルトのエントリーポイントである<code>/bin/sh -c</code>がどのようにしてスクリプトを実行したらいいわからないためエラーになりました。</p>
+
+<p>これを修正するには、単にシェバングを足すか、</p>
+
+<p><strong><em>/usr/local/bin/run.sh</em></strong>
+```bash</p>
+
+<h1>!/bin/bash</h1>
+
+<p>echo &ldquo;hello, world&rdquo;
+```</p>
+
+<p>またはコマンドラインから指定することができます。</p>
+
+<p><code>bash
+$ docker run -entrypoint="/bin/bash" -i hello_world_image
+</code></p>
+
+<p><a id="build_caching_what_invalids_cache_and_not"></a></p>
+
+<h2>ビルド時のキャッシュについて: キャッシュが有効なときと無効なとき</h2>
+
+<p>DockerはDockerfileの各一行毎にコミットを作成していきます。行の記述を変更しない限り、Dockerは新しいイメージを作る必要がないと判断してキャッシュを使って次の行の元になるイメージを作成します。
+これが初めて <code>docker build</code> を実行した時には時間がかかるのに、２回目からは一瞬でビルドが完了する理由です。</p>
+
+<p>```bash
+$ time docker build -t blog .
+Uploading context 10.24 kB
+Step 1 : FROM ubuntu
+ &mdash;&ndash;> 8dbd9e392a96
+Step 2 : RUN apt-get update
+ &mdash;&ndash;> Running in 15705b182387
+Ign <a href="http://archive.ubuntu.com">http://archive.ubuntu.com</a> precise InRelease
+Hit <a href="http://archive.ubuntu.com">http://archive.ubuntu.com</a> precise Release.gpg
+Hit <a href="http://archive.ubuntu.com">http://archive.ubuntu.com</a> precise Release
+Hit <a href="http://archive.ubuntu.com">http://archive.ubuntu.com</a> precise/main amd64 Packages
+Get:1 <a href="http://archive.ubuntu.com">http://archive.ubuntu.com</a> precise/main i386 Packages [1641 kB]
+Get:2 <a href="http://archive.ubuntu.com">http://archive.ubuntu.com</a> precise/main TranslationIndex [3706 B]
+Get:3 <a href="http://archive.ubuntu.com">http://archive.ubuntu.com</a> precise/main Translation-en [893 kB]
+Fetched 2537 kB in 7s (351 kB/s)</p>
+
+<p> &mdash;&ndash;> a8e9f7328cc4
+Successfully built a8e9f7328cc4</p>
+
+<p>real    0m8.589s
+user    0m0.008s
+sys 0m0.012s</p>
+
+<p>$ time docker build -t blog .
+Uploading context 10.24 kB
+Step 1 : FROM ubuntu
+ &mdash;&ndash;> 8dbd9e392a96
+Step 2 : RUN apt-get update
+ &mdash;&ndash;> Using cache
+ &mdash;&ndash;> a8e9f7328cc4
+Successfully built a8e9f7328cc4</p>
+
+<p>real    0m0.067s
+user    0m0.012s
+sys 0m0.000s
+```
+しかし、いつキャッシュが使われていつキャッシュが使われないのかはあまり明確ではありません。ここでは、いくつかのケースを紹介します。</p>
+
+<p><a id="cache_invalidation_at_one_instruction_invalids_cache_of_all_subsequent_instructions"></a></p>
+
+<h4>ある一行でキャッシュが使われなかったらそれ以降のすべての行でキャッシュは使われない</h4>
+
+<p>これは一番基本のルールです。もし、Dockerfile内のある一行でキャッシュが使われない書き方をしていまうと、それ以降の行でキャッシュは全く使われなくなってしまいます。</p>
+
+<p>```bash</p>
+
+<h1>Before</h1>
+
+<p>From ubuntu
+Run apt-get install ruby
+Run echo done!</p>
+
+<h1>After</h1>
+
+<p>From ubuntu
+Run apt-get update
+Run apt-get install ruby
+Run echo done!
+```</p>
+
+<p><em>Run apt-get update</em> という行を追加したことでベースのイメージを変更してしまったので、 それ以降の <strong>すべての</strong> 行で使うイメージも初めから作り直されないといけません。
+Dockerfileはひとつ前の行で作られたイメージをベースにして行に書かれている命令を実行するので、これは当然の挙動だと言えます。</p>
+
+<p><a id="cache_invalidation_at_one_instruction_invalids_cache_of_all_subsequent_instructions"></a></p>
+
+<h4>何もしないコマンドを追加してもキャッシュは無効になる</h4>
+
+<p><em>以下の例ではキャッシュは効きません。</em></p>
+
+<p>```bash</p>
+
+<h1>Before</h1>
+
+<p>Run apt-get update</p>
+
+<h1>After</h1>
+
+<p>Run apt-get update &amp;&amp; true
+```</p>
+
+<p><code>true</code> コマンドは実際には何もしないコマンドですが、Dockerはキャッシュを使ってはくれません。</p>
+
+<p><a id="cache_is_invalid_when_you_add_spaces_between_command_and_arguments_inside_instruction"></a></p>
+
+<h4>コマンドと引数の間に意味のないスペースの入れてもキャッシュは無効となる</h4>
+
+<p><em>以下の例ではキャッシュは効きません。</em></p>
+
+<p>```bash</p>
+
+<h1>Before</h1>
+
+<p>Run apt-get update</p>
+
+<h1>After</h1>
+
+<p>Run apt-get               update
+```</p>
+
+<p><a id="cache_is_used_when_you_add_spaces_around_commands_inside_instruction"></a></p>
+
+<h4>Dockerfileの行に意味のないスペースを入れてもキャッシュは有効</h4>
+
+<p><em>以下の例ではキャッシュは有効になります。</em></p>
+
+<p>```bash</p>
+
+<h1>Before</h1>
+
+<p>Run apt-get update</p>
+
+<h1>After</h1>
+
+<p>Run                apt-get update
+```</p>
+
+<p><a id="cache_is_used_for_non_idempotent_instructions"></a></p>
+
+<h4>冪等ではない命令でもキャッシュは効いてしまう</h4>
+
+<p>これはどちらかというとキャッシュの落とし穴についてです。 <em>冪等ではない命令</em> とは実行する度に結果が変わる可能性のあるコマンドを実行する行のことです。
+例えば、 <code>apt-get update</code> は実行する度にアップデートされる内容が変わる可能性があるので冪等ではありません。</p>
+
+<p><code>bash
+From ubuntu
+Run apt-get update
+</code></p>
+
+<p>上記のDockerfileを作ってイメージを作成したとします。３ヶ月後、Ubutnuがセキュリティアップデートをあるリポジトリにリリースしたので、同じDockerfileを使ってイメージの再作成をしたとします。(apt-get update がセキュリティアップデートを拾ってくれると思って)
+しかし、この方法でイメージを再作成してもセキュリティアップデートはインストールされません。Dockerfileの記述自体は全く変更されていないので、たとえ <code>apt-get update</code> の実行結果が変わっていたとしてもDockerはキャッシュを使うからです。</p>
+
+<p>もし、これ避けたければ、<code>-no-cache</code> オプションを使えます。</p>
+
+<p><code>bash
+$ docker build -no-cache .
+</code></p>
+
+<p><a id="instructions_after_add_never_cached_only_versions_prior_to_0.7.3"></a></p>
+
+<h4>ADD以降にある命令はキャッシュされない (ただし、0.7.3以前のバージョンを使っている場合のみ)</h4>
+
+<p>もし、0.7.3以前のバージョンを使っている場合、注意してください！</p>
+
+<p><code>bash
+From ubuntu
+Add myfile /
+Run apt-get update
+Run apt-get install openssh-server
+</code></p>
+
+<p>もしこのようなDockerfileだと、<strong><em>Run apt-get update</em></strong> と <strong><em>Run apt-get install openssh-server</em></strong> は絶対にキャッシュされません。</p>
+
+<p>この挙動は0.7.3で改善されました。ADD以降の行でも、ADDの書き方自身やADDする対象が変更されない限りキャッシュが使われます。</p>
+
+<p>```bash
+$ echo &ldquo;Jeff Beck&rdquo; > rock.you</p>
+
+<p>From ubuntu
+Add rock.you /
+Run add rock.you</p>
+
+<p>$ echo &ldquo;Eric Clapton&rdquo; > rock.you</p>
+
+<p>From ubuntu
+Add rock.you /
+Run add rock.you
+```</p>
+
+<p>ここでは、<em>rock.you</em> ファイルの内容を変更したので、ADD以降の行ではキャッシュは使われません。</p>
+
+<p><a id="hack_to_run_container_in_the_background"></a></p>
+
+<h2>コンテナをバックグラウンドで動かすハック</h2>
+
+<p>もし、コンテナの起動方法をシンプルにしたければ、<code>docker run -d image your-command</code> を使ってコンテナをバックグラウンドで起動するべきです。
+<code>docker run -i -t image your-command</code> の代わりに <code>-d</code> を使うことを勧める理由はコンテナの起動をたった一つのコマンドで行うことができ、かつ <code>Ctrl + P + Q</code> を入力してコンテナをターミナルから切り離す作業をしなくていいからです。</p>
+
+<p>しかし、<code>-d</code> オプションには問題があります。コマンドがフォアグラウンドで実行されていないとコンテナはすぐに終了してしまいます。</p>
+
+<p>apacheをサービスとして起動するコンテナを例に説明しましょう。直感的に次のようにやりたくなるでしょう。</p>
+
+<p><code>bash
+$ docker run -d apache-server apachectl start
+</code></p>
+
+<p>しかし、これだとコンテナは起動した瞬間に終了します。これは、 <code>apachectl</code> がapacheをデーモン化した瞬間に自身は終了してしまうからです。</p>
+
+<p>Dockerはこのようなコマンドが嫌いです。Dockerはコマンドがフォアグラウンドで起動し続けることを期待しているからです。
+もしそうでなければ、Dockerはアプリケーションは終了したと考えてコンテナを終了してしまいます。</p>
+
+<p>この問題はapacheの実行バイナリを直接フォアグラウンドで動かすことで解決できます。</p>
+
+<p>```bash
+$ docker run -e APACHE_RUN_USER=www-data \</p>
+
+<pre><code>                -e APACHE_RUN_GROUP=www-data \
+                -e APACHE_PID_FILE=/var/run/apache2.pid \
+                -e APACHE_RUN_DIR=/var/run/apache2 \
+                -e APACHE_LOCK_DIR=/var/lock/apache2 \
+                -e APACHE_LOG_DIR=/var/log/apache2 \
+                -d apache-server /usr/sbin/apache2 -D NO_DETACH -D FOREGROUND
+</code></pre>
+
+<p>```</p>
+
+<p>ここでしていることは、<code>apachectl</code> がやっていることを手動で行ってapacheを起動しています。このやり方だとapacheはフォアグラウンドで動き続けることができます。</p>
+
+<p>問題はアプリケーションによってはフォアグラウンドで起動する方法がない場合があることです。また、<code>apachectl</code> の例のようにヘルパープログラムがやってくれることを分解して手動でやらないといけないのは大変です。どうすればいいでしょう？</p>
+
+<p>このような場合、<code>tail -f /dev/null</code> を実行したいコマンドに追加すればコンテナはメインのコマンドがバックグラウンドで実行されても <code>tail</code> がフォアグラウンドで起動し続けてくれるので終了しません。このテクニックをさっきのapacheの例で使ってみましょう。</p>
+
+<p><code>bash
+$ docker run -d apache-server apachectl start &amp;&amp; tail -f /dev/null
+</code></p>
+
+<p>ずっと良くなりました。 <code>tail -f /dev/null</code> は無害なコマンドなのでこのテクニックはどんな場合にも使うことができるのでおすすめです。</p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Gotchas in Writing Dockerfile]]></title>
+    <link href="http://kimh.github.io/blog/en/docker/gotchas-in-writing-dockerfile-en/"/>
+    <updated>2014-01-18T23:22:00+09:00</updated>
+    <id>http://kimh.github.io/blog/en/docker/gotchas-in-writing-dockerfile-en</id>
+    <content type="html"><![CDATA[<h2>Contents of This Article</h2>
+
+<h4><a href="#why_do_we_need_to_use_dockerfile">Why do we need to use Dockerfile?</a></h4>
+
+<h4><a href="#add_and_understanding_context_in_dockerfile">ADD and understanding context in Dockerfile</a></h4>
+
+<h4><a href="#treat_your_container_like_a_binary_with_cmd">Treat your container like a binary with CMD</a></h4>
+
+<h4><a href="#difference_between_cmd_and_entrypoint">Difference between CMD and ENTRYPOINT</a></h4>
+
+<ul>
+<li><a href="#exec_format_error">exec format error</a></li>
+</ul>
+
+
+<h4><a href="#build_caching_what_invalids_cache_and_not">Build caching: what invalids cache and not?</a></h4>
+
+<ul>
+<li><a href="#cache_invalidation_at_one_instruction_invalids_cache_of_all_subsequent_instructions">Cache invalidation at one instruction invalids cache of all subsequent instructions</a></li>
+<li><a href="#cache_is_invalid_even_when_adding_commands_that_dont_do_anything">Cache is invalid even when adding commands that don&rsquo;t do anything</a></li>
+<li><a href="#cache_is_invalid_when_you_add_spaces_between_command_and_arguments_inside_instruction">Cache is invalid when you add spaces between command and arguments inside instruction</a></li>
+<li><a href="#cache_is_used_when_you_add_spaces_around_commands_inside_instruction">Cache is used when you add spaces around commands</a></li>
+<li><a href="#cache_is_used_for_non_idempotent_instructions">Cache is used for non-idempotent instructions</a></li>
+<li><a href="#instructions_after_add_never_cached_only_versions_prior_to_0.7.3">Instructions after ADD never cached (Only versions prior to 0.7.3)</a></li>
+</ul>
+
+
+<h4><a href="#hack_to_run_container_in_the_background">Hack to run container in the background</a></h4>
+
+<p><a id="why_do_we_need_to_use_dockerfile"></a></p>
+
+<h2>Why do we need to use Dockerfile?</h2>
+
+<p>Dockerfile is not yet-another shell. Dockerfile has its special mission: <strong>automation of Docker image creation.</strong></p>
+
+<p>Once, you write build instructions into Dockerfile, you can build the same image just with <code>docker build</code> command.</p>
+
+<p>Dockerfile is also useful to tell the knowledge of what a job the container does to somebody else. Your teammates can tell what the container is supposed to do just by reading Dockerfile. They don&rsquo;t need to know login to the container and figure out what the container is doing by using ps command.</p>
+
+<p>For these reasons, you <strong>must</strong> use Dockerfile when you build images. However, writing Dockerfile is sometimes painful. In this post, I will write a few tips and gochas in writing Dockerfile so that you love the tool.</p>
+
+<p><a id="add_and_understanding_context_in_dockerfile"></a></p>
+
+<h2>ADD and understanding context in Dockerfile</h2>
+
+<p><strong><em>ADD</em></strong> is the instruction to add local files to Docker image.  The basic usage is very simple. Suppose you want to add a local file called <em>myfile.txt</em> to <em>/myfile.txt</em> of image.</p>
+
+<p><code>bash
+$ ls
+Dockerfile  mydir  myfile.txt
+</code></p>
+
+<p>Then your Dockerfile looks like this.</p>
+
+<p><code>
+ADD myfile.txt /
+</code></p>
+
+<p>Very simple. However, if you want to add <em>/home/vagrant/myfile.txt</em>, you can&rsquo;t do this.</p>
+
+<p>```bash</p>
+
+<h1>Your have this in your Dockerfile</h1>
+
+<h1>ADD /home/vagrant/myfile.txt /</h1>
+
+<p>$ docker build -t blog .
+Uploading context 10240 bytes
+Step 1 : FROM ubuntu
+ &mdash;&ndash;> 8dbd9e392a96
+Step 2 : ADD /home/vagrant/myfile.txt /
+Error build: /home/vagrant/myfile.txt: no such file or directory
+```</p>
+
+<p>You got <code>no such file or directory</code> error even if you have the file. Why? This is because <em>/home/vagrant/myfile.txt</em> is not added to the <strong>context</strong> of Dockerfile. Context in Dockerfile means files and directories available to the Dockerfile instructions. Only files and directories in the context can be added during build.
+Files and sub directories under the current directory are added to the context. You can see this when you run build command.</p>
+
+<p><code>
+$ docker build -t blog .
+Uploading context 10240 bytes
+</code></p>
+
+<p>What&rsquo;s happening here is Docker client makes tarball of entries under the current directory and send it to Docker daemon. The reason why thiis is required is because your Docker daemon may be running on remote machine. That&rsquo;s why the above command says <em>Uploading</em>.</p>
+
+<p>There is a pitfall, though. Since automatically entries under current directories are added to the context, it tries to upload huge files and take longer time for build even if you don&rsquo;t add the file.</p>
+
+<p>```bash
+$ ls
+Dockerfile  very_huge_file</p>
+
+<p>$ docker build -t blog .
+Uploading context xxxxxx bytes
+&hellip;.. # Takes very long time
+```</p>
+
+<p>So the best practice is only placing files and directories that you need to add to image under current directory.</p>
+
+<p><a id="treat_your_container_like_a_binary_with_cmd"></a></p>
+
+<h2>Treat your container like a binary with CMD</h2>
+
+<p>By using CMD instruction in Dockerfile, your container acts like a single executable binary. Suppose you have these instructions in your Dockerfile.</p>
+
+<p>```</p>
+
+<h1>Suppose you have run.sh in the same directory as the Dockerfile</h1>
+
+<p>ADD run.sh /usr/local/bin/run.sh
+CMD [&ldquo;/usr/local/bin/run.sh&rdquo;]
+```</p>
+
+<p>When you build a container from this Dockerfile and run with <code>docker run -i run_image</code>, it runs <code>/usr/local/bin/run.sh</code> script and exists.</p>
+
+<p>If you don&rsquo;t use <code>CMD</code>, you always have to pass the command to the argument: <code>docker run -i run_image /usr/local/bin/run.sh</code>.</p>
+
+<p>This is not just cumbersome, but also considered to be a bad practice from the perspective of operation.</p>
+
+<p>If you have <code>CMD</code> instruction, the purpose of the container becomes explicit: all what the container wants to do is running the command.</p>
+
+<p>But, if you don&rsquo;t have the instruction, anybody except the person who made the container need to rely on external documentation to know how to run the container properly.</p>
+
+<p>So, in general, you should have <code>CMD</code> instruction in your Dockerfile.</p>
+
+<p><a id="difference_between_cmd_and_entrypoint"></a></p>
+
+<h2>Difference between CMD and ENTRYPOINT</h2>
+
+<p>  <code>CMD</code> and <code>ENTRYPOINT</code> are confusing.</p>
+
+<p>Every commands, either passed as an argument or specified from <code>CND</code> instruction are passed as argument of binary specified in <code>ENTRYPOINT</code>.</p>
+
+<p>  <code>/bin/sh -c</code> is the default entrypoint. So if you specify <code>CMD date</code> without specifying entrypoint, Docker executes it as <code>/bin/sh -c date</code>.</p>
+
+<p>By using entrypoint, you can change the behaviour of your container at run time that makes container operation a bit more flexible.</p>
+
+<p><code>
+ENTRYPOINT ["/bin/date"]
+</code></p>
+
+<p>With the entrypoint above, the container prints out current date with different format.</p>
+
+<p>```bash
+$ docker run -i clock_container +&ldquo;%s&rdquo;
+1404214000</p>
+
+<p>$ docker run -i clock_container +&ldquo;%F&rdquo;
+2014-07-01
+```</p>
+
+<p><a id="exec_format_error"></a></p>
+
+<h3>exec format error</h3>
+
+<p>There is one caveat in default entrypoint. For example, you want to execute the following shell script.</p>
+
+<p><strong><em>/usr/local/bin/run.sh</em></strong>
+<code>bash
+echo "hello, world"
+</code></p>
+
+<p><strong><em>Dockerfile</em></strong>
+<code>
+ADD run.sh /usr/local/bin/run.sh
+RUN chmod +x /usr/local/bin/run.sh
+CMD ["/usr/local/bin/run.sh"]
+</code></p>
+
+<p>When you run the container, your expectation is the container prints out <code>hello, world</code>. However, what you will get is a error message that doesn&rsquo;t make sense.</p>
+
+<p><code>bash
+$ docker run -i hello_world_image
+2014/07/01 10:53:57 exec format error
+</code></p>
+
+<p>You see this message when you didn&rsquo;t put shebang in your script, and because of that, default entrypoint <code>/bin/sh -c</code> does not know how to run the script.</p>
+
+<p>To fix this, you can either add shebang</p>
+
+<p><strong><em>/usr/local/bin/run.sh</em></strong>
+```bash</p>
+
+<h1>!/bin/bash</h1>
+
+<p>echo &ldquo;hello, world&rdquo;
+```</p>
+
+<p>or you can specify from command line.</p>
+
+<p><code>bash
+$ docker run -entrypoint="/bin/bash" -i hello_world_image
+</code></p>
+
+<p><a id="build_caching_what_invalids_cache_and_not"></a></p>
+
+<h2>Build caching: what invalids cache and not?</h2>
+
+<p>Docker creates a commit for each line of instruction in Dockerfile. As long as you don&rsquo;t change the instruction, Docker thinks it doesn&rsquo;t need to change the image, so use cached image which is used by the next instruction as a parent image.
+This is the reason why <code>docker build</code> takes long time in the first time, but immediately finishes in the second time.</p>
+
+<p>```bash
+$ time docker build -t blog .
+Uploading context 10.24 kB
+Step 1 : FROM ubuntu
+ &mdash;&ndash;> 8dbd9e392a96
+Step 2 : RUN apt-get update
+ &mdash;&ndash;> Running in 15705b182387
+Ign <a href="http://archive.ubuntu.com">http://archive.ubuntu.com</a> precise InRelease
+Hit <a href="http://archive.ubuntu.com">http://archive.ubuntu.com</a> precise Release.gpg
+Hit <a href="http://archive.ubuntu.com">http://archive.ubuntu.com</a> precise Release
+Hit <a href="http://archive.ubuntu.com">http://archive.ubuntu.com</a> precise/main amd64 Packages
+Get:1 <a href="http://archive.ubuntu.com">http://archive.ubuntu.com</a> precise/main i386 Packages [1641 kB]
+Get:2 <a href="http://archive.ubuntu.com">http://archive.ubuntu.com</a> precise/main TranslationIndex [3706 B]
+Get:3 <a href="http://archive.ubuntu.com">http://archive.ubuntu.com</a> precise/main Translation-en [893 kB]
+Fetched 2537 kB in 7s (351 kB/s)</p>
+
+<p> &mdash;&ndash;> a8e9f7328cc4
+Successfully built a8e9f7328cc4</p>
+
+<p>real    0m8.589s
+user    0m0.008s
+sys 0m0.012s</p>
+
+<p>$ time docker build -t blog .
+Uploading context 10.24 kB
+Step 1 : FROM ubuntu
+ &mdash;&ndash;> 8dbd9e392a96
+Step 2 : RUN apt-get update
+ &mdash;&ndash;> Using cache
+ &mdash;&ndash;> a8e9f7328cc4
+Successfully built a8e9f7328cc4</p>
+
+<p>real    0m0.067s
+user    0m0.012s
+sys 0m0.000s
+```
+However, when cache is used and what invalids cache are sometimes not very clear. Here is a few cases that I found worth to note.</p>
+
+<p><a id="cache_invalidation_at_one_instruction_invalids_cache_of_all_subsequent_instructions"></a></p>
+
+<h4>Cache invalidation at one instruction invalids cache of all subsequent instructions</h4>
+
+<p>This is the basic rule of caching. If you cause cache invalidation at one instruction, subsequent instructions doesn&rsquo;t use cache.</p>
+
+<p>```bash</p>
+
+<h1>Before</h1>
+
+<p>From ubuntu
+Run apt-get install ruby
+Run echo done!</p>
+
+<h1>After</h1>
+
+<p>From ubuntu
+Run apt-get update
+Run apt-get install ruby
+Run echo done!
+```</p>
+
+<p>Since you add <em>Run apt-get update</em> instruction, <strong>all</strong> instructions after that have to be done from the scratch even if they are not changed.
+This is inevitable because Dockerfile uses the image built by the previous instruction as a parent image to execute next instruction. So, if you insert an instruction that creates a new parent image, all subsequent instructions cannot use cache because now parent image differs.</p>
+
+<p><a id="cache_invalidation_at_one_instruction_invalids_cache_of_all_subsequent_instructions"></a></p>
+
+<h4>Cache is invalid even when adding commands that don&rsquo;t do anything</h4>
+
+<p><em>This invalidates caching.</em> For example,</p>
+
+<p>```bash</p>
+
+<h1>Before</h1>
+
+<p>Run apt-get update</p>
+
+<h1>After</h1>
+
+<p>Run apt-get update &amp;&amp; true
+```</p>
+
+<p>Even if <code>true</code> command doesn&rsquo;t change anything of the image, Docker invalids the cache.</p>
+
+<p><a id="cache_is_invalid_when_you_add_spaces_between_command_and_arguments_inside_instruction"></a></p>
+
+<h4>Cache is invalid when you add spaces between command and arguments inside instruction</h4>
+
+<p><em>This invalids cache</em></p>
+
+<p>```bash</p>
+
+<h1>Before</h1>
+
+<p>Run apt-get update</p>
+
+<h1>After</h1>
+
+<p>Run apt-get               update
+```</p>
+
+<p><a id="cache_is_used_when_you_add_spaces_around_commands_inside_instruction"></a></p>
+
+<h4>Cache is used when you add spaces around commands inside instruction</h4>
+
+<p><em>Cache is valid even if you add space around commands</em></p>
+
+<p>```bash</p>
+
+<h1>Before</h1>
+
+<p>Run apt-get update</p>
+
+<h1>After</h1>
+
+<p>Run                apt-get update
+```</p>
+
+<p><a id="cache_is_used_for_non_idempotent_instructions"></a></p>
+
+<h4>Cache is used for non-idempotent instructions</h4>
+
+<p>This is kind of pitfall of build caching. What I mean by non-idempotent instructions is the execution of commands that may return different result each time.
+For example, <code>apt-get update</code> is not idempotent because the content of updates changes as time goes by.</p>
+
+<p><code>bash
+From ubuntu
+Run apt-get update
+</code></p>
+
+<p>You made this Dockerfile and create image. 3 months later, Ubuntu made some security updates to their repository, so you rebuild the image by using the same Dockerfile hoping your new image includes the security updates.
+However, this doesn&rsquo;t pick up the updates. Since no instructions or files are changed, Docker uses cache and skips doing <code>apt-get update</code>.</p>
+
+<p>If you don&rsquo;t want to use cache, just pass <code>-no-cache</code> option to build.</p>
+
+<p><code>bash
+$ docker build -no-cache .
+</code></p>
+
+<p><a id="instructions_after_add_never_cached_only_versions_prior_to_0.7.3"></a></p>
+
+<h4>Instructions after ADD never cached (Only versions prior to 0.7.3)</h4>
+
+<p>If you use Docker before v7.3, watch out!</p>
+
+<p><code>bash
+From ubuntu
+Add myfile /
+Run apt-get update
+Run apt-get install openssh-server
+</code></p>
+
+<p>If you have Dockerfile like this, <strong><em>Run apt-get update</em></strong> and <strong><em>Run apt-get install openssh-server</em></strong>  will never be cached.</p>
+
+<p>The behavior is changed from v7.3. It caches even if you have ADD instruction, but invalids cache if file content is changed.</p>
+
+<p>```bash
+$ echo &ldquo;Jeff Beck&rdquo; > rock.you</p>
+
+<p>From ubuntu
+Add rock.you /
+Run add rock.you</p>
+
+<p>$ echo &ldquo;Eric Clapton&rdquo; > rock.you</p>
+
+<p>From ubuntu
+Add rock.you /
+Run add rock.you
+```</p>
+
+<p>Since you change <em>rock.you</em> file, instructions after Add doesn&rsquo;t use cache.</p>
+
+<p><a id="hack_to_run_container_in_the_background"></a></p>
+
+<h2>Hack to run container in the background</h2>
+
+<p>If you want to simplify the way to run containers, you should run your container on background with <code>docker run -d image your-command</code>.
+Instead of running with <code>docker run -i -t image your-command</code>, using <code>-d</code> is recommended because you can run your container with just one command and you don&rsquo;t need to detach terminal of container by hitting <code>Ctrl + P + Q</code>.</p>
+
+<p>However, there is a problem with <code>-d</code> option. Your container immediately stops unless the commands are not running on foreground.</p>
+
+<p>Let me explain this by using case where you want to run apache service on a container. The intuitive way of doing this is</p>
+
+<p><code>bash
+$ docker run -d apache-server apachectl start
+</code></p>
+
+<p>However, the container stops immediately after it is started. This is because <code>apachectl</code> exits once it detaches apache daemon.</p>
+
+<p>Docker doesn&rsquo;t like this. Docker requires your command to keep running in the foreground.
+Otherwise, it thinks that your applications stops and shutdown the container.</p>
+
+<p>You can solve this by directly running apache executable with foreground option.</p>
+
+<p>```bash
+$ docker run -e APACHE_RUN_USER=www-data \</p>
+
+<pre><code>                -e APACHE_RUN_GROUP=www-data \
+                -e APACHE_PID_FILE=/var/run/apache2.pid \
+                -e APACHE_RUN_DIR=/var/run/apache2 \
+                -e APACHE_LOCK_DIR=/var/lock/apache2 \
+                -e APACHE_LOG_DIR=/var/log/apache2 \
+                -d apache-server /usr/sbin/apache2 -D NO_DETACH -D FOREGROUND
+</code></pre>
+
+<p>```</p>
+
+<p>Here we are manually doing what <code>apachectl</code> does for us and run apache executable. With this approach, apache keeps running on foreground.</p>
+
+<p>The problem is that some application does not run in the foreground. Also, we need to do extra works such as exporting environment variables by ourselves. How can we make it easier?</p>
+
+<p>In this situation, you can add <code>tail -f /dev/null</code> to your command. By doing this, even if your main command runs in the background, your container doesn&rsquo;t stop because <code>tail</code> is keep running in the foreground. We can use this technique in the apache case.</p>
+
+<p><code>bash
+$ docker run -d apache-server apachectl start &amp;&amp; tail -f /dev/null
+</code></p>
+
+<p>Much better, right? Since <code>tail -f /dev/null</code> doesn&rsquo;t do any harm, you can use this hack to any applications.</p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Running Docker Containers Asynchronously with Celluloid]]></title>
+    <link href="http://kimh.github.io/blog/en/docker/running-docker-containers-asynchronously-with-celluloid/"/>
+    <updated>2014-01-11T14:59:00+09:00</updated>
+    <id>http://kimh.github.io/blog/en/docker/running-docker-containers-asynchronously-with-celluloid</id>
+    <content type="html"><![CDATA[<p><img src="/images/parallel.jpg" alt="" /></p>
+
+<h2>Baleen</h2>
+
+<p>I wrote a ruby gem called <a href="http://rubygems.org/gems/baleen">baleen</a>.
+Baleen runs your cucumber tests by using docker containers in parallel. By using docker, baleen archives parallel test execution as well as providing completely isolated environments for each test runner.</p>
+
+<p>For the basic usages, please see <a href="https://github.com/kimh/baleen">github repo</a>. In this post, I will write how balenn runs docker containrs in parallel by using remote API of docker.</p>
+
+<h2>API Library</h2>
+
+<p>baleen server makes API call to Docker. To make API call, I use ruby gem that wraps the call. Currently, there are two gems of docker ruby api.</p>
+
+<ul>
+<li><a href="https://github.com/swipely/docker-api">swipely / docker-api</a></li>
+<li><a href="https://github.com/geku/docker-client">geku / docker-client</a></li>
+</ul>
+
+
+<p>Unfortunately, docker-client is not under active development, so I will recommend to use docker-api which is also used in baleen.</p>
+
+<h2>Celluloid</h2>
+
+<p>To run tests in parallel, we also have to run containers in parallel. To archive this, the operation of running containers should be done asynchronously and not blocking subsequent containers.</p>
+
+<p>Fortunately, we have <a href="https://github.com/celluloid/celluloid">Celluloid</a> to get the power of asynchronous very easily.</p>
+
+<h2>Brief Explanation of How Baleen Works</h2>
+
+<p>To get the context, let me quicly go over how baleen works with docker.</p>
+
+<p>This is rough image that shows how baleen interacts with Docker. In the image, you can see how the request made by baleen client is processed by baleen server that makes API calls to Docker host.</p>
+
+<p><img src="/images/basic-flow.png" alt="basic flow of interaction" /></p>
+
+<p>The flow is what happens when you run</p>
+
+<p><code>bash
+baleen cucumber --image my-test-runner --files features/
+</code></p>
+
+<p>The above command does the following things.</p>
+
+<p><strong>1.</strong> Baleen client asks baleen server to run your tests.
+<strong>2.</strong> Baleen server receives the request and make API call to docker
+<strong>3.</strong> Docker creates and starts containers accordingly
+<strong>4.</strong> Baleen server retrieves results and pass them back to baleen client</p>
+
+<p>In this post, we are interested in a bit of <strong>2.</strong> and more in <strong>3.</strong> and <strong>4.</strong></p>
+
+<h2>Making API Call To Run Containers</h2>
+
+<p>Making container object is very straightforward if you use docker-ruby.</p>
+
+<p><code>ruby
+image = "my-app-runner"
+test_files = ["test1.feature", "test2.feature", "test3.feature"]
+containers = test_files.map do |test_file|
+  Docker::Container.create('Cmd' =&gt; ["bash", "-c", "cucumber features/#{test_file}"], 'Image' =&gt; image)
+end
+</code></p>
+
+<p>Note that we are passing different test files to each container. The basic idea of baleen is let each container to run a single test. Therefore, if we have three test files, then we need to create three containers.</p>
+
+<p>To start container, just call <strong><em>Container.start</em></strong> method like this.</p>
+
+<p><code>ruby
+containers.each do |container|
+  container.start
+end
+</code></p>
+
+<p>The important point here is <strong><em>start</em></strong> method immediately returns once it asks docker to start containers. Therefore this loop finishes very quickly.</p>
+
+<h2>Running containers asynchronously</h2>
+
+<p>When you start containers, you have to know when it finishes otherwise you don&rsquo;t know when you can retrieve the results of containers. You can detect when a container finishes by using <strong><em>Container#wait</em></strong>.</p>
+
+<p>However, there is a problem.
+Unlike <strong><em>start</em></strong>,<strong><em>wait</em></strong> blocks until the method returns. This behavior isn&rsquo;t good for our purpose (parallel tests running) since you don&rsquo;t want to be blocked at one container.</p>
+
+<p>If you are blocked, you have wait each container one by one which is very inefficient.</p>
+
+<p><img src="/images/synchronous_wait.png" alt="Waiting containers synchronously" /></p>
+
+<p>In this diagram, you can see that you have wait each container that takes <strong>90 sec</strong> including the time to start containers.</p>
+
+<p>What you want to do is waiting all containers at the same time and ask containers to notify you when they finish so that you can retrieve the results of containers.</p>
+
+<p><img src="/images/asynchronous_wait.png" alt="Waiting containers asynchronously" /></p>
+
+<p>In this diagram, the maximum time is the time for waiting the slowest container, which is 30 sec. This makes <strong>60 sec</strong> in total which is faster than synchronous version.</p>
+
+<p>How can we archive this? This is where celluloid comes into play. We will put <strong><em>start</em></strong> and <strong><em>wait</em></strong> into a method called <strong><em>run</em></strong> and calling it asynchronously with the help of celluloid.</p>
+
+<p>Here is how <strong><em>run</em></strong> method looks like (some codes are omitted)</p>
+
+<p>```ruby
+def run
+  @container.start
+  @container.wait(600)
+  stdout, stderr = *@container.attach(:stream => false, :stdout => true, :stderr => true, :logs => true)</p>
+
+<p>  return {</p>
+
+<pre><code>status_code: @container.json["State"]["ExitCode"],
+stdout: stdout,
+stderr: stderr,
+</code></pre>
+
+<p>  }
+end
+```</p>
+
+<p>At this point, <strong><em>run</em></strong> still blocks. However, by using <a href="https://github.com/celluloid/celluloid/wiki/futures">Futures</a> of celluloid, you can make it asynchronous method.</p>
+
+<p>The code looks something like this.</p>
+
+<p><code>ruby
+containers.map {|container| container.future.run}
+</code></p>
+
+<p>Note that the receiver of <strong><em>run</em></strong> is not the instance of container, but <strong><em>future</em></strong>.</p>
+
+<p>This method magically makes preceding method call asynchronous. In our case, <strong><em>run</em></strong> is called asynchronously.
+Therefore, even if <strong><em>run</em></strong> is blocking method, <strong><em>{|container| container.future.run}</em></strong> immediately moves to next loop without waiting containers to finish.</p>
+
+<p>But how can we be notified when containers finish? Well, we actually even don&rsquo;t have to get notified because celluloid does it for you. This is done by calling <strong><em>value</em></strong> method.
+Let&rsquo;s retrieve results by modifying previous codes a bit.</p>
+
+<p><code>ruby
+results = []
+containers.map {|container| container.future.run}.each do |actor|
+  results &lt;&lt; actor.value
+end
+</code></p>
+
+<p>Methods called with <strong><em>future</em></strong> returns <strong><em>#&lt;Celluloid::Future></em></strong> that has <strong><em>value</em></strong> method. <strong><em>value</em></strong> returns the return value of <strong><em>future</em></strong> whenever it finishes.</p>
+
+<p>So in our case, <strong><em>value</em></strong> returns the return value of <strong><em>run</em></strong> which is the hash of status code, stdout, and stderr. Now we could accomplish what we wanted. We could run multiple containers at one time and retrieve results whenever they finish.</p>
+
+<p>In summary, we archived running containers in parallel by</p>
+
+<ul>
+<li>Implementing <strong><em>run</em></strong> method that calls <strong><em>start</em></strong> and <strong><em>wait</em></strong></li>
+<li>Calling <strong><em>run</em></strong> asynchronously with future of celluloid</li>
+<li>Retrieving return values with <strong><em>value</em></strong></li>
+</ul>
+
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Using Trusted Builds to generate Docker image automatically]]></title>
+    <link href="http://kimh.github.io/blog/en/docker/using-trusted-builds-to-generate-docker-image-automatically/"/>
+    <updated>2013-11-10T08:20:00+09:00</updated>
+    <id>http://kimh.github.io/blog/en/docker/using-trusted-builds-to-generate-docker-image-automatically</id>
+    <content type="html"><![CDATA[<p><img src="/images/construction.png" alt="" /></p>
+
+<h2>Trusted Builds</h2>
+
+<p>Recently, <a href="http://index.docker.io/" title="index.docker.io">index.docker.io</a> released a new feature called &ldquo;Trusted Builds&rdquo;.
+Trusted Builds allows you to automatically builds a Docker container according to Dockerfile when you push to your Github repository.
+In this post, I will share how to use it and one pitfall that I experienced.</p>
+
+<h3>Place a Dockerfile in your repo</h3>
+
+<p>Trusted Builds knows how to make a new image by reading Dockerfile in your repository and uses repository as a context for the Dockerfile.
+So, you first need to add a Dockerfile to your repository. Let&rsquo;s put a very simple Dockerfile.</p>
+
+<p><code>bash
+from ubuntu
+</code></p>
+
+<p>This Dockerfile tells Trusted Builds to create a new image based on ubuntu image. Add the file and push to Github.</p>
+
+<h3>Link Github and register repository</h3>
+
+<p>To use Trusted Builds, you need to link your Github account. Login to <a href="http://index.docker.io/" title="index.docker.io">index.docker.io</a> and go to <a href="https://index.docker.io/builds/github/select/">setting page</a>.
+Once you link Github accountm, you should see the list of your public repositories. Select the repository that you want to build and enter information used by Trusted Builds.</p>
+
+<h5>Default Branch</h5>
+
+<p>Branch name that Trusted Builds uses</p>
+
+<h5>Repo Name</h5>
+
+<p>This is used as a name of new image. Probably, Repo here means Docker&rsquo;s repository, not Github repository. <strong>You should pick up the name carefully because you can&rsquo;t change the name later.</strong></p>
+
+<h5>Docker Tag Name</h5>
+
+<p>The name of tag that you want put to a image</p>
+
+<h5>Dockerfile Location</h5>
+
+<p>Specify the location of Dockerfile in your repo. As I mentioned earlier, Trusted Builds uses your repo as a build context. Therefore, the top directory of your repo becomes the root of file path.
+For example, if you put Dockerfile just under your repo&rsquo;s top directory, you should specify <strong>/</strong> as Dockerfile location. Note that you only need to specify the directory name, not the path of Dockerfile.</p>
+
+<p>```</p>
+
+<h1>Good</h1>
+
+<p>/
+/build</p>
+
+<h1>Bad</h1>
+
+<p>/Dockerfile
+/build/Dockerfile
+```</p>
+
+<p>Also note the file name should be Dockerfile. If you put other name, Trusted Builds can&rsquo;t find the file.</p>
+
+<p>You should be ready now! Press Submit button and a new build will start. Once builds finish, you will see a new image in the list of your repository.</p>
+
+<h2>A few common mistakes</h2>
+
+<p>Did your build succeed? In my case, I made try &amp; error several times until it succeeds. Let me share them so you can save your time.</p>
+
+<h5>Is the file name of Dockerfile correct?</h5>
+
+<p>The file name of your Dockerfile should be <em>Dockerfile</em>.</p>
+
+<h5>Did you specify correct path to your Dockerfile?</h5>
+
+<p>Dockerfile Location should be the path of directory where you have Dockerfile, not the whole path name of Dockerfile. Check the examples above.</p>
+
+<h5>Is your Dockerfile correct?</h5>
+
+<p>Maybe you put wrong instruction in Dockerfile. You can test this by manually building a image by using docker command.</p>
+
+<p><code>bash
+docker build -t kimh/test_dockerfile github.com/kimh/baleen
+</code></p>
+
+<p>The above command assumes that you have Dockerfile at the top directory of your repo. If the command fails, make sure your instructions are correct.</p>
+
+<h5>Do you have submodule in your repository?</h5>
+
+<p>This one took the most of debugging time for me. Currently, <a href="https://groups.google.com/forum/#!topic/docker-user/ZothnJ46Pps">Trusted Builds does not support git submodule</a>, so builds fails if you have a submodule in your repository.
+For now, you have to remove the submodule to make build succeed.</p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Dockerを使ってCucumberテストを並列実行する]]></title>
+    <link href="http://kimh.github.io/blog/jp/docker/using-docker-to-run-cucumber-tests-in-parallel-jp/"/>
+    <updated>2013-09-10T22:15:00+09:00</updated>
+    <id>http://kimh.github.io/blog/jp/docker/using-docker-to-run-cucumber-tests-in-parallel-jp</id>
+    <content type="html"><![CDATA[<p><img src="/images/homepage-docker-logo.png" alt="" /></p>
+
+<h2>Dockerってなに？</h2>
+
+<p><a href="https://www.docker.io/">Docker</a> は一言で言えばLXCのラッパーです。Dockerを使うことですこし面倒なLXCをとても簡単に操作することができるようになります。それに加えて、Dockerは"Union File System"という機能があり、これのおかげでLXCコンテナのバージョン管理を<em>commit</em>や<em>push</em>など使い慣れたインターフェイスで操作することができます。まるでGitのLXC版のような感覚です。</p>
+
+<p>LXCとは仮想化技術のひとつでホストマシンからは隔離されたコンテナと呼ばれる仮想マシンを実行することができます。ハイパーバイザー型の仮想化の代表であるXen Serverなどとは異なり、LXCは軽量な仮想マシンを作成することができます。とても軽量なので、通常は同じリソースでハイパーバイザー型の仮想マシンよりも多くのマシンを実行することができます。</p>
+
+<p>この軽量とLXCの性質が生きてくるのは、多くのテストを実行することだと思います。</p>
+
+<p>テストを実行する時、できるだけ各テストが他のテストに影響を与えないことに気を配っていると思います。これをするためには、いくつもの仮想マシンを立ち上げて、そこで各テストを実行するというやり方があると思います。ハイパーバイザー型の仮想マシンでもこの方法を実行できますが、ハイパーバイザー型のマシンは開始/停止に時間がかかるため、テスト全体の実行時間が増えてしまうという欠点があります。
+しかし、LXCならこの問題を克服できます。なぜなら、LXCではマシンを実行するのは１つのプロセスを起動するのと同じくらい軽量だからです。</p>
+
+<h2>Dockerをインストールしてみよう</h2>
+
+<p>DockerのインストールはUbuntu12.04を使っていればとても簡単です。</p>
+
+<p>以下は<a href="http://docs.docker.io/en/latest/installation/ubuntulinux/">Dockerのサイトに</a>に記載されていた手順です。</p>
+
+<p><code>bash
+sudo apt-get update
+sudo apt-get install linux-image-generic-lts-raring linux-headers-generic-lts-raring
+sudo reboot
+sudo sh -c "curl https://get.docker.io/gpg | apt-key add -"
+sudo sh -c "echo deb https://get.docker.io/ubuntu docker main &gt; /etc/apt/sources.list.d/docker.list"
+sudo apt-get update
+sudo apt-get install lxc-docker
+</code></p>
+
+<p>これでコンテナをDockerから作成できるようになりました。</p>
+
+<p><code>bash
+sudo docker run -i -t ubuntu /bin/bash
+</code></p>
+
+<p>もし、Macを使っているならDockerをVagramtのUbuntuマシンで試すことができます。この場合のインストール方法は<a href="http://docs.docker.io/en/latest/installation/vagrant/">ここ</a>にあります。
+しかし、初めはUbuntuにインストールして試してみることをおすすめします。一度Vagrant上で動かしてみましたが、Ubuntuで動かしたよりもコンテナの実行速度が遅く感じられました。もしかしたら、すでに仮想化されているVagrant上で実行しているからかもしれません。</p>
+
+<h2>環境をセットアップする</h2>
+
+<p>上述したようにDockerはGitにとてもよく似たインターフェイスを備えています。Dockerのイメージを<a href="https://index.docker.io/">Dockerのパブリックレポジトリ</a>からPullしてきてそれをベースにして自分の好きな変更を加えてCommitしたら、またそれをPushできます。
+今回はCucumberのテストを実行するのでRubyの実行環境があるコンテナが必要になります。もちろん、自分でコンテナを作成することもできますが今回は私が作成したイメージを使いましょう。</p>
+
+<p>```bash</p>
+
+<h1>まずrootユーザになります</h1>
+
+<p>sudo -s</p>
+
+<h1>イメージをPullします</h1>
+
+<p>docker pull kimh/ruby-base</p>
+
+<h1>イメージでechoコマンドを実行してみましょう</h1>
+
+<p>docker run kimh/ruby-base echo &ldquo;Running on Docker&rdquo;
+```</p>
+
+<p>今度はコンテナにログインして、テスト用のアプリケーションをインストールしましょう。</p>
+
+<p>```bash</p>
+
+<h1>コンテナにログインします</h1>
+
+<p>docker run -i -t kimh/ruby-base /bin/bash
+cd /git
+git clone <a href="https://github.com/kimh/docker_demo">https://github.com/kimh/docker_demo</a>
+cd docker_demo/ci_app
+bundle install
+```</p>
+
+<p>この時点で２つの比較的時間がかかる作業をしたので（イメージのPullとbundle installです）コンテナの変更を保存しましょう。それをするには、変更をCommitしてイメージに保存します。</p>
+
+<p>```bash</p>
+
+<h1>ここで exit とタイプしてはダメです！タイプするとマシンが終了して一からやり直しになってしまいます。</h1>
+
+<h1>代わりに、Ctrl+p とタイプしてから Ctrl+q とタイプすることで終了せずにコンソールから抜けることができます。</h1>
+
+<p>Ctrl+p
+Ctrl+q</p>
+
+<h1>コンテナのidを調べます</h1>
+
+<p>docker ps # 今回はidは 23fd82dcc088 でした。多分実行環境によって違うかも？
+docker commit 23fd82dcc088 kimh/ruby-base
+```</p>
+
+<p>これでCucumberテストを実行する環境が整いました。コンテナを起動してテストを一つ実行してみましょう。</p>
+
+<p><code>bash
+docker run kimh/ruby-base /bin/bash -c "
+  source /etc/profile
+  cd /git/docker_demo/ci_app
+  export LC_CTYPE="ja_JP.UTF-8"
+  export RAILS_ENV=test
+  bundle exec rake cucumber
+"
+</code></p>
+
+<p>このスクリプトでDockerはCucumberテストをkimh/ruby-baseコンテナ上で実行しました。</p>
+
+<p>いよいよ最後にテストを並列実行してみましょう。考え方としては複数のコンテナを実行して、各コンテナに一つのCucumberテストを実行させます。今回は５つのコンテナを並列で実行してみましょう。</p>
+
+<p>```bash
+DID=&ldquo;&rdquo;
+container=&ldquo;kimh/ruby-base:latest&rdquo;
+dir=&ldquo;/git/docker_demo/ci_app&rdquo;</p>
+
+<p>for feature in {0..4}
+do
+  DID=$DID" &ldquo;<code>sudo docker run -d $container /bin/bash -c "
+  source /etc/profile
+  cd $dir
+  export LC_CTYPE="ja_JP.UTF-8"
+  export RAILS_ENV=test
+  bundle exec rake cucumber
+  "</code>
+done
+docker wait $DID
+```</p>
+
+<p>このスクリプトのポイントは２つです。</p>
+
+<p>１つめは、実行したコンテナのidをDIDという変数に保存していることです。この変数は各コンテナのステータスコード（テストが成功したか失敗したか）を後で知る必要があるからです。</p>
+
+<p>２つめは、<em>docker wait</em>コマンドにコンテナの実行idを渡していることです。こうすると、シェルはコンテナが終了するまでブロックして、各コンテナのステータスコードを返します。</p>
+
+<p>今回だとすべてのテストはパスするはずなので、五回連続で0が表示されるはずです。（0はCucumberではパスしたという意味です）</p>
+
+<h1>まとめ</h1>
+
+<p>今回はDockerの基本的な使い方とそれを使ってのテストの並列実行をしました。各テストはコンテナ上の独立した環境で実行されます。今回の例では同じテストを５台のコンテナ上で実行したのであまり意味はありませんが、
+異なる複数のテストを並列で実行するのも簡単にできます。今回はこんな感じでやりました。</p>
+
+<p>```bash
+DID=&ldquo;&rdquo;
+container=&ldquo;kimh/ruby-base:nice&rdquo;
+dir=&ldquo;/git/your_repo&rdquo;</p>
+
+<p>for feature in <code>find  ./features/</code>
+do
+  DID=$DID" &ldquo;<code>docker run -d $container /bin/bash -c "
+  source /etc/profile
+  cd $dir
+  export LC_CTYPE="ja_JP.UTF-8"
+  export RAILS_ENV=test
+  bundle exec cucumber $feature -r features/
+  "</code>
+done
+docker wait $DID
+```</p>
+]]></content>
+  </entry>
+  
+</feed>

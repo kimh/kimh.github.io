@@ -1,0 +1,726 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+  <title><![CDATA[Category: security | Program Is Made At Night]]></title>
+  <link href="http://kimh.github.io/blog/categories/security/atom.xml" rel="self"/>
+  <link href="http://kimh.github.io/"/>
+  <updated>2015-05-09T15:17:33+09:00</updated>
+  <id>http://kimh.github.io/</id>
+  <author>
+    <name><![CDATA[Kim, Hirokuni]]></name>
+    <email><![CDATA[yangkookkim@gmail.com]]></email>
+  </author>
+  <generator uri="http://octopress.org/">Octopress</generator>
+
+  
+  <entry>
+    <title type="html"><![CDATA[シャミアの秘密分散法で秘密のデータを分割管理する]]></title>
+    <link href="http://kimh.github.io/blog/jp/security/protect-your-secret-key-with-shamirs-secret-sharing-jp/"/>
+    <updated>2014-05-03T22:07:00+09:00</updated>
+    <id>http://kimh.github.io/blog/jp/security/protect-your-secret-key-with-shamirs-secret-sharing-jp</id>
+    <content type="html"><![CDATA[<p><img src="/images/pieces.jpg" alt="" /></p>
+
+<p>つい最近<a href="https://github.com/PolyPassHash/PolyPassHash">PollyPassHash</a>という新しいパスワード管理手法を知りました。</p>
+
+<p>PolyPassHashingについては時間があれば別のポストで書きますが、要約すると、ある一定数の管理者の正しいパスワードが入力されないと暗号化されたパスワードデータベースを復号化できないようにするための仕組みです。</p>
+
+<p>このポストではPolyPassHashingの中核の暗号技術である <strong><em>シャミアの秘密分散法</em></strong> の紹介とそれを実現する数学的な仕組みを解説したいと思います。</p>
+
+<h2>この記事の内容</h2>
+
+<h4><a href="#what_is_shamirs_secret_sharing">シャミアの秘密分散法とはなにか</a></h4>
+
+<h4><a href="#basic_terms">用語</a></h4>
+
+<h4><a href="#handson">実際にやってみる: Rubyでシャミアの秘密分散</a></h4>
+
+<h4><a href="#handson">仕組み</a></h4>
+
+<ul>
+<li><a href="#share_computation">シェアの計算</a></li>
+<li><a href="#secret_reconstruction">シークレットの復元</a></li>
+</ul>
+
+
+<p><a id="what_is_shamirs_secret_sharing"></a></p>
+
+<h2>シャミアの秘密分散法とはなにか</h2>
+
+<p>名前からわかるとおり、シャミアの秘密分散法はRSAのアルゴリズムにも貢献した有名なイスラエル人の暗号研究者アディ・シャミアによって作られました。</p>
+
+<p>シャミアの秘密分散法は秘密のデータであるシークレットを複数のシェアに分割します。一定数のシェアを持ち寄ることで元のデータを復元することができます。</p>
+
+<p>何かデータを暗号化しなければいけないとしましょう。どんな暗号化方式を使ってもいいですが、暗号の鍵はあとで復号するためにどこかに保存しなければいけません。</p>
+
+<p>この鍵は安全な場所と方法で保管されないといけません。もし、この鍵が盗まれたら攻撃者は暗号化したデータを簡単に復号化できてしまいます。しかし、鍵を安全に保管するというのはとても難しい問題です。その鍵を誰かと共有する場合はもっと難しくなります。</p>
+
+<p>鍵の保管と共有は管理者にとって常に頭痛のタネです。</p>
+
+<p>しかし、シャミアの秘密分散法を使えば二つの問題をかなりの割合で解決することができます。</p>
+
+<p>まず、暗号の鍵を複数に分割してそれぞれを別々の管理者に渡します。各管理者は渡された鍵の断片を大切に保管しなければいけませんが、仮に一つの断片が盗まれたとしても元の鍵は復元することはできません。</p>
+
+<p>攻撃者は複数の管理者が持っている断片を盗まないといけないので、もとの鍵を盗むことは格段に難しくなります。</p>
+
+<p><a id="basic_terms"></a></p>
+
+<h2>用語</h2>
+
+<p>詳細に行く前に使われる用語を明確にしておきましょう。</p>
+
+<h4>シークレット</h4>
+
+<p>シークレットは攻撃者には知られてはいけないデータです。メッセージや数字の羅列の形を取り、用途は暗号の鍵だったり秘密にしたいメッセージだったりします。
+(英語だと<strong><em>Secret</em></strong>と簡潔に言えますが、日本語でピンとくる単語が見つからなかったのでカタカナにしました。)</p>
+
+<h4>シェア</h4>
+
+<p>シークレットを分割してできた各断片をシェアと呼びます。シェアはシークレットから計算して得られます。シークレットを復元するためには一定数のシェアがそろわないといけません。(シェアは英語だと<strong><em>share</em></strong>です。直訳すると<strong><em>割り符</em></strong>になりますが、これもなんかしっくりこないのでシェアと書くことにします。)</p>
+
+<h4>閾値</h4>
+
+<p>閾値はシークレットを復元するために最低必要なシェアの数です。閾値以上のシェアがそろっている場合のみ、もとのシークレットを復元することができます。</p>
+
+<p><a id="handson"></a></p>
+
+<h2>実際にやってみる: Rubyでシャミアの秘密分散</h2>
+
+<p>そろそろシャミアの秘密分散が動くところを実際に見てみましょう。僕が書いた小さなRubyのライブラリを使ってデモします。このライブラリは<a href="https://github.com/PolyPassHash/PolyPassHash">PolyPassHash project</a>で使われているPythonで書かれたものをポートしたものです。Python版は<a href="https://github.com/JustinCappos">JustinCappos</a>によって書かれました。</p>
+
+<p>まず、コードを<a href="https://github.com/PolyPassHash/PolyPassHash-Ruby">PolyPassHash-Ruby</a>から落としてきて、<code>shamirsecret.rb</code>を<code>irb</code>セッションにロードします。</p>
+
+<p><code>sh
+$ git clone https://github.com/PolyPassHash/PolyPassHash-Ruby
+$ cd PolyPassHash-Ruby
+$ irb -r ./shamirsecret.rb
+</code></p>
+
+<p>実際に秘密のメッセージ<code>In the name of Adi Shamir</code>を分割して、閾値の数のシェアを使うことで復元できることを見てみましょう。</p>
+
+<p>```ruby</p>
+
+<h1>まず、ShamirSecretクラスのインスタンスを作成しましょう</h1>
+
+<h1>第一引数に閾値の数を渡します。以下の場合だと2が閾値なので、2つ以上のシェアが必要ということになります</h1>
+
+<h1>第二引数には分割したいシークレットを渡します</h1>
+
+<p>shamirsecret = ShamirSecret.new(2, &ldquo;In the name of Adi Shamir&rdquo;)</p>
+
+<h1>次に与えられたシークレットからシェアを計算します。ここでは３人にシェアを渡すことにしましょう。3つシェアを生成します</h1>
+
+<h1>引数にはシェア番号を渡します。シェア番号が何かは後で説明するので、ここでは一意な整数とだけ覚えておいてください</h1>
+
+<p>s1 = shamirsecret.compute_share(1)
+s2 = shamirsecret.compute_share(2)
+s3 = shamirsecret.compute_share(3)</p>
+
+<h1>シェアを計算したら、シークレットは捨てます。シェアがそろえば復元できるので保管する必要はありません</h1>
+
+<p>shamirsecret = nil</p>
+
+<h1>今度は復元です。もう一度ShamirSecretクラスのインスタンスを作成します。今回は復元なのでシークレットは引数に渡しません</h1>
+
+<p>shamirsecret = ShamirSecret.new(2)</p>
+
+<h1>閾値は2に設定したので2つのシェアがあればシークレットを復元できます</h1>
+
+<p>shamirsecret.recover_secretdata([s1,s3])
+=> &ldquo;In the name of Adi Shamir&rdquo;
+```</p>
+
+<p>今度は正しくないシェアを使ったらどうなるかを見てみましょう。</p>
+
+<p>```ruby</p>
+
+<h1>同じようにインスタンスを作成してシェアを計算します</h1>
+
+<p>shamirsecret = ShamirSecret.new(2, &ldquo;In the name of Adi Shamir&rdquo;)
+s1 = shamirsecret.compute_share(1)
+s2 = shamirsecret.compute_share(2)
+s3 = shamirsecret.compute_share(3)</p>
+
+<h1>この時点ではシェアが正しいものであることを確認します</h1>
+
+<p>shamirsecret.is_valid_share(s1)
+=> true</p>
+
+<h1>シェアの1バイトを変更します</h1>
+
+<p>s1[1][0] = s1[1][0] + 1 % 256</p>
+
+<h1>このシェアはもう正しくありません</h1>
+
+<p>shamirsecret.is_valid_share(s1)
+=> false</p>
+
+<h1>正しくないシェアを使って復元されたシークレットは壊れています</h1>
+
+<p>shamirsecret = nil
+shamirsecret = ShamirSecret.new(2)
+shamirsecret.recover_secretdata([s1,s3])
+=> &ldquo;\xC6n the name of Adi Shamir&rdquo;
+```</p>
+
+<p><a id="how_this_works"></a></p>
+
+<h2>仕組み</h2>
+
+<p>少しだけ数学を勉強しましょう。シャミアの秘密分散法は基礎的な多項式を使います。</p>
+
+<p>シャミアの秘密分散は２つのステップに分かれます: <strong>シェアの計算</strong>と<strong>シークレットの復号</strong>です。一つずつ見ていきましょう。</p>
+
+<p><a id="share_computation"></a></p>
+
+<h3>シェアの計算</h3>
+
+<h4>ステップ1: シークレットを決める</h4>
+
+<p>まず最初にシークレットを決めます。説明を簡単にするために、ここではとてもシンプルなシークレットにしましょう。<code>3</code>という数字をシークレットにします。</p>
+
+<p>もちろんもっと複雑なシークレット、<em>I love you</em> とか <em>4b0649b1faf1c1ea7cb0e900</em> とかでも構いません。その場合は、数字として扱う必要があるので文字列をバイト配列に変換すればいいだけです。</p>
+
+<h4>ステップ2: 閾値を決める</h4>
+
+<p>次に閾値を決めます。ここでは <code>3</code> を閾値にしましょう。閾値が3なのでシークレットを復元するために三つシークレットが必要ということになります。</p>
+
+<h4>ステップ3: 多項式を生成する</h4>
+
+<p>シェアを計算するための多項式を生成します。多項式とは<strong>y=3x+1</strong> や <strong>y=5x<sup>2</sup>+10x-3</strong>の形をした方程式のことです。
+多項式の係数は自由に決めて構いませんが、次数は<strong>閾値 &ndash; 1</strong>じゃないといけません。</p>
+
+<p>今回は閾値を<code>3</code>に設定したので、次数は<code>2</code>になります。次数が2の多項式は<strong>y=ax<sup>2</sup>+bx+c</strong>の形を取ります。係数はなんでもいいので<strong><em>a</em></strong>は<code>2</code>、<strong><em>b</em></strong>は<code>1</code>にしましょう。</p>
+
+<p><strong><em>c</em></strong>にはシークレットを使わないといけません。つまり、<strong><em>c</em></strong>は<code>3</code>ということになります。</p>
+
+<p>これで多項式ができました: <strong>y=2x<sup>2</sup>+x+3</strong></p>
+
+<p>準備は整いました。以下は上記の設定をまとめたものです。</p>
+
+<blockquote><p><strong>シークレット:</strong> 3</p>
+
+<p><strong>閾値:</strong>  3</p>
+
+<p><strong>多項式:</strong> y=2x<sup>2</sup>+x+3</p></blockquote>
+
+<h4>ステップ4: グラフを書く</h4>
+
+<p>このステップはシャミアの秘密分散の計算をするためには必ずしも必要ではありませんが、グラフを書くことで理解が簡単になります。</p>
+
+<p>多項式のグラフは以下のようになります。</p>
+
+<p><img src="/images/polygraph0.jpg" alt="y=2x^2+x+3のグラフ" /></p>
+
+<h4>ステップ5: 点をグラフに描画する</h4>
+
+<p>三つの点をグラフの線上に書きます。</p>
+
+<p>例として、<strong>(x,y)(1, 6)</strong>, <strong>(x,y)(2,13)</strong>, <strong>(x,y)(-2, 9)</strong>をグラフ線上に書いてみましょう。</p>
+
+<p><img src="/images/polygraph1.jpg" alt="点をグラフ線上に書く" /></p>
+
+<p>このそれぞれの点が<strong><em>シェア</em></strong>になります。<strong>x</strong>の値が前述した<em>シェア番号</em>になり<strong>y</strong>の値が<em>シェア</em>になります。</p>
+
+<p>閾値を<code>3</code>に設定したことを思い出してください。閾値が<code>3</code>なので、今回は三つの点を書きました。</p>
+
+<p>もっとシェアが必要であればさらに点を増やせばいいだけです。</p>
+
+<p>シェアが計算できたら、シェアと閾値以外はすべて忘れて構いません。多項式、グラフ、シークレットは捨ててしまいましょう。</p>
+
+<p>シェアと閾値を知っている限り他のすべてを復元することができます。</p>
+
+<p><a id="secret_reconstruction"></a></p>
+
+<h3>シークレットの復元</h3>
+
+<p>今、シェアと閾値以外は何も知らない状態ですが、ここから元のシークレットを復元することができます。</p>
+
+<p>わかりやすくするためにもう一度グラフを使いましょう。</p>
+
+<p><strong>(x,y)(1, 6)</strong>, <strong>(x,y)(2,13)</strong>, <strong>(x,y)(-2, 9)</strong> の点をグラフに書きます。</p>
+
+<p>次に、これらの点を線で結びます。これらの点は元の多項式から得た点なので線で結べばグラフを引くことができます。</p>
+
+<p><img src="/images/polygraph4.jpg" alt="" /></p>
+
+<p>グラフはあくまで理解の助けをするためなので正確なグラフが書けなくても構いません。</p>
+
+<p>しかし、多項式の定義では<a href="http://en.wikipedia.org/wiki/Shamir's_Secret_Sharing#Shamir.27s_secret-sharing_scheme">直線には２点、放射線には３点さえあれば正確な線を引くことができます。</a> (Wikipedia)</p>
+
+<p>これにより、たとえ手で正確なグラフを書くことができなくても計算すれば正確なグラフを求めることができます。</p>
+
+<h4>多項式補間</h4>
+
+<p>閾値は<code>3</code>と知っているので、次数が<code>2</code> (次数は閾値 &ndash; 1) の<strong>y=ax<sup>2</sup>+bx+c</strong>の形の多項式に点を代入すれば元の多項式を得ることができます。</p>
+
+<p>３つの点を<strong>y=ax<sup>2</sup>+bx+c</strong>に代入します。</p>
+
+<blockquote><p><strong>(1)</strong> (1,6)  => <strong>c = a + b &ndash; 6</strong></p>
+
+<p><strong>(2)</strong> (2,13) => <strong>c = 4a + 2b &ndash; 13</strong></p>
+
+<p><strong>(3)</strong> (-2,9) => <strong>c = 4a &ndash; 2b &ndash; 9</strong></p></blockquote>
+
+<p>次に<strong>(1)</strong>を<strong>(2)</strong>と<strong>(3)</strong>に代入して<strong>a</strong>を得ます。</p>
+
+<blockquote><p><strong>(4)</strong> <strong>(1)</strong>を<strong>(2)</strong>に代入します => <strong>b = -3a + 7</strong></p>
+
+<p><strong>(5)</strong> <strong>(1)</strong>を<strong>(3)</strong>に代入します => <strong>3b = 3a -3</strong></p>
+
+<p><strong>(6)</strong> <strong>(4)</strong>を<strong>(5)</strong>に代入します => <strong>a = 2</strong></p></blockquote>
+
+<p>これで、<strong>a</strong>を得ることができました。今度は<strong>b</strong>を求めます。</p>
+
+<blockquote><p><strong>(7)</strong> <strong>a=2</strong>を<strong>(1)</strong>に代入します => <strong>c=b &ndash; 4</strong></p>
+
+<p><strong>(8)</strong> <strong>a=2</strong>を<strong>(2)</strong>に代入します => <strong>c=2b &ndash; 5</strong></p>
+
+<p><strong>(9)</strong> <strong>(7)</strong>を<strong>(8)</strong>に代入します => <strong>b = 1</strong></p></blockquote>
+
+<p>これで<strong>a</strong>と<strong>b</strong>を得ることができました。最後に<strong>c</strong>を得ます。</p>
+
+<blockquote><p><strong>(10)</strong> <strong>a=2</strong>と<strong>b=1</strong>を<strong>(1)</strong>に代入します => <strong>c=3</strong></p></blockquote>
+
+<p>これで終わりです。無事元の多項式である<strong>y=2x<sup>2</sup>+x+3</strong>を得ることができました。係数がない項がシークレットなので正しいシークレットである<strong>3</strong>を復元することができました。</p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Divide And Manage Secret Data Securely With Shamir's Secret Sharing]]></title>
+    <link href="http://kimh.github.io/blog/en/security/protect-your-secret-key-with-shamirs-secret-sharing/"/>
+    <updated>2014-04-22T20:51:00+09:00</updated>
+    <id>http://kimh.github.io/blog/en/security/protect-your-secret-key-with-shamirs-secret-sharing</id>
+    <content type="html"><![CDATA[<p><img src="/images/pieces.jpg" alt="" /></p>
+
+<p>Recently, I came to know an interesting and new idea about password storage schema called <a href="https://github.com/PolyPassHash/PolyPassHash">PollyPassHash</a>.</p>
+
+<p>I may write about PolyPassHasing in more details in separate post, but in summary, PolyPassHashing proposes a new password storage schema that requires certain numbers of shared keys to decrypt the encrypted password.</p>
+
+<p>In this post, I will write about <strong><em>Shamir&rsquo;s secret sharing</em></strong>, one of key technologies used in PolyPassHashing, and try to explain the mathematical basis that archive this great secret sharing technology.</p>
+
+<h2>Contents of This Article</h2>
+
+<h4><a href="#what_is_shamirs_secret_sharing">What is Shamir&rsquo;s secret sharing?</a></h4>
+
+<h4><a href="#basic_terms">Basic terms</a></h4>
+
+<h4><a href="#handson">HandsOn: Play Shamir&rsquo;s Secret with Ruby</a></h4>
+
+<h4><a href="#handson">Understanding mathematical basis</a></h4>
+
+<ul>
+<li><a href="#share_computation">Share Computation</a></li>
+<li><a href="#secret_reconstruction">Secret Reconstruction</a></li>
+</ul>
+
+
+<p><a id="what_is_shamirs_secret_sharing"></a></p>
+
+<h2>What is Shamir&rsquo;s secret sharing</h2>
+
+<p>As the name implies, Shamir&rsquo;s secret sharing is created by Adi Shamir, an famous Israeli cryptographer, who also contributed to the invention of RSA algorithm.</p>
+
+<p>Shamir&rsquo;s secret sharing is an algorithm that divides a secret into shares. Secret can be recovered by combining certain numbers of shares.</p>
+
+<p>Imagine a case where you have to encrypt some data. No matter which encryption method you use, you must store the secret key used in the encryption in order to decrypt later.</p>
+
+<p>The key has to be very secured. If the key is stolen by attacker, your data will be easily decrypted. However, storing key is always difficult problem. It gets even more difficult if you need to share the key with others.</p>
+
+<p>This problem of storing and sharing secret key is cause of headache for administrators.</p>
+
+<p>However, if you use Shamir&rsquo;s secret sharing algorithm, you can solve the two problems to greater extent.</p>
+
+<p>You can divide your secret key into pieces and distribute them to other administrators. Each administrator still needs to keep a piece of secret key, but knowing a piece is not enough to recover the original secret.</p>
+
+<p>Because attacker must compromise multiple administrator&rsquo;s pieces, secret generated by Shamir&rsquo;s secret sharing is very difficult to be compromised.</p>
+
+<p><a id="basic_terms"></a></p>
+
+<h2>Basic Terms</h2>
+
+<p>Before going into details, let&rsquo;s clarify some terms used in Shamir&rsquo;s Secret sharing.</p>
+
+<h4>Secret</h4>
+
+<p>Secret is a secret message or number that you want to share with others securely.</p>
+
+<h4>Share</h4>
+
+<p>Share is a piece of secret. Secret is divided into pieces and each piece is called share. It is computed from given secret. In order to recover the secret, you need to get certain numbers of shares.</p>
+
+<h4>Threshold</h4>
+
+<p>Threshold is the number of shares you need at least in order to recover your secret. You can restore your secret only when you have more than or equal to the number of threshold.</p>
+
+<p><a id="handson"></a></p>
+
+<h2>HandsOn: Play Shamir&rsquo;s Secret With Ruby</h2>
+
+<p>Do you want to see what you can do with Shamir&rsquo;s secret sharing? Let&rsquo;s use a small Ruby library that I wrote to demonstrate the idea. This library is ported from Python Shamir&rsquo;s secret sharing library used in <a href="https://github.com/PolyPassHash/PolyPassHash">PolyPassHash project</a> originally written by <a href="https://github.com/JustinCappos">JustinCappos</a>.</p>
+
+<p>First get the code from <a href="https://github.com/PolyPassHash/PolyPassHash-Ruby">PolyPassHash-Ruby</a> and load <code>shamirsecret.rb</code> into your <code>irb</code> session.</p>
+
+<p><code>sh
+$ git clone https://github.com/PolyPassHash/PolyPassHash-Ruby
+$ cd PolyPassHash-Ruby
+$ irb -r ./shamirsecret.rb
+</code></p>
+
+<p>Let&rsquo;s encrypt some messages and see if we can recover the message when giving enough numbers of shares.</p>
+
+<p>```ruby</p>
+
+<h1>First, you need to instantiate ShamirSecret class.</h1>
+
+<h1>You can specify the number of threshold in the first argument. In this case, two shares are required.</h1>
+
+<h1>You can pass a message to encrypt in the second argument.</h1>
+
+<p>shamirsecret = ShamirSecret.new(2, &ldquo;In the name of Adi Shamir&rdquo;)</p>
+
+<h1>We compute shares from the given secret. Let&rsquo;s assume we want to distribute to three parties, so lets create three shares.</h1>
+
+<h1>The argument is so called share number. You will know what it is later in this post.</h1>
+
+<h1>For now, just remember that it has to be unique number.</h1>
+
+<p>s1 = shamirsecret.compute_share(1)
+s2 = shamirsecret.compute_share(2)
+s3 = shamirsecret.compute_share(3)</p>
+
+<h1>Once we computed shares, we will throw the secret away because we should be able to recover from shares.</h1>
+
+<p>shamirsecret = nil</p>
+
+<h1>Then we will recover the secret. Instantiate ShamirSecret again. We don&rsquo;t pass secret this time because we just want to recover secret.</h1>
+
+<p>shamirsecret = ShamirSecret.new(2)</p>
+
+<h1>Now we can recover the secret by giving two shares or more since we set threshold to be 2.</h1>
+
+<p>shamirsecret.recover_secretdata([s1,s3])
+=> &ldquo;In the name of Adi Shamir&rdquo;
+```</p>
+
+<p>Let&rsquo;s confirm what happens if we gave wrong shares.</p>
+
+<p>```ruby</p>
+
+<h1>Instantiate and compute share in the same way</h1>
+
+<p>shamirsecret = ShamirSecret.new(2, &ldquo;In the name of Adi Shamir&rdquo;)
+s1 = shamirsecret.compute_share(1)
+s2 = shamirsecret.compute_share(2)
+s3 = shamirsecret.compute_share(3)</p>
+
+<h1>Make sure our share is valid</h1>
+
+<p>shamirsecret.is_valid_share(s1)
+=> true</p>
+
+<h1>Change a byte of share</h1>
+
+<p>s1[1][0] = s1[1][0] + 1 % 256</p>
+
+<h1>The share is not valid anymore</h1>
+
+<p>shamirsecret.is_valid_share(s1)
+=> false</p>
+
+<h1>Secret is corrupted with wrong share</h1>
+
+<p>shamirsecret = nil
+shamirsecret = ShamirSecret.new(2)
+shamirsecret.recover_secretdata([s1,s3])
+=> &ldquo;\xC6n the name of Adi Shamir&rdquo;
+```</p>
+
+<p><a id="how_this_works"></a></p>
+
+<h2>How This Works</h2>
+
+<p>It&rsquo;s time to do some math. Shamir&rsquo;s secret sharing is using the very basic idea of polynomial.</p>
+
+<p>We have two major steps: <strong>Share Computation</strong> and <strong>Secret Reconstruction</strong>. Let&rsquo;s do one by one.</p>
+
+<p><a id="share_computation"></a></p>
+
+<h3>Share Computation</h3>
+
+<h4>Step1: Decide secret</h4>
+
+<p>First, we need to decide our secret message. To make our story simple, let&rsquo;s choose dead simple one, <code>3</code>, as our secret.</p>
+
+<p>If you choose more complex message such as <em>I love you</em> or <em>4b0649b1faf1c1ea7cb0e900</em>, you just need to convert them to byte array so that you can treat them as a number.</p>
+
+<h4>Step2: Decide threshold</h4>
+
+<p>Next thing to decide is the threshold. We will choose <code>3</code> as our threshold. This means that you need at least three shares to recover the secret.</p>
+
+<h4>Step3: Create polynomial</h4>
+
+<p>We need to create our polynomial. Polynomial is the equation that looks like <strong>y=3x+1</strong> or <strong>y=5x<sup>2</sup>+10x-3</strong>.
+You can choose any numbers for coefficient, but the degree of your polynomial must be <strong>threshold -1 </strong>.</p>
+
+<p>Our threshold is <code>3</code>, so the degree must be <code>2</code> in our case. The polynomial of degree of 2 should takes the form of <strong>y=ax<sup>2</sup>+bx+c</strong>. Since you can choose any numbers
+for coefficient, we will use <code>2</code> for <strong><em>a</em></strong> and <code>1</code> for <strong><em>b</em></strong>.</p>
+
+<p>What <strong><em>c</em></strong> will be? <strong><em>c</em></strong> must to be our secret. Therefore, we use <code>3</code> for <strong><em>c</em></strong>.</p>
+
+<p>This is our polynomial: <strong>y=2x<sup>2</sup>+x+3</strong>.</p>
+
+<p>Now we have everything to demonstrate Shamir&rsquo;s secret sharing. This is our configuration</p>
+
+<blockquote><p><strong>Secret:</strong> 3</p>
+
+<p><strong>Threshold:</strong>  3</p>
+
+<p><strong>Polynomial:</strong> y=2x<sup>2</sup>+x+3</p></blockquote>
+
+<h4>Step4: Draw graph</h4>
+
+<p>Note that drawing graph is not necessary to do computation for Shamir&rsquo;s secret sharing. However, we can understand how this works better by drawing graph.</p>
+
+<p>The graph of our polynomial looks like this one.</p>
+
+<p><img src="/images/polygraph0.jpg" alt="Graph of y=2x^2+x+3" /></p>
+
+<h4>Step5: Plot points on the graph</h4>
+
+<p>Plot three points on the line of graph.</p>
+
+<p>For example, we plot <strong>(x,y)(1, 6)</strong>, <strong>(x,y)(2,13)</strong>, <strong>(x,y)(-2, 9)</strong> on the line of graph.</p>
+
+<p><img src="/images/polygraph1.jpg" alt="Plot points on the line of graph" /></p>
+
+<p>These points are your <strong><em>shares</em></strong>. The value in <strong>x</strong> is called <em>share number</em> and the value of <strong>y</strong> is a <em>share</em>.</p>
+
+<p>Remember that we decided our threshold to be <code>3</code>? Three shares are minimum number of shares that we need. That&rsquo;s why we plotted three points.</p>
+
+<p>You can get even more shares by plotting extra points if you want to distribute shares to more parties.</p>
+
+<p>Once you get shares, forget everything but your threshold and shares!! Throw your polynomial, the graph, and your secret.</p>
+
+<p>As long as you have your shares and threshold, you can recover everything else.</p>
+
+<p><a id="secret_reconstruction"></a></p>
+
+<h3>Secret Reconstruction</h3>
+
+<p>Now you know nothing but shares and threshold, but you can still recover your secret by combining the shares.</p>
+
+<p>To get this idea, we will again use graph.</p>
+
+<p>Plot points of your shares, <strong>(x,y)(1, 6)</strong>, <strong>(x,y)(2,13)</strong>, <strong>(x,y)(-2, 9)</strong>, on the graph.
+Then connecting your points and draw imaginary line. If you could do this, you can now recover your polynomial because you are connecting
+points derived from the polynomial.</p>
+
+<p><img src="/images/polygraph4.jpg" alt="" /></p>
+
+<p>Not sure if your line is accurate? Yes, it is is difficult to draw the completely same line because it is curving line. It doesn&rsquo;t matter because drawing graph is just to help you understand the idea.</p>
+
+<p>However, by definition, <a href="http://en.wikipedia.org/wiki/Shamir's_Secret_Sharing#Shamir.27s_secret-sharing_scheme">2 points are sufficient to define a line, 3 points are sufficient to define a parabola</a> (Wikipedia)</p>
+
+<p>Therefore, although it is difficult to draw the imaginary line by hands from points of shares,  you should be able to do that by doing some math. Now, let&rsquo;s do this.</p>
+
+<h4>Polynomial interpolation</h4>
+
+<p>Since we know that our threshold is <code>3</code>, we know that we need to get the polynomial of degree of <code>2</code> (remember that degree is threshold &ndash; 1) which looks like this: <strong>y=ax<sup>2</sup>+bx+c</strong></p>
+
+<p>Substitute three points into <strong>y=ax<sup>2</sup>+bx+c</strong>.</p>
+
+<blockquote><p><strong>(1)</strong> (1,6)  => <strong>c = a + b &ndash; 6</strong></p>
+
+<p><strong>(2)</strong> (2,13) => <strong>c = 4a + 2b &ndash; 13</strong></p>
+
+<p><strong>(3)</strong> (-2,9) => <strong>c = 4a &ndash; 2b &ndash; 9</strong></p></blockquote>
+
+<p>Now substitute <strong>(1)</strong> into <strong>(2)</strong> and <strong>(3)</strong> to get <strong>a</strong>.</p>
+
+<blockquote><p><strong>(4)</strong> substitute <strong>(1)</strong> into <strong>(2)</strong> => <strong>b = -3a + 7</strong></p>
+
+<p><strong>(5)</strong> substitute <strong>(1)</strong> into <strong>(3)</strong> => <strong>3b = 3a -3</strong></p>
+
+<p><strong>(6)</strong> substitute <strong>(4)</strong> into <strong>(5)</strong> => <strong>a = 2</strong></p></blockquote>
+
+<p>We could get <strong>a</strong>. Let&rsquo;s compute <strong>b</strong> next.</p>
+
+<blockquote><p><strong>(7)</strong> substitute <strong>a=2</strong> into <strong>(1)</strong> => <strong>c=b &ndash; 4</strong></p>
+
+<p><strong>(8)</strong> substitute <strong>a=2</strong> into <strong>(2)</strong> => <strong>c=2b &ndash; 5</strong></p>
+
+<p><strong>(9)</strong> substitute <strong>(7)</strong> into <strong>(8)</strong> => <strong>b = 1</strong></p></blockquote>
+
+<p>Now we could get <strong>a</strong> and <strong>b</strong>. At last, we can compute <strong>c</strong>.</p>
+
+<blockquote><p><strong>(10)</strong> substitute <strong>a=2</strong> and <strong>b=1</strong> into <strong>(1)</strong> => <strong>c=3</strong></p></blockquote>
+
+<p>We are done. We could recover original polynomial <strong>y=2x<sup>2</sup>+x+3</strong> and you can find your secret at free coefficient, which is <strong>3</strong>.</p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[PFS（Perfect Forward Secrecy）]]></title>
+    <link href="http://kimh.github.io/blog/jp/security/understanding-pfs-jp/"/>
+    <updated>2014-01-05T15:52:00+09:00</updated>
+    <id>http://kimh.github.io/blog/jp/security/understanding-pfs-jp</id>
+    <content type="html"><![CDATA[<p><img src="/images/keyblade.jpg" alt="" /></p>
+
+<h2>SSL/TLSの問題</h2>
+
+<h3>なぜPFSが注目されているか</h3>
+
+<p>PFS (Perfect Forward Secrecy)とは暗号化された通信と暗号化するための秘密鍵が両方漏洩しても複合化できません、という鍵交換に関する概念です。
+PFSは概念なのでを実装する仕組みが別にあります。２０１４年１月現時点ではPFSはまだあまり普及していないので、主に使われてい鍵交換方式はPFSではありません。</p>
+
+<p>Edward SnowdenがアメリカのNSAの諜報活動をリークしたことをきっかけにPFSは有名になりました。</p>
+
+<p>NSAは</p>
+
+<ul>
+<li><p>何らかの方法でWebサーバとクライアント間の通信を盗聴する(いわゆる中間者攻撃)</p></li>
+<li><p>通信は暗号化されていてもとにかく保存</p></li>
+<li><p>将来、何らかの方法で暗号化に使われた鍵が手に入ったら保存していた通信を解読</p></li>
+</ul>
+
+
+<p>ということを行っていました。PFSではない仕組みを使って通信した場合、このようにして通信の時点では暗号を解読されなくても、将来解読されるという不安が残るわけです。</p>
+
+<h3>SSL/TLSとRSA鍵交換方式</h3>
+
+<p>SSL/TLSはもっとも普及しているWebサーバとクライアント間で通信を暗号化する仕組みです。SSL/TLSにはセッションとコネクションという概念があります。
+セッションはサーバとクライアントが通信時に一度確立され、信頼できるサーバかどうか、暗号方式には何を使うかなどの情報をやりとりします。
+コネクションで実際にサーバとクライアント間の通信、例えばHTTP GETなどが行われます。コネクション上の通信は暗号化されていますが、この暗号化には共通鍵暗号方式が使われます。
+共通鍵暗号方式とは暗号化と複合化に同じ鍵を使う方式のことです。</p>
+
+<p>普段、僕たちが生活していて思い浮かべる暗号化はすべて共通鍵暗号方式です。</p>
+
+<ul>
+<li>ボブ&amp;アリス: 二人だけの秘密のメッセージを交換しよう</li>
+<li>ボブ: 「アイシテイル」。このメッセージを暗号化するために、各文字を３文字前にずらした、「エオソニオワ」という文字をアリスに教える</li>
+<li>アリス: 「エオソニオワ」を３文字後ろにずらして、「アイシテイル」というメッセージを複合化できた</li>
+</ul>
+
+
+<p>この例だと３文字が暗号の鍵です。ボブが暗号化するのにもアリスが複合化するにも同じ「３」を使っているので共通鍵暗号方式です。</p>
+
+<p>共通鍵暗号方式は便利な暗号方式ですが、ひとつ問題があります。それは、どうやって全く知らない二人(SSL/TLSだとサーバとクライアント)が暗号に使う鍵を共有するかということです。
+暗号には鍵が必要ですが、鍵を共有するために平文で通信して鍵が第3者に盗み見られたら元も子もありません。
+ボブとアリスの例だと3という数字を鍵として使うためには、二人の間で3を鍵にしようと何らかの方法で決めなければいけません。
+もし、この取り決めを第三者に覗き見された場合、それ以降の通信が全部解読されてしまいます。鍵は絶対に安全な方法で共有されないければいけないのです。</p>
+
+<p>SSL/TLSでもコネクションで使う共通鍵を共有する時にこの問題に出くわします。一つの、そして、もっとも普及している解決方法はRSA鍵交換方式です。
+この記事ではRSA鍵交換方式については説明しませんが、簡単にいうサーバとクライアントで別々の鍵を使って共通鍵を暗号化してから共有します。複合化にも別々の鍵を使います。</p>
+
+<p>別々の鍵を使うことで、鍵共有問題を解決しているのですが、ここにPFSが解決しようとする問題があります。それは、もし共通鍵を暗号化する時に使った秘密鍵が盗まれた場合、その鍵ですべての通信の暗号を解読されてしまうという問題です。</p>
+
+<ul>
+<li>Big Brother社のサーバとクライアント間の暗号化された通信を盗聴してハードディスクにとりあず保存</li>
+<li>3年後、Big Brother社のサーバリプレース時に廃棄されたハードディスクを盗んでそこに保存されていた秘密鍵をゲット</li>
+<li>秘密鍵を使って保存していた３年分の暗号化された通信を解析して、暗号化に使われた共通鍵をゲット</li>
+<li>共通鍵で通信の複合化</li>
+</ul>
+
+
+<p>PFSではない仕組みを使って通信した場合、通信した時点では安全でも将来秘密鍵が何らかの方法で漏洩した場合、過去の暗号化された通信が保存されていれば内容が解読されてしまうという脆弱性が存在します。</p>
+
+<p>ちなみに、PFSのFはForwardで、これは<strong>前方</strong>_という意味ではなく<strong>将来</strong>とか"未来"とかの意味だと思われます。つまり、PFSは<strong>完全に(P)に未来(F)においても通信の秘密(S)が保たれる</strong>という意味になります。</p>
+
+<h2>EDH鍵交換方式</h2>
+
+<p>RSA鍵交換方式の問題点は実際の通信の内容を暗号化するための共通鍵を暗号化するために、サーバに保存されている秘密鍵を使っていることでした。EDH鍵交換方式を使うと、決まった鍵の代わりにセッション毎に
+クライアントとサーバ側でそれぞれ生成する異なったランダムな数字を鍵と使うことができます。こうすれば、暗号化されて通信を盗聴されていても、それぞれの通信はセッション毎にランダムで生成された
+鍵で暗号化されているので複合化は格段に難しくなります。</p>
+
+<p>これを実現するためにEDHは<strong>Diffie-Hellman</strong>鍵共有という方法を使います。DH鍵共有使えば、全く知らない二人の間で事前に何の準備もせずに鍵を共有することができます。</p>
+
+<h3>離散対数問題</h3>
+
+<p>この魔法のような仕組みは離散対数問題という数学的性質を応用しています。</p>
+
+<p>離散対数問題とは、</p>
+
+<p><em>g<sup>a</sup> mod p</em> を計算して A を求めることは簡単だけど、<em>g, p, A</em>がわかってもそこから<em>a</em>を求めるのはとても時間がかかってしまうという性質のことです。</p>
+
+<p>下記の計算は簡単にできる。</p>
+
+<ul>
+<li><em>a=3, g=5, p=7</em> とする</li>
+<li><em>g<sup>a</sup> mod p</em> は <em>5<sup>3</sup> mod 7</em> となる</li>
+<li>これの答えは6となる</li>
+</ul>
+
+
+<p>だけど、下記の計算は難しい。</p>
+
+<ul>
+<li><em>a=x, g=5, p=7, A=6</em> とする</li>
+<li><em>5<sup>x</sup> mod 7 = 6</em> となる<em>x</em>は何か？</li>
+<li><em>x=1</em>と仮定すると、<em>5<sup>1</sup> mod 7 = 5</em> となり、<em>6</em>ではないので間違い</li>
+<li><em>x=2</em>と仮定すると、<em>5<sup>2</sup> mod 7 = 4</em> となり、<em>6</em>ではないので間違い</li>
+<li><em>x=3</em>と仮定すると、<em>5<sup>3</sup> mod 7 = 6</em> となるので<em>x=3</em>が正解</li>
+</ul>
+
+
+<p>今回はxが小さいから運良く3回の計算で答えにたどり着いたけど、もし<em>x</em>が大きかったら順番に計算するのはとても時間がかかってしまう。これが離散対数問題です。</p>
+
+<h3>Diffie-Hellman (ディフィー・ヘルマン)鍵共有</h3>
+
+<p>Diffie-Hellman鍵共有、(以下DHと省略)は離散対数問題を使って、第3者に知られることなく鍵を共有することができます。</p>
+
+<p>例としてアリスとボブの間で暗号化するための鍵を共有する場合を考えます。ただし、アリスとボブは事前に鍵が何かは知りません。</p>
+
+<ul>
+<li>アリスはランダムに数字を生成して、3という数字を得ます。この数字は誰にも教えずアリスだけの秘密の数字とします。</li>
+<li>ボブも同じくランダムな数字を生成して、4という数字を得ます。これも誰にも教えません。</li>
+<li>二人は、<em>g=4, p=7</em>と決めます。二人とも知っているので、gとpは秘密ではありません。秘密ではないので平文で送ります。</li>
+<li>アリスは<em>g<sup>a</sup> mod p (4<sup>3</sup> mod 7)</em>を計算します。これは、1になります。この1という数字をボブに教えます。これは平文で送ります。</li>
+<li>ボブも4<sup>4</sup> mod 7を計算します。これは、4になります。この4という数字をアリスに教えます。これは平文で送ります。</li>
+<li>アリスはボブからもらった4という数字を使って、<em>4<sup>3</sup> mod 7</em> という計算をします。これは、1となります。</li>
+<li>ボブはアリスからもらった1という数字を使って、<em>1<sup>4</sup> mod 7</em> という計算をします。これは、1となります。</li>
+<li>アリスとボブは1という数字を共有することができたので、これを共有鍵として使うことができます。</li>
+</ul>
+
+
+<p>ポイントは</p>
+
+<ul>
+<li>アリスとボブはランダムで別々に生成した数字をお互いに秘密にしておくこと</li>
+<li>これ以外の数字、g, pと自分の秘密のランダム数字を使って計算した<em>g<sup>a</sup> mod p</em>は盗聴されても構わないので平文で送る</li>
+<li>お互いに決めたpと相手から送られてきた<em>g<sup>a</sup> mod p</em>に対して、自分の秘密ランダム数字を使って計算するとアリスとボブは同じ数字を得ることができる。</li>
+</ul>
+
+
+<p>最後のポイントが一番重要です。なぜ、二人は別々の秘密ランダム数字を使っているのに最終的に同じ値を得ることできるのか？</p>
+
+<p>さっきのやりとりを具体的な数字を記号に置き換えて計算してみます。</p>
+
+<ul>
+<li><em>x、y</em>をアリスとボブそれぞれの秘密ランダム数字とする</li>
+<li><em>g, p</em>を共有する</li>
+<li><em>g<sup>x</sup> mod p = A、g<sup>y</sup> mod p = B</em>とする</li>
+<li>アリスは<em>B<sup>x</sup> mod p</em>を計算する。Bは<em>g<sup>y</sup> mod p</em>なので、<em>(g<sup>y</sup> mod p)<sup>x</sup> mod p</em>に置き換えるられる。これはさらに、<em>g<sup>x*y</sup> mod p</em> に置き換えることができる。</li>
+<li>ボブは<em>A<sup>y</sup> mod p</em>を計算する。Aは<em>g<sup>x</sup> mod p</em>なので、<em>(g<sup>x</sup> mod p)<sup>y</sup> mod p</em>に置き換えるられる。これは、<em>g<sup>x*y</sup> mod p</em> に置き換えることができる。</li>
+</ul>
+
+
+<p>つまり、アリスの<em>B<sup>x</sup> mod p</em>とボブの<em>A<sup>x</sup> mod p</em>は同じ値を計算していることになるので、二人は同じ値を得ることができます。</p>
+
+<p>離散対数問題の性質上、g, p, A, Bがわかってもxとyを計算するのはとても難しいので、第3者はたとえアリスとボブの通信を盗聴できたとしても共通鍵は知ることができません。</p>
+
+<p>また、xとyはランダムに生成される数字で各セッションで使い切りです。xとyがランダムなのでそこから生成される共通鍵もランダムなので、RSA鍵共有方式のように同じ鍵を使い回すことがありません。
+EDHのEは「Ephemeral」で、はかないとか短命とかいう意味で、これはEDHで生成される鍵が使い捨てということから来ています。</p>
+
+<h2>以下の資料に感謝</h2>
+
+<ul>
+<li><a href="http://vincent.bernat.im/en/blog/2011-ssl-perfect-forward-secrecy.html">SSL/TLS &amp; Perfect Forward Secrecy</a></li>
+<li><a href="http://blog.livedoor.jp/k_urushima/archives/1728348.html">TwitterのPerfect Forward Secrecy(PFS)対応</a></li>
+<li><a href="http://www.atmarkit.co.jp/ait/articles/0101/16/news002.html">http://www.atmarkit.co.jp/ait/articles/0101/16/news002.html</a></li>
+<li><a href="http://saltheads.blog134.fc2.com/blog-entry-35.html">離散対数問題を使った公開鍵暗号 (ElGamal暗号、Diffe-Hellman鍵共有法)</a></li>
+</ul>
+
+]]></content>
+  </entry>
+  
+</feed>

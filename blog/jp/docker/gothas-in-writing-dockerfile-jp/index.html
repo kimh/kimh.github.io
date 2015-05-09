@@ -1,0 +1,748 @@
+<!doctype html>
+<!-- paulirish.com/2008/conditional-stylesheets-vs-css-hacks-answer-neither/ -->
+<!--[if lt IE 7]> <html class="no-js ie6 oldie" lang="en"> <![endif]-->
+<!--[if IE 7]>    <html class="no-js ie7 oldie" lang="en"> <![endif]-->
+<!--[if IE 8]>    <html class="no-js ie8 oldie" lang="en"> <![endif]-->
+<!-- Consider adding an manifest.appcache: h5bp.com/d/Offline -->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en"> <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+
+  <!-- Use the .htaccess and remove these lines to avoid edge case issues.
+       More info: h5bp.com/b/378 -->
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+
+  <title>Program Is Made At Night</title>
+  <meta name="author" content="Kim, Hirokuni">
+  
+
+  
+  <!-- Mobile viewport optimized: j.mp/bplateviewport -->
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+
+  <!-- Place favicon.ico and apple-touch-icon.png in the root directory: mathiasbynens.be/notes/touch-icons -->
+
+  <!-- CSS: implied media=all -->
+  <!-- CSS concatenated and minified via ant build script-->
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <link href='https://fonts.googleapis.com/css?family=Inconsolata' rel='stylesheet' type='text/css'>
+  <!-- end CSS-->
+
+  <!-- More ideas for your <head> here: h5bp.com/d/head-Tips -->
+
+  <!-- All JavaScript at the bottom, except for Modernizr / Respond.
+       Modernizr enables HTML5 elements & feature detects; Respond is a polyfill for min/max-width CSS3 Media Queries
+       For optimal performance, use a custom Modernizr build: www.modernizr.com/download/ -->
+  <script src="/javascripts/libs/modernizr-2.0.6.min.js"></script>
+</head>
+
+<body id="post">
+
+  <div id="container">
+    <nav role="navigation" ><ul class="main-navigation">
+  <li style='float:left;margin-right:5px'><a class='nav' href="/">Home</a></li>
+</ul><br><br>
+</nav>
+    <article>
+
+
+  <h1 class="article-title">Dockerfileを書く時の注意とかコツとかハックとか</h1>
+  <div class="article-content"><h2>目次</h2>
+
+<h4><a href="#why_do_we_need_to_use_dockerfile">なぜDockerfileを使うのか？</a></h4>
+
+<h4><a href="#add_and_understanding_context_in_dockerfile">ADDとDockerfileにおいてのコンテキストを理解する</a></h4>
+
+<h4><a href="#treat_your_container_like_a_binary_with_cmd">CMDでコンテナをバイナリのように扱う</a></h4>
+
+<h4><a href="#difference_between_cmd_and_entrypoint">CMDとENTRYPOINTの違い</a></h4>
+
+<ul>
+<li><a href="#exec_format_error">exec format error</a></li>
+</ul>
+
+
+<h4><a href="#build_caching_what_invalids_cache_and_not">ビルド時のキャッシュについて: キャッシュが有効なときと無効なとき</a></h4>
+
+<ul>
+<li><a href="#cache_invalidation_at_one_instruction_invalids_cache_of_all_subsequent_instructions">ある一行でキャッシュが使われなかったらそれ以降のすべての行でキャッシュは使われない</a></li>
+<li><a href="#cache_is_invalid_even_when_adding_commands_that_dont_do_anything">何もしないコマンドを追加してもキャッシュは無効になる</a></li>
+<li><a href="#cache_is_invalid_when_you_add_spaces_between_command_and_arguments_inside_instruction">コマンドと引数の間に意味のないスペースの入れてもキャッシュは無効となる</a></li>
+<li><a href="#cache_is_used_when_you_add_spaces_around_commands_inside_instruction">Dockerfileの行に意味のないスペースを入れてもキャッシュは有効</a></li>
+<li><a href="#cache_is_used_for_non_idempotent_instructions">冪等ではない命令でもキャッシュは効いてしまう</a></li>
+<li><a href="#instructions_after_add_never_cached_only_versions_prior_to_0.7.3">ADD以降にある命令はキャッシュされない (ただし、0.7.3以前のバージョンを使っている場合のみ)</a></li>
+</ul>
+
+
+<h4><a href="#hack_to_run_container_in_the_background"> コンテナをバックグラウンドで動かすハック</a></h4>
+
+<p><a id="why_do_we_need_to_use_dockerfile"></a></p>
+
+<h2>なぜDockerfileを使うのか？</h2>
+
+<p>DockerfileはYet Anotherシェルではありません。Dockerfileは特別なミッションを持っています。それは、<em>Dockerイメージ作成の自動化</em>です。</p>
+
+<p>一度Dockerfileにイメージ作成の手順を記述すれば、それ以降は<code>docker build</code>コマンド一つで同じイメージを作ることができます。</p>
+
+<p>Dockerfileはコンテナが何をしているかを別の人の伝える手段でもあります。Dockerfileにはイメージを作って動かすまでのすべてが書かれているので、Dockerfileを読むだけでそのコンテナのやるべき仕事がすぐにわかります。こうすれば、コンテナが何をしているかを調べるためにわざわざログインしてpsコマンドを駆使しなくてもいいというわけです。</p>
+
+<p>簡単に述べましたが、これらの理由で、Dockerイメージを作るなら<strong>必ず</strong>Dockerfileを使ってください。しかし、Dockerfileを書くのは時々嫌になってしまうことがあるのも事実です。このポストではDockerfileを書く時に注意することわかりにくいことを解説します。この記事を読んでDockerfileに慣れてもらえればと思います。</p>
+
+<p><a id="add_and_understanding_context_in_dockerfile"></a></p>
+
+<h2>ADDとDockerfileにおいてのコンテキストを理解する</h2>
+
+<p><strong><em>ADD</em></strong> is the instruction to add local files to Docker image.  The basic usage is very simple. Suppose you want to add a local file called <em>myfile.txt</em> to /myfile.txt of image.
+<strong><em>ADD</em></strong>はローカルファイルシステムのファイルやディレクトリをDockerイメージにコピーするために使います。使い方は至って簡単。もし、ローカルにある<em>myfile.txt</em>をイメージの<em>/myfile.txt</em>にコピーしたい場合を説明します。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='bash'><span class='line'><span class="nv">$ </span>ls
+</span><span class='line'>Dockerfile  mydir  myfile.txt
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>上記のようなディレクトリ構成の場合、Dockerfileは次のようになります。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='bash'><span class='line'>ADD myfile.txt /
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>簡単ですね。しかし、<em>/home/vagrant/myfile.txt</em>を追加しようとすると失敗します。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+</pre></td><td class='code'><pre><code class='bash'><span class='line'><span class="c"># 以下の行がDockerfileにあるとします</span>
+</span><span class='line'><span class="c"># ADD /home/vagrant/myfile.txt /</span>
+</span><span class='line'>
+</span><span class='line'><span class="nv">$ </span>docker build -t blog .
+</span><span class='line'>Uploading context 10240 bytes
+</span><span class='line'>Step 1 : FROM ubuntu
+</span><span class='line'> ---&gt; 8dbd9e392a96
+</span><span class='line'>Step 2 : ADD /home/vagrant/myfile.txt /
+</span><span class='line'>Error build: /home/vagrant/myfile.txt: no such file or directory
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p><code>no such file or directory</code> と言われてしまいました。確かにファイルは存在するのになぜでしょうか？理由は <em>/home/vagrant/myfile.txt</em> がDockerfileのコンテキスト外だからです。DockerfileでのコンテキストとはDockerfile内の命令からアクセス可能なファイルやディレクトリの範囲のことです。そして、コンテキスト内のファイルとディレクトリしかイメージに追加することはできません。
+カレントディレクトリ配下のファイルとディレクトリは自動的にコンテキストに追加されます。これは <code>build</code> コマンドを実行した時に確認できます。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='bash'><span class='line'><span class="nv">$ </span>docker build -t blog .
+</span><span class='line'>Uploading context 10240 bytes
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>ここで <code>build</code> コマンドが何をしているかというと、Dockerクライアントがカレントディレクトリ配下のファイルとディレクトリをtarballにまとめてDockerデーモンへ送信しています。なぜわざわざ送信する必要があるかというと、DockerクライアントとDockerデーモンは違うホストで動いている可能性があるからです。これが上記のコマンドを実行した時に <em>Uploading</em> と表示されている理由です。</p>
+
+<p>ひとつ落とし穴があります。Dockerは自動的にカレントディレクトリ配下のファイルとディレクトリをコンテキストに追加するので、もし巨大なファイルやディレクトリを間違っておいておくと使う必要もないのにそれらのtarballを作ろうとします。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+</pre></td><td class='code'><pre><code class='bash'><span class='line'><span class="nv">$ </span>ls
+</span><span class='line'>Dockerfile  very_huge_file
+</span><span class='line'>
+</span><span class='line'><span class="nv">$ </span>docker build -t blog .
+</span><span class='line'>Uploading context xxxxxx bytes
+</span><span class='line'>..... <span class="c"># すごく時間がかかる、、、</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>ベストプラクティスとしては、イメージに追加したいファイルとディレクトリのみをbuildを実行するディレクトリに置くべきです。</p>
+
+<p><a id="treat_your_container_like_a_binary_with_cmd"></a></p>
+
+<h2>CMDでコンテナをバイナリのように扱う</h2>
+
+<p>CMDをDockerfileで使うことで、コンテナを一つのバイナリのように扱うことができます。以下のようなDockerfileがあるとします。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='bash'><span class='line'><span class="c"># run.shがDockerfileと同じディレクトリにあるとします</span>
+</span><span class='line'>ADD run.sh /usr/local/bin/run.sh
+</span><span class='line'>CMD <span class="o">[</span><span class="s2">&quot;/usr/local/bin/run.sh&quot;</span><span class="o">]</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>このDockerfileからコンテナを作って、<code>docker run -i run_image</code>で起動すると<code>/usr/local/bin/run.sh</code>スクリプトを実行してコンテナは終了します。</p>
+
+<p>もし、<code>CMD</code>を使わなかった場合、毎回起動する度に、<code>docker run -i run_image /usr/local/bin/run.sh</code>とコマンドラインで指定しないといけません。</p>
+
+<p>これは、面倒なだけではなく、コンテナの運用の観点からもバッドプラクティスです。</p>
+
+<p>もし、<code>CMD</code>がDockerfileにあればそのコンテナが何をするのか明確になります。
+しかし、もしなかった場合コンテナを作った人以外の人がこのコンテナを正しく起動するためには外部のドキュメントに頼らなければいけません。</p>
+
+<p>なので一般的には常に<code>CMD</code>はDockerfileに指定すべきです。</p>
+
+<p><a id="difference_between_cmd_and_entrypoint"></a></p>
+
+<h2>CMDとENTRYPOINTの違い</h2>
+
+<p>  <code>CMD</code>と<code>ENTRYPOINT</code>はとても紛らわしいです。</p>
+
+<p>コマンドラインから引数として渡されたものでも<code>CMD</code>から指定されたものでも、すべてのコマンドは<code>ENTRYPOINT</code>で指定されたバイナリの引数として渡されます。</p>
+
+<p>  <code>/bin/sh -c</code> はデフォルトのエントリーポイントです。もし、エントリーポイントなしで<code>CMD date</code>と書いた場合、Dockerはこれを<code>/bin/sh -c date</code>として実行します。</p>
+
+<p>エントリーポイントを使うことによってコンテナの挙動を実行時に変えることができるので、運用を柔軟にすることができます。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='bash'><span class='line'>ENTRYPOINT <span class="o">[</span><span class="s2">&quot;/bin/date&quot;</span><span class="o">]</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>上記のようなエントリーポイントがあった場合、このコンテナは現在時刻を違うフォーマットで出力することができます。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class='bash'><span class='line'><span class="nv">$ </span>docker run -i clock_container +<span class="s2">&quot;%s&quot;</span>
+</span><span class='line'>1404214000
+</span><span class='line'>
+</span><span class='line'><span class="nv">$ </span>docker run -i clock_container +<span class="s2">&quot;%F&quot;</span>
+</span><span class='line'>2014-07-01
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p><a id="exec_format_error"></a></p>
+
+<h3>exec format error</h3>
+
+<p>デフォルトにエントリーポイントに関して、一つ注意することがあります。例えば以下のようなシェルスクリプトを実行したいとします。</p>
+
+<p><strong><em>/usr/local/bin/run.sh</em></strong></p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='bash'><span class='line'><span class="nb">echo</span> <span class="s2">&quot;hello, world&quot;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p><strong><em>Dockerfile</em></strong></p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='bash'><span class='line'>ADD run.sh /usr/local/bin/run.sh
+</span><span class='line'>RUN chmod +x /usr/local/bin/run.sh
+</span><span class='line'>CMD <span class="o">[</span><span class="s2">&quot;/usr/local/bin/run.sh&quot;</span><span class="o">]</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>このコンテナを起動すると、<code>hello, world</code>と出力することをあなたは期待すると思いますが、実際は意味のわからないエラーになります。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='bash'><span class='line'><span class="nv">$ </span>docker run -i hello_world_image
+</span><span class='line'>2014/07/01 10:53:57 <span class="nb">exec </span>format error
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>これは、シェルスクリプトにシェバングを忘れたため、デフォルトのエントリーポイントである<code>/bin/sh -c</code>がどのようにしてスクリプトを実行したらいいわからないためエラーになりました。</p>
+
+<p>これを修正するには、単にシェバングを足すか、</p>
+
+<p><strong><em>/usr/local/bin/run.sh</em></strong></p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='bash'><span class='line'><span class="c">#!/bin/bash</span>
+</span><span class='line'><span class="nb">echo</span> <span class="s2">&quot;hello, world&quot;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>またはコマンドラインから指定することができます。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='bash'><span class='line'><span class="nv">$ </span>docker run -entrypoint<span class="o">=</span><span class="s2">&quot;/bin/bash&quot;</span> -i hello_world_image
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p><a id="build_caching_what_invalids_cache_and_not"></a></p>
+
+<h2>ビルド時のキャッシュについて: キャッシュが有効なときと無効なとき</h2>
+
+<p>DockerはDockerfileの各一行毎にコミットを作成していきます。行の記述を変更しない限り、Dockerは新しいイメージを作る必要がないと判断してキャッシュを使って次の行の元になるイメージを作成します。
+これが初めて <code>docker build</code> を実行した時には時間がかかるのに、２回目からは一瞬でビルドが完了する理由です。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+</pre></td><td class='code'><pre><code class='bash'><span class='line'><span class="nv">$ </span><span class="nb">time </span>docker build -t blog .
+</span><span class='line'>Uploading context 10.24 kB
+</span><span class='line'>Step 1 : FROM ubuntu
+</span><span class='line'> ---&gt; 8dbd9e392a96
+</span><span class='line'>Step 2 : RUN apt-get update
+</span><span class='line'> ---&gt; Running in 15705b182387
+</span><span class='line'>Ign http://archive.ubuntu.com precise InRelease
+</span><span class='line'>Hit http://archive.ubuntu.com precise Release.gpg
+</span><span class='line'>Hit http://archive.ubuntu.com precise Release
+</span><span class='line'>Hit http://archive.ubuntu.com precise/main amd64 Packages
+</span><span class='line'>Get:1 http://archive.ubuntu.com precise/main i386 Packages <span class="o">[</span>1641 kB<span class="o">]</span>
+</span><span class='line'>Get:2 http://archive.ubuntu.com precise/main TranslationIndex <span class="o">[</span>3706 B<span class="o">]</span>
+</span><span class='line'>Get:3 http://archive.ubuntu.com precise/main Translation-en <span class="o">[</span>893 kB<span class="o">]</span>
+</span><span class='line'>Fetched 2537 kB in 7s <span class="o">(</span>351 kB/s<span class="o">)</span>
+</span><span class='line'>
+</span><span class='line'> ---&gt; a8e9f7328cc4
+</span><span class='line'>Successfully built a8e9f7328cc4
+</span><span class='line'>
+</span><span class='line'>real  0m8.589s
+</span><span class='line'>user  0m0.008s
+</span><span class='line'>sys   0m0.012s
+</span><span class='line'>
+</span><span class='line'><span class="nv">$ </span><span class="nb">time </span>docker build -t blog .
+</span><span class='line'>Uploading context 10.24 kB
+</span><span class='line'>Step 1 : FROM ubuntu
+</span><span class='line'> ---&gt; 8dbd9e392a96
+</span><span class='line'>Step 2 : RUN apt-get update
+</span><span class='line'> ---&gt; Using cache
+</span><span class='line'> ---&gt; a8e9f7328cc4
+</span><span class='line'>Successfully built a8e9f7328cc4
+</span><span class='line'>
+</span><span class='line'>real  0m0.067s
+</span><span class='line'>user  0m0.012s
+</span><span class='line'>sys   0m0.000s
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>しかし、いつキャッシュが使われていつキャッシュが使われないのかはあまり明確ではありません。ここでは、いくつかのケースを紹介します。</p>
+
+<p><a id="cache_invalidation_at_one_instruction_invalids_cache_of_all_subsequent_instructions"></a></p>
+
+<h4>ある一行でキャッシュが使われなかったらそれ以降のすべての行でキャッシュは使われない</h4>
+
+<p>これは一番基本のルールです。もし、Dockerfile内のある一行でキャッシュが使われない書き方をしていまうと、それ以降の行でキャッシュは全く使われなくなってしまいます。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+</pre></td><td class='code'><pre><code class='bash'><span class='line'><span class="c"># Before</span>
+</span><span class='line'>From ubuntu
+</span><span class='line'>Run apt-get install ruby
+</span><span class='line'>Run <span class="nb">echo </span><span class="k">done</span>!
+</span><span class='line'>
+</span><span class='line'><span class="c"># After</span>
+</span><span class='line'>From ubuntu
+</span><span class='line'>Run apt-get update
+</span><span class='line'>Run apt-get install ruby
+</span><span class='line'>Run <span class="nb">echo </span><span class="k">done</span>!
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p><em>Run apt-get update</em> という行を追加したことでベースのイメージを変更してしまったので、 それ以降の <strong>すべての</strong> 行で使うイメージも初めから作り直されないといけません。
+Dockerfileはひとつ前の行で作られたイメージをベースにして行に書かれている命令を実行するので、これは当然の挙動だと言えます。</p>
+
+<p><a id="cache_invalidation_at_one_instruction_invalids_cache_of_all_subsequent_instructions"></a></p>
+
+<h4>何もしないコマンドを追加してもキャッシュは無効になる</h4>
+
+<p><em>以下の例ではキャッシュは効きません。</em></p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class='bash'><span class='line'><span class="c"># Before</span>
+</span><span class='line'>Run apt-get update
+</span><span class='line'>
+</span><span class='line'><span class="c"># After</span>
+</span><span class='line'>Run apt-get update <span class="o">&amp;&amp;</span> <span class="nb">true</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p><code>true</code> コマンドは実際には何もしないコマンドですが、Dockerはキャッシュを使ってはくれません。</p>
+
+<p><a id="cache_is_invalid_when_you_add_spaces_between_command_and_arguments_inside_instruction"></a></p>
+
+<h4>コマンドと引数の間に意味のないスペースの入れてもキャッシュは無効となる</h4>
+
+<p><em>以下の例ではキャッシュは効きません。</em></p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class='bash'><span class='line'><span class="c"># Before</span>
+</span><span class='line'>Run apt-get update
+</span><span class='line'>
+</span><span class='line'><span class="c"># After</span>
+</span><span class='line'>Run apt-get               update
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p><a id="cache_is_used_when_you_add_spaces_around_commands_inside_instruction"></a></p>
+
+<h4>Dockerfileの行に意味のないスペースを入れてもキャッシュは有効</h4>
+
+<p><em>以下の例ではキャッシュは有効になります。</em></p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class='bash'><span class='line'><span class="c"># Before</span>
+</span><span class='line'>Run apt-get update
+</span><span class='line'>
+</span><span class='line'><span class="c"># After</span>
+</span><span class='line'>Run                apt-get update
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p><a id="cache_is_used_for_non_idempotent_instructions"></a></p>
+
+<h4>冪等ではない命令でもキャッシュは効いてしまう</h4>
+
+<p>これはどちらかというとキャッシュの落とし穴についてです。 <em>冪等ではない命令</em> とは実行する度に結果が変わる可能性のあるコマンドを実行する行のことです。
+例えば、 <code>apt-get update</code> は実行する度にアップデートされる内容が変わる可能性があるので冪等ではありません。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='bash'><span class='line'>From ubuntu
+</span><span class='line'>Run apt-get update
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>上記のDockerfileを作ってイメージを作成したとします。３ヶ月後、Ubutnuがセキュリティアップデートをあるリポジトリにリリースしたので、同じDockerfileを使ってイメージの再作成をしたとします。(apt-get update がセキュリティアップデートを拾ってくれると思って)
+しかし、この方法でイメージを再作成してもセキュリティアップデートはインストールされません。Dockerfileの記述自体は全く変更されていないので、たとえ <code>apt-get update</code> の実行結果が変わっていたとしてもDockerはキャッシュを使うからです。</p>
+
+<p>もし、これ避けたければ、<code>-no-cache</code> オプションを使えます。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='bash'><span class='line'><span class="nv">$ </span>docker build -no-cache .
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p><a id="instructions_after_add_never_cached_only_versions_prior_to_0.7.3"></a></p>
+
+<h4>ADD以降にある命令はキャッシュされない (ただし、0.7.3以前のバージョンを使っている場合のみ)</h4>
+
+<p>もし、0.7.3以前のバージョンを使っている場合、注意してください！</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='bash'><span class='line'>From ubuntu
+</span><span class='line'>Add myfile /
+</span><span class='line'>Run apt-get update
+</span><span class='line'>Run apt-get install openssh-server
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>もしこのようなDockerfileだと、<strong><em>Run apt-get update</em></strong> と <strong><em>Run apt-get install openssh-server</em></strong> は絶対にキャッシュされません。</p>
+
+<p>この挙動は0.7.3で改善されました。ADD以降の行でも、ADDの書き方自身やADDする対象が変更されない限りキャッシュが使われます。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+</pre></td><td class='code'><pre><code class='bash'><span class='line'><span class="nv">$ </span><span class="nb">echo</span> <span class="s2">&quot;Jeff Beck&quot;</span> &gt; rock.you
+</span><span class='line'>
+</span><span class='line'>From ubuntu
+</span><span class='line'>Add rock.you /
+</span><span class='line'>Run add rock.you
+</span><span class='line'>
+</span><span class='line'><span class="nv">$ </span><span class="nb">echo</span> <span class="s2">&quot;Eric Clapton&quot;</span> &gt; rock.you
+</span><span class='line'>
+</span><span class='line'>From ubuntu
+</span><span class='line'>Add rock.you /
+</span><span class='line'>Run add rock.you
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>ここでは、<em>rock.you</em> ファイルの内容を変更したので、ADD以降の行ではキャッシュは使われません。</p>
+
+<p><a id="hack_to_run_container_in_the_background"></a></p>
+
+<h2>コンテナをバックグラウンドで動かすハック</h2>
+
+<p>もし、コンテナの起動方法をシンプルにしたければ、<code>docker run -d image your-command</code> を使ってコンテナをバックグラウンドで起動するべきです。
+<code>docker run -i -t image your-command</code> の代わりに <code>-d</code> を使うことを勧める理由はコンテナの起動をたった一つのコマンドで行うことができ、かつ <code>Ctrl + P + Q</code> を入力してコンテナをターミナルから切り離す作業をしなくていいからです。</p>
+
+<p>しかし、<code>-d</code> オプションには問題があります。コマンドがフォアグラウンドで実行されていないとコンテナはすぐに終了してしまいます。</p>
+
+<p>apacheをサービスとして起動するコンテナを例に説明しましょう。直感的に次のようにやりたくなるでしょう。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='bash'><span class='line'><span class="nv">$ </span>docker run -d apache-server apachectl start
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>しかし、これだとコンテナは起動した瞬間に終了します。これは、 <code>apachectl</code> がapacheをデーモン化した瞬間に自身は終了してしまうからです。</p>
+
+<p>Dockerはこのようなコマンドが嫌いです。Dockerはコマンドがフォアグラウンドで起動し続けることを期待しているからです。
+もしそうでなければ、Dockerはアプリケーションは終了したと考えてコンテナを終了してしまいます。</p>
+
+<p>この問題はapacheの実行バイナリを直接フォアグラウンドで動かすことで解決できます。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+</pre></td><td class='code'><pre><code class='bash'><span class='line'><span class="nv">$ </span>docker run -e <span class="nv">APACHE_RUN_USER</span><span class="o">=</span>www-data <span class="se">\</span>
+</span><span class='line'>                    -e <span class="nv">APACHE_RUN_GROUP</span><span class="o">=</span>www-data <span class="se">\</span>
+</span><span class='line'>                    -e <span class="nv">APACHE_PID_FILE</span><span class="o">=</span>/var/run/apache2.pid <span class="se">\</span>
+</span><span class='line'>                    -e <span class="nv">APACHE_RUN_DIR</span><span class="o">=</span>/var/run/apache2 <span class="se">\</span>
+</span><span class='line'>                    -e <span class="nv">APACHE_LOCK_DIR</span><span class="o">=</span>/var/lock/apache2 <span class="se">\</span>
+</span><span class='line'>                    -e <span class="nv">APACHE_LOG_DIR</span><span class="o">=</span>/var/log/apache2 <span class="se">\</span>
+</span><span class='line'>                    -d apache-server /usr/sbin/apache2 -D NO_DETACH -D FOREGROUND
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>ここでしていることは、<code>apachectl</code> がやっていることを手動で行ってapacheを起動しています。このやり方だとapacheはフォアグラウンドで動き続けることができます。</p>
+
+<p>問題はアプリケーションによってはフォアグラウンドで起動する方法がない場合があることです。また、<code>apachectl</code> の例のようにヘルパープログラムがやってくれることを分解して手動でやらないといけないのは大変です。どうすればいいでしょう？</p>
+
+<p>このような場合、<code>tail -f /dev/null</code> を実行したいコマンドに追加すればコンテナはメインのコマンドがバックグラウンドで実行されても <code>tail</code> がフォアグラウンドで起動し続けてくれるので終了しません。このテクニックをさっきのapacheの例で使ってみましょう。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='bash'><span class='line'><span class="nv">$ </span>docker run -d apache-server apachectl start <span class="o">&amp;&amp;</span> tail -f /dev/null
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>ずっと良くなりました。 <code>tail -f /dev/null</code> は無害なコマンドなのでこのテクニックはどんな場合にも使うことができるのでおすすめです。</p>
+</div>
+  
+    <section>
+      <h1>Comments</h1>
+      <div id="disqus_thread"><div id="disqus_thread"></div>
+<script type="text/javascript">
+  var disqus_shortname = 'kimstechblog';
+  var disqus_identifier = 'http://kimh.github.io/blog/jp/docker/gothas-in-writing-dockerfile-jp/';
+  var disqus_url = 'http://kimh.github.io/blog/jp/docker/gothas-in-writing-dockerfile-jp/';
+  //var disqus_developer = 1;
+  (function() {
+    var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+    dsq.src = 'http://' + disqus_shortname + '.disqus.com/embed.js';
+    (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+  })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+</div>
+    </section>
+  
+
+</article>
+
+
+      <p class="meta">
+      
+        <a class="basic-alignment left nav" href="/blog/en/docker/gotchas-in-writing-dockerfile-en/" title="Previous Post: Gotchas in Writing Dockerfile">&laquo; Gotchas in Writing Dockerfile</a>
+      
+      
+        <a class="basic-alignment right nav" href="/blog/jp/dashing/creating-custom-dashing-widget-ja/" title="Next Post: Dashingのカスタムウィジェットを作成する">Dashingのカスタムウィジェットを作成する &raquo;</a>
+      
+    </p>
+  </div>
+    <script>
+      var name = document.getElementById('name-helper').innerHTML;
+
+      var canvas = document.getElementById('myCanvas');
+
+      //The name (up to 28 characters long, including white space)
+      var length = name.length;
+      if (length>28){//Exceed character length limit, remove canvas
+          canvas.remove();
+      }
+      else{
+            
+
+        var context = canvas.getContext('2d');
+
+        //calculate width and length
+        var width=700/1.25/length;
+        var start;
+        if (width>40){
+          width=40;
+        }
+
+        var height= width/2;
+
+        //the start postion of the link list
+        var start = (700-width*length*1.25)/2;
+        var horizon = 5;
+
+        //DO NOT CHANGE THOSE
+        var mid_horizon = horizon+height/2;
+        var name_counter =0;
+
+        var x = height/5;
+        var y = height/5;
+        var interval=width/4;
+        
+        var radius = 0.75*width;
+        
+        var text_pos=width*1.1;
+
+
+        canvas.height=mid_horizon+width/2+width/2.1+5;
+        
+        for (var i=1;i<name.length+1;i++){
+
+          context.beginPath();
+          context.strokeStyle='#F9BF3B';
+          
+          //the rectangle
+          context.rect(start, horizon, width, height);
+
+          //the middle line
+          context.moveTo(start+width/2,horizon);
+          context.lineTo(start+width/2,horizon+height);
+
+          //if this is the last element
+          if (i==name.length){
+            context.moveTo(start+width/2,horizon+height);
+            context.lineTo(start+width,horizon);
+
+          }
+          else{
+            //the arrow
+            context.moveTo(start+0.75*width,mid_horizon);
+            context.lineTo(start+width+interval,mid_horizon);
+
+            context.moveTo(start+width+interval,mid_horizon);
+            context.lineTo(start+width+interval-x,mid_horizon+y);
+          
+            context.moveTo(start+width+interval,mid_horizon);
+            context.lineTo(start+width+interval-x,mid_horizon-y); 
+          }
+          
+       
+        
+          var startAngle = 1.2 * Math.PI;
+          var endAngle = 1 * Math.PI;
+          var counterClockwise = true;
+      
+          context.stroke();
+            
+          context.beginPath();
+          context.arc(start+width/4+radius*0.81, mid_horizon+width/2, radius, startAngle, endAngle, counterClockwise);
+
+          context.moveTo(start+width/4+radius*0.81-radius,mid_horizon+width/2);
+          context.lineTo(start+width/4+radius*0.81-radius-x,mid_horizon-y+width/2);
+
+          context.moveTo(start+width/4+radius*0.81-radius,mid_horizon+width/2);
+          context.lineTo(start+width/4+radius*0.81-radius+x,mid_horizon-y+width/2); 
+
+          context.font = ' 15pt Calibri';
+          context.fillStyle = '#859900';
+          context.fillText(name.charAt(name_counter), start+width/4+radius*0.81-radius-width/14, mid_horizon+width/2+width/2.1);
+
+          context.lineWidth=1;
+          context.strokeStyle='#F9BF3B';
+          context.stroke();
+          start+=width/2*2+interval;      
+          name_counter+=1;
+        }
+      }
+
+    </script>
+
+  <!-- JavaScript at the bottom for fast page loading -->
+
+  <!-- Grab Google CDN's jQuery, with a protocol relative URL; fall back to local if offline -->
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.6.2/jquery.min.js"></script>
+  <script>window.jQuery || document.write('<script src="js/libs/jquery-1.6.2.min.js"><\/script>')</script>
+
+
+  <!-- scripts concatenated and minified via ant build script-->
+  <script defer src="/javascripts/app.js"></script>
+  <!-- end scripts-->
+
+	
+
+  <!-- Prompt IE 6 users to install Chrome Frame. Remove this if you want to support IE 6.
+       chromium.org/developers/how-tos/chrome-frame-getting-started -->
+  <!--[if lt IE 7 ]>
+    <script src="//ajax.googleapis.com/ajax/libs/chrome-frame/1.0.3/CFInstall.min.js"></script>
+    <script>window.attachEvent('onload',function(){CFInstall.check({mode:'overlay'})})</script>
+  <![endif]-->
+ 
+
+  <script type="text/javascript">
+    (function(){
+      var twitterWidgets = document.createElement('script');
+      twitterWidgets.type = 'text/javascript';
+      twitterWidgets.async = true;
+      twitterWidgets.src = 'http://platform.twitter.com/widgets.js';
+      document.getElementsByTagName('head')[0].appendChild(twitterWidgets);
+    })();
+  </script>
+
+
+
+
+
+
+
+</body>
+</html>
+

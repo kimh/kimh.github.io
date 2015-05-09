@@ -1,0 +1,547 @@
+<!doctype html>
+<!-- paulirish.com/2008/conditional-stylesheets-vs-css-hacks-answer-neither/ -->
+<!--[if lt IE 7]> <html class="no-js ie6 oldie" lang="en"> <![endif]-->
+<!--[if IE 7]>    <html class="no-js ie7 oldie" lang="en"> <![endif]-->
+<!--[if IE 8]>    <html class="no-js ie8 oldie" lang="en"> <![endif]-->
+<!-- Consider adding an manifest.appcache: h5bp.com/d/Offline -->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en"> <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+
+  <!-- Use the .htaccess and remove these lines to avoid edge case issues.
+       More info: h5bp.com/b/378 -->
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+
+  <title>Program Is Made At Night</title>
+  <meta name="author" content="Kim, Hirokuni">
+  
+
+  
+  <!-- Mobile viewport optimized: j.mp/bplateviewport -->
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+
+  <!-- Place favicon.ico and apple-touch-icon.png in the root directory: mathiasbynens.be/notes/touch-icons -->
+
+  <!-- CSS: implied media=all -->
+  <!-- CSS concatenated and minified via ant build script-->
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <link href='https://fonts.googleapis.com/css?family=Inconsolata' rel='stylesheet' type='text/css'>
+  <!-- end CSS-->
+
+  <!-- More ideas for your <head> here: h5bp.com/d/head-Tips -->
+
+  <!-- All JavaScript at the bottom, except for Modernizr / Respond.
+       Modernizr enables HTML5 elements & feature detects; Respond is a polyfill for min/max-width CSS3 Media Queries
+       For optimal performance, use a custom Modernizr build: www.modernizr.com/download/ -->
+  <script src="/javascripts/libs/modernizr-2.0.6.min.js"></script>
+</head>
+
+<body id="post">
+
+  <div id="container">
+    <nav role="navigation" ><ul class="main-navigation">
+  <li style='float:left;margin-right:5px'><a class='nav' href="/">Home</a></li>
+</ul><br><br>
+</nav>
+    <article>
+
+
+  <h1 class="article-title">Creating Web Application With Ruby Lotus</h1>
+  <div class="article-content"><p><img src="/images/lotus.jpeg" alt="" /></p>
+
+<p><strong><em>WARNING</em></strong>  This is not your article if you are looking for information about the collaboration software made by IBM.
+Instead, this article is about <a href="http://lotusrb.org/">Lotus</a>, a new web framework written in Ruby.</p>
+
+<h2>Contents</h2>
+
+<ul>
+<li><a href="#what_is_lotus">What is Lotus</a></li>
+<li><a href="#why_lotus_instead_of_rails">Why Lotus instead of Rails</a></li>
+<li><a href="#creating_one_file_application">Creating one file aplication</a></li>
+</ul>
+
+
+<p><a id="what_is_lotus"></a></p>
+
+<h2>What is Lotus</h2>
+
+<p><a href="http://lotusrb.org/">Lotus</a> is a web framework that is being developed by relatively small team of <a href="https://github.com/lotus">lotus team</a>.
+You can use Lotus and build a complete MVC web application just like Rails.
+Lotus is still under active development and not production ready as of Sep, 2014, but you can definitely use it to create a web application.</p>
+
+<p>I fell in love with Lotus at first sight of the mission that Lotus tries to archive in the project page.</p>
+
+<p>The page reads</p>
+
+<blockquote><p>Lotus is lightweight, fast and testable. It aims to bring back Object Oriented Programming to web development, leveraging on a stable API, a minimal DSL, and plain objects.</p></blockquote>
+
+<p>I felt this is what I was looking for (explained more later) and decided to use Lotus to create a small API server in my private project.
+Since there are not much documentation and information about Lotus in the wild yet, I sometimes had a hard time to figure out how to use it.
+But, I am recently getting used to the <strong><em>Lotus way</em></strong> so I&rsquo;d like to share them in this and subsequent posts.</p>
+
+<p><a id="why_lotus_instead_of_rails"></a></p>
+
+<h2>Why Lotus instead of Rails</h2>
+
+<p>Recent applications are built in modular way more than ever before.
+Whether you call this type of application architecture SOA or microservices,
+it is true that many recent great projects <a href="https://github.com/flynn">(my favorite example is Fylnn)</a> are taking this design approach.</p>
+
+<p>There are a few major benefits of taking this approach</p>
+
+<ul>
+<li>more testability</li>
+<li>more portability</li>
+<li>more reusability</li>
+<li>easier deployment</li>
+</ul>
+
+
+<p>You will realize that it is not easy to accomplish all of these with Rails.
+Rails is definitely great, but the framework stack is huge and lots of things are built in. After all, Rails is a big framework, so not a good option if you want to create lots of small components.</p>
+
+<p>You may think there are small frameworks such as <a href="https://github.com/sinatra/sinatra">Sinatra</a> or <a href="https://github.com/rails-api/rails-api">rails-api</a>.
+Yes, Sinatra is lightweight, but I recently prefer to <strong><em>pure ruby code</em></strong> than DSL because it gives me steep learning curve (meaning easy to learn).
+To be honest, I never tried rails-api by myself, but I am suspicious that it is lightweight because the base is still Rails. Let me know if you have different opinions.</p>
+
+<p>As you can tell from <a href="https://github.com/lotus">Lotus github page</a>, it is made of many components. You can easily bring one of components into your application.
+For example, you can just grab <a href="https://github.com/lotus/router">lotus-router</a> and mixin to your Rack application to handle http request.</p>
+
+<p>Although, Lotus is made modular way, you can still use it as fullstack web-framework with relatively small amount of codes.
+Apparently, Lotus steals many good designs from Rails such as CoC and that allows you to build applications easy.</p>
+
+<p>So, my point in this section is this: <strong>Lotus is flexible but easy to use, so why not give it a shot?</strong></p>
+
+<p>Hopefully, this article helps you starting Lotus.</p>
+
+<p><a id="creating_one_file_application"></a></p>
+
+<h2>Creating one file application</h2>
+
+<p>Let&rsquo;s make our first Lotus application. We will follow the example of <a href="https://github.com/lotus/lotus#one-file-application">one file application</a>.</p>
+
+<p>First, create a project directory. I am assuming that you set your current directory to this directory in the subsequent instructions.</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>mkdir onefileapp && cd onefileapp</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Lotus does not publish official gem as far as I know. There is <a href="https://rubygems.org/gems/lotusrb">one</a> here but the last update was on Jan, 2014.
+Current master branch is far ahead of this release. So, clone the Lotus project in order to install from source.</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>git clone https://github.com/lotus/lotus.git</span></code></pre></td></tr></table></div></figure>
+
+
+<p>We need bundler to manage gem dependancy. Let&rsquo;s create a Gemfile.</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>bundle init</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Edit your Gemfile. Change <code>&lt;your-path-to-lotus-repo&gt;</code> to the directory where you clone Lotus repo.</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="n">source</span> <span class="s2">&quot;https://rubygems.org&quot;</span>
+</span><span class='line'><span class="n">gem</span> <span class="s1">&#39;lotusrb&#39;</span><span class="p">,</span> <span class="ss">:path</span> <span class="o">=&gt;</span> <span class="o">&lt;</span><span class="n">your</span><span class="o">-</span><span class="n">path</span><span class="o">-</span><span class="n">to</span><span class="o">-</span><span class="n">lotus</span><span class="o">-</span><span class="n">repo</span><span class="o">&gt;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Then install gems.</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="n">bundle</span> <span class="n">install</span> <span class="o">--</span><span class="n">path</span> <span class="n">vendor</span><span class="o">/</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Now, we can start writing our application which is just one file. Save below codes as <strong><em>config.ru</em></strong>.</p>
+
+<p><strong><em>config.ru</em></strong></p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="nb">require</span> <span class="s1">&#39;lotus&#39;</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">module</span> <span class="nn">OneFile</span>
+</span><span class='line'>  <span class="k">class</span> <span class="nc">Application</span> <span class="o">&lt;</span> <span class="ss">Lotus</span><span class="p">:</span><span class="ss">:Application</span>
+</span><span class='line'>    <span class="n">configure</span> <span class="k">do</span>
+</span><span class='line'>      <span class="n">routes</span> <span class="k">do</span>
+</span><span class='line'>        <span class="n">get</span> <span class="s1">&#39;/&#39;</span><span class="p">,</span> <span class="ss">to</span><span class="p">:</span> <span class="s1">&#39;home#index&#39;</span>
+</span><span class='line'>      <span class="k">end</span>
+</span><span class='line'>    <span class="k">end</span>
+</span><span class='line'>    <span class="nb">load</span><span class="o">!</span>
+</span><span class='line'>  <span class="k">end</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="k">module</span> <span class="nn">Controllers</span>
+</span><span class='line'>    <span class="k">module</span> <span class="nn">Home</span>
+</span><span class='line'>      <span class="kp">include</span> <span class="ss">OneFile</span><span class="p">:</span><span class="ss">:Controller</span>
+</span><span class='line'>
+</span><span class='line'>      <span class="n">action</span> <span class="s1">&#39;Index&#39;</span> <span class="k">do</span>
+</span><span class='line'>        <span class="k">def</span> <span class="nf">call</span><span class="p">(</span><span class="n">params</span><span class="p">)</span>
+</span><span class='line'>        <span class="k">end</span>
+</span><span class='line'>      <span class="k">end</span>
+</span><span class='line'>    <span class="k">end</span>
+</span><span class='line'>  <span class="k">end</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="k">module</span> <span class="nn">Views</span>
+</span><span class='line'>    <span class="k">module</span> <span class="nn">Home</span>
+</span><span class='line'>      <span class="k">class</span> <span class="nc">Index</span>
+</span><span class='line'>        <span class="kp">include</span> <span class="ss">OneFile</span><span class="p">:</span><span class="ss">:View</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="k">def</span> <span class="nf">render</span>
+</span><span class='line'>          <span class="s2">&quot;Hello, Lotus&quot;</span>
+</span><span class='line'>        <span class="k">end</span>
+</span><span class='line'>      <span class="k">end</span>
+</span><span class='line'>    <span class="k">end</span>
+</span><span class='line'>  <span class="k">end</span>
+</span><span class='line'><span class="k">end</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">run</span> <span class="ss">OneFile</span><span class="p">:</span><span class="ss">:Application</span><span class="o">.</span><span class="n">new</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>You can run the app with rackup command.</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="n">bundle</span> <span class="nb">exec</span> <span class="n">lotus</span> <span class="n">server</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Successfully run? Then, access <a href="http://localhost:2300">http://localhost:2300</a> from your browser. You should see <code>Hello, Lotus</code>.</p>
+
+<p>Let me explain what is doing.</p>
+
+<p>First, you will notice that classes inside <code>Controllers</code> and <code>Views</code> modules not using inheritance.
+One important philosophy of Lotus is this:<code>include a module and implement a minimal interface.</code>
+This philosophy encourages developers to use only what you need with mixin.</p>
+
+<p>Now let&rsquo;s look at <code>Application</code> class. In our application, the class only configures routes.
+We use <code>get</code> method to configure a route for http <code>GET /</code> method that uses <code>Home::Index</code> controller.
+Here we only configure <code>get</code> http method, but you can configure other methods easily such as these:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="n">routes</span> <span class="k">do</span>
+</span><span class='line'>  <span class="n">post</span>   <span class="s1">&#39;/books&#39;</span><span class="p">,</span>             <span class="ss">to</span><span class="p">:</span> <span class="s1">&#39;book#create&#39;</span>
+</span><span class='line'>  <span class="n">put</span>    <span class="s1">&#39;/books/:id&#39;</span><span class="p">,</span>         <span class="ss">to</span><span class="p">:</span> <span class="s1">&#39;book#update&#39;</span>
+</span><span class='line'>  <span class="n">delete</span> <span class="s1">&#39;/books/:id&#39;</span><span class="p">,</span>         <span class="ss">to</span><span class="p">:</span> <span class="s1">&#39;book#destroy&#39;</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="c1"># You can also define one liner response</span>
+</span><span class='line'>  <span class="n">get</span>    <span class="s1">&#39;/ping&#39;</span><span class="p">,</span>              <span class="ss">to</span><span class="p">:</span> <span class="o">-&gt;</span><span class="p">(</span><span class="n">env</span><span class="p">)</span> <span class="p">{</span><span class="o">[</span><span class="mi">200</span><span class="p">,</span> <span class="p">{},</span> <span class="o">[</span><span class="s1">&#39;pong&#39;</span><span class="o">]]</span><span class="p">}</span>
+</span><span class='line'><span class="k">end</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Next, let&rsquo;s look at <code>Controllers</code>. We are not doing anything but defining <code>action</code>.
+What is <code>action</code>? <code>action</code> is the HTTP endpoint where you can handle incoming request and creating response.
+This is also the place where you can implement your business logic. I think it is safe to think that the responsibility of Lotus action is very similar to Rails controller.
+We define <code>Index</code> action so that we can use it from our router code that we looked at previously.</p>
+
+<p>Last thing to look at is <code>Views</code>. The responsibility of the class is not the same as the Rails view class.
+In Rails, you write codes that is actually rendered by browser (if html format) in view. This is done by <code>Template</code> in Lotus which I don&rsquo;t cover in this post.
+In Lotus, the responsibility of view is more like of presenter which does not come with Rails by default (you can use gems such as Draper to implement presetation layer in Rails, too.)
+What presenter does is receiving data from controller and abstracts them to template layer.
+In this way, your template layer gets clean and can focus on redning content.</p>
+
+<p>Let&rsquo;s go back to our code. Here we define <code>render</code> method and simply print <code>Hello, Lotus</code> message.</p>
+
+<p>This is neither interesting nor useful. We will make view to interact with controller by via data.</p>
+
+<p>Let&rsquo;s modify your controller.</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="k">module</span> <span class="nn">Controllers</span>
+</span><span class='line'>  <span class="k">module</span> <span class="nn">Home</span>
+</span><span class='line'>    <span class="kp">include</span> <span class="ss">OneFile</span><span class="p">:</span><span class="ss">:Controller</span>
+</span><span class='line'>    <span class="n">action</span> <span class="s1">&#39;Index&#39;</span> <span class="k">do</span>
+</span><span class='line'>
+</span><span class='line'>      <span class="n">expose</span> <span class="ss">:time</span>
+</span><span class='line'>
+</span><span class='line'>      <span class="k">def</span> <span class="nf">call</span><span class="p">(</span><span class="n">params</span><span class="p">)</span>
+</span><span class='line'>        <span class="vi">@time</span> <span class="o">=</span> <span class="no">Time</span><span class="o">.</span><span class="n">now</span>
+</span><span class='line'>      <span class="k">end</span>
+</span><span class='line'>    <span class="k">end</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="k">end</span>
+</span><span class='line'><span class="k">end</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Now, we see two new things <code>expose</code> and <code>call</code>.</p>
+
+<p>To pass data from controller to view, you need to manually expose what you want to pass.
+Again, here you see Lotus philosophy: <code>only use what you need</code>.</p>
+
+<p><code>call</code> is the entry point of http request. As I mentioned earlier, you can write business logic as well as response handling codes here.</p>
+
+<p>Let&rsquo;s modify your view to get data from the controller.</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="k">module</span> <span class="nn">Views</span>
+</span><span class='line'>  <span class="k">module</span> <span class="nn">Home</span>
+</span><span class='line'>    <span class="k">class</span> <span class="nc">Index</span>
+</span><span class='line'>      <span class="kp">include</span> <span class="ss">OneFile</span><span class="p">:</span><span class="ss">:View</span>
+</span><span class='line'>
+</span><span class='line'>      <span class="k">def</span> <span class="nf">render</span>
+</span><span class='line'>        <span class="s2">&quot;Current time: </span><span class="si">#{</span><span class="n">time</span><span class="si">}</span><span class="s2">&quot;</span>
+</span><span class='line'>      <span class="k">end</span>
+</span><span class='line'>    <span class="k">end</span>
+</span><span class='line'>  <span class="k">end</span>
+</span><span class='line'><span class="k">end</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Since our controller exposes <code>@time</code>, you can access the data via <code>time</code> from your view.
+Now, restart your Rack process and access from your browser. Now you should see something like this: <code>Current time: 2014-09-11 23:18:30 +0900</code></p>
+
+<h2>Wrap up</h2>
+
+<p>Did you see it is quite easy to write Lotus application?</p>
+
+<p>Ok, I can hear your voice: <em>this example is too simple. I want to see real Lotus application.</em></p>
+
+<p>Yes, let me do that in the next post. I thought I can do that in the same post, but writing this takes more time than I thought&hellip;</p>
+
+<p>Next post will be something like this: <strong><em>Creating Full Stack Web Application with Lotus</em></strong></p>
+</div>
+  
+    <section>
+      <h1>Comments</h1>
+      <div id="disqus_thread"><div id="disqus_thread"></div>
+<script type="text/javascript">
+  var disqus_shortname = 'kimstechblog';
+  var disqus_identifier = 'http://kimh.github.io/blog/en/lotus/creating-web-application-with-ruby-lotus/';
+  var disqus_url = 'http://kimh.github.io/blog/en/lotus/creating-web-application-with-ruby-lotus/';
+  //var disqus_developer = 1;
+  (function() {
+    var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+    dsq.src = 'http://' + disqus_shortname + '.disqus.com/embed.js';
+    (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+  })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+</div>
+    </section>
+  
+
+</article>
+
+
+      <p class="meta">
+      
+        <a class="basic-alignment left nav" href="/blog/jp/criu/experiment-to-suspend-and-resume-docker-container-with-criu-jp/" title="Previous Post: CRIUを使ってDockerコンテナの停止/再開に挑戦">&laquo; CRIUを使ってDockerコンテナの停止/再開に挑戦</a>
+      
+      
+        <a class="basic-alignment right nav" href="/blog/jp/lotus/creating-web-application-with-ruby-lotus-ja/" title="Next Post: Ruby LotusでWeb Appを作ってみる">Ruby LotusでWeb Appを作ってみる &raquo;</a>
+      
+    </p>
+  </div>
+    <script>
+      var name = document.getElementById('name-helper').innerHTML;
+
+      var canvas = document.getElementById('myCanvas');
+
+      //The name (up to 28 characters long, including white space)
+      var length = name.length;
+      if (length>28){//Exceed character length limit, remove canvas
+          canvas.remove();
+      }
+      else{
+            
+
+        var context = canvas.getContext('2d');
+
+        //calculate width and length
+        var width=700/1.25/length;
+        var start;
+        if (width>40){
+          width=40;
+        }
+
+        var height= width/2;
+
+        //the start postion of the link list
+        var start = (700-width*length*1.25)/2;
+        var horizon = 5;
+
+        //DO NOT CHANGE THOSE
+        var mid_horizon = horizon+height/2;
+        var name_counter =0;
+
+        var x = height/5;
+        var y = height/5;
+        var interval=width/4;
+        
+        var radius = 0.75*width;
+        
+        var text_pos=width*1.1;
+
+
+        canvas.height=mid_horizon+width/2+width/2.1+5;
+        
+        for (var i=1;i<name.length+1;i++){
+
+          context.beginPath();
+          context.strokeStyle='#F9BF3B';
+          
+          //the rectangle
+          context.rect(start, horizon, width, height);
+
+          //the middle line
+          context.moveTo(start+width/2,horizon);
+          context.lineTo(start+width/2,horizon+height);
+
+          //if this is the last element
+          if (i==name.length){
+            context.moveTo(start+width/2,horizon+height);
+            context.lineTo(start+width,horizon);
+
+          }
+          else{
+            //the arrow
+            context.moveTo(start+0.75*width,mid_horizon);
+            context.lineTo(start+width+interval,mid_horizon);
+
+            context.moveTo(start+width+interval,mid_horizon);
+            context.lineTo(start+width+interval-x,mid_horizon+y);
+          
+            context.moveTo(start+width+interval,mid_horizon);
+            context.lineTo(start+width+interval-x,mid_horizon-y); 
+          }
+          
+       
+        
+          var startAngle = 1.2 * Math.PI;
+          var endAngle = 1 * Math.PI;
+          var counterClockwise = true;
+      
+          context.stroke();
+            
+          context.beginPath();
+          context.arc(start+width/4+radius*0.81, mid_horizon+width/2, radius, startAngle, endAngle, counterClockwise);
+
+          context.moveTo(start+width/4+radius*0.81-radius,mid_horizon+width/2);
+          context.lineTo(start+width/4+radius*0.81-radius-x,mid_horizon-y+width/2);
+
+          context.moveTo(start+width/4+radius*0.81-radius,mid_horizon+width/2);
+          context.lineTo(start+width/4+radius*0.81-radius+x,mid_horizon-y+width/2); 
+
+          context.font = ' 15pt Calibri';
+          context.fillStyle = '#859900';
+          context.fillText(name.charAt(name_counter), start+width/4+radius*0.81-radius-width/14, mid_horizon+width/2+width/2.1);
+
+          context.lineWidth=1;
+          context.strokeStyle='#F9BF3B';
+          context.stroke();
+          start+=width/2*2+interval;      
+          name_counter+=1;
+        }
+      }
+
+    </script>
+
+  <!-- JavaScript at the bottom for fast page loading -->
+
+  <!-- Grab Google CDN's jQuery, with a protocol relative URL; fall back to local if offline -->
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.6.2/jquery.min.js"></script>
+  <script>window.jQuery || document.write('<script src="js/libs/jquery-1.6.2.min.js"><\/script>')</script>
+
+
+  <!-- scripts concatenated and minified via ant build script-->
+  <script defer src="/javascripts/app.js"></script>
+  <!-- end scripts-->
+
+	
+
+  <!-- Prompt IE 6 users to install Chrome Frame. Remove this if you want to support IE 6.
+       chromium.org/developers/how-tos/chrome-frame-getting-started -->
+  <!--[if lt IE 7 ]>
+    <script src="//ajax.googleapis.com/ajax/libs/chrome-frame/1.0.3/CFInstall.min.js"></script>
+    <script>window.attachEvent('onload',function(){CFInstall.check({mode:'overlay'})})</script>
+  <![endif]-->
+ 
+
+  <script type="text/javascript">
+    (function(){
+      var twitterWidgets = document.createElement('script');
+      twitterWidgets.type = 'text/javascript';
+      twitterWidgets.async = true;
+      twitterWidgets.src = 'http://platform.twitter.com/widgets.js';
+      document.getElementsByTagName('head')[0].appendChild(twitterWidgets);
+    })();
+  </script>
+
+
+
+
+
+
+
+</body>
+</html>
+

@@ -1,0 +1,2150 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+  <title><![CDATA[Category: en | Program Is Made At Night]]></title>
+  <link href="http://kimh.github.io/blog/categories/en/atom.xml" rel="self"/>
+  <link href="http://kimh.github.io/"/>
+  <updated>2015-05-09T15:17:33+09:00</updated>
+  <id>http://kimh.github.io/</id>
+  <author>
+    <name><![CDATA[Kim, Hirokuni]]></name>
+    <email><![CDATA[yangkookkim@gmail.com]]></email>
+  </author>
+  <generator uri="http://octopress.org/">Octopress</generator>
+
+  
+  <entry>
+    <title type="html"><![CDATA[The Practices of Backbone.Marionette That I believe The Best]]></title>
+    <link href="http://kimh.github.io/blog/en/javascript/the-practices-of-backbone-marionette-that-i-believe-the-best-en/"/>
+    <updated>2014-12-12T14:08:00+09:00</updated>
+    <id>http://kimh.github.io/blog/en/javascript/the-practices-of-backbone-marionette-that-i-believe-the-best-en</id>
+    <content type="html"><![CDATA[<h1>On Marionette.Module</h1>
+
+<h2>Dividing app into sub-modules</h2>
+
+<p>You can create sub-modules as many as you want inside one Marionette app. I higly enoucurage to take the advantage of sub-modules.</p>
+
+<p>You can also say that sub-module is sub-application. The easiest way to imagine is Gmail. Gmail has many features: email, chat, contacts list, etc. You can construct each component as sub-modules in Marionette.</p>
+
+<p>Let&rsquo;s look at how we define sub-modules.</p>
+
+<p><code>js
+var MyApp = new Backbone.Marionette.Application();
+MyApp.module("ModuleA", function(ModuleA, MyApp, Backbone, Marionette, $, _){
+  // your module code goes here //
+})
+</code></p>
+
+<p>You may wonder about parameters in callback function. This is automatically passed in this order:</p>
+
+<ul>
+<li>The module itself</li>
+<li>The Application object</li>
+<li>Backbone</li>
+<li>Backbone.Marionette</li>
+<li>jQuery</li>
+<li>Underscore</li>
+</ul>
+
+
+<p>They are defined in local scope and only accessbile from the callback function.</p>
+
+<p>One of the benefits of using sub-modules is you can write codes of a module into separate files with ease.</p>
+
+<p>Let&rsquo;s say you define a <code>ShoppingCart</code> module.</p>
+
+<p>```js
+var MyApp = new Backbone.Marionette.Application();
+MyApp.module(&ldquo;ShoppingCart&rdquo;, function(ModuleA, MyApp, Backbone, Marionette, $, _){</p>
+
+<pre><code>// your module code goes here //
+</code></pre>
+
+<p>})
+```</p>
+
+<p>You can easily guess what the module does: it takes care everything about shopping cart feature in your app.</p>
+
+<p>One single <code>ShoppingCart</code> module is still too big to be written in a file. So, let&rsquo;s divide them into separate files based on functionality: <code>Controller</code> and <code>View</code>.</p>
+
+<p><strong><em>shopping_cart_controller.js</em></strong>
+```js
+MyApp.module(&ldquo;ShoppingCart&rdquo;, function(ShoppingCart, MyApp, Backbone, Marionette, $, _){</p>
+
+<pre><code>ShoppingCart.Controller = Marionette.Controller.extend({
+    // controller implementation goes here
+});
+</code></pre>
+
+<p>})
+```</p>
+
+<p><strong><em>shopping_cart_view.js</em></strong>
+```js
+MyApp.module(&ldquo;ShoppingCart&rdquo;, function(ShoppingCart, MyApp, Backbone, Marionette, $, _){</p>
+
+<pre><code>ShoppingCart.View = Marionette.ItemView.extend({
+    // view implementation goes here
+});
+</code></pre>
+
+<p>})
+<code>``
+When you create modules, you don't have to worry whether your module is already defined or not. If not defined, Marionette defines for you. So, in the previous case,</code>ShoppingCart` module is defined in <strong><em>shopping_cart_controller.js</em></strong> and <strong><em>shopping_cart_view.js</em></strong> just adds things to the module.</p>
+
+<p>Maybe <code>ShoppingCart.View</code> still contains too many views to be in a single file such as <code>show_view</code> or <code>new_view</code>. You can further divide your <code>ShoppingCart</code> sub-module like this.</p>
+
+<p><strong><em>show/shopping_cart_view.js</em></strong>
+```js
+MyApp.module(&ldquo;ShoppingCart.View&rdquo;, function(View, MyApp, Backbone, Marionette, $, _){</p>
+
+<pre><code>View.ShowView = Marionette.ItemView.extend({
+    // show view implementation goes here
+});
+</code></pre>
+
+<p>})
+```</p>
+
+<p><strong><em>new/shopping_cart_view.js</em></strong>
+```js
+MyApp.module(&ldquo;ShoppingCart.View&rdquo;, function(View, MyApp, Backbone, Marionette, $, _){</p>
+
+<pre><code>View.NewView = Marionette.ItemView.extend({
+    // new view implementation goes here
+});
+</code></pre>
+
+<p>})
+```</p>
+
+<p>I create separate directories for <code>show</code> and <code>new</code> and put each file there. You can continue this process until you are satisfied.</p>
+
+<p>Probalby enough words are spoken to introduce sub-modules.</p>
+
+<p>So here is the pattern statement. <strong>Use sub-modules to seperate codes</strong></p>
+
+<!--
+Now, let's see the benifits of using sub-modules.
+
+### Encapsulation
+
+You can define public and private methods easily inside a module.
+
+```js
+var MyApp = new Backbone.Marionette.Application();
+
+MyApp.module("ModuleA", function(ModuleA, MyApp, Backbone, Marionette, $, _){
+  // Defining public method
+  ModuleA.publicMethod = function() {
+    return privateMethod();
+  }
+
+  // Defining private method
+  var privateMethod = function() {
+    return "some value"
+  }
+
+})
+```
+
+Now other sub-modules can access public method but not private one.
+
+```js
+MyApp.ModuleA.publicMethod() // => "some value"
+MyApp.ModuleA.privateMethod() // => "Uncaught TypeError: undefined is not a function"
+```
+-->
+
+
+<h2>Starting and stopping sub-modules</h2>
+
+<p>You can start and stop your sub-modules individually. By default, sub-modules is automatically started when Marionette parent app is started. You can change this behavior by <code>startWithParent</code> option.</p>
+
+<p>```js
+MyApp.module(&ldquo;ModuleA&rdquo;, function(ModuleA, MyApp, Backbone, Marionette, $, _){</p>
+
+<pre><code>this.startWithParent = false;
+</code></pre>
+
+<p>})</p>
+
+<p>MyApp.start() // this doesn&rsquo;t start ModuleA
+MyApp.ModuleA.start() // you have to start by yourself</p>
+
+<p>```</p>
+
+<p>Why is this important? Because sometimes you want to execute some codes before starting other modules. Let&rsquo;s say you need to load some resources from a remote server when user enters your app and other modules are dependent on that resources.</p>
+
+<p>```js
+MyApp.on(&ldquo;start&rdquo;, function() {</p>
+
+<pre><code>// Let's say deferredFetchihg grubs some data from remote server
+$.when(deferredFetching()).done(function(data) {
+    // Set data to Module1
+    MyApp.Module1.setData(data);
+
+    // Now Module1 is ready to start
+    MyApp.Module1.start()
+});
+</code></pre>
+
+<p>})
+```</p>
+
+<p>How about <code>stop()</code>? I don&rsquo;t think you need to use <code>stop()</code> unless your app is huge so that you need to pay careful attention to memory usage.</p>
+
+<p>However, <code>stop()</code> is very useful when it comes to testing. I will cover this in the following post.</p>
+
+<h2>Organize your files by module base</h2>
+
+<p>There is no canonical way to organize your files in Backbone.Marionette. However, it is good to agree on a convetion for how to name and organize files in project if you are working in a team. This is the pattern that works for me.</p>
+
+<p>```
+project_root/</p>
+
+<pre><code>|
+|---application.js
+|
+|---small_module/
+|      |
+|      |---small_module.js
+|      |
+|      |---small_module_controller.js
+|      |
+|      |---small_module_model.js
+|      |
+|      |---small_module_view.js
+|      |
+|      |---templates/
+|              |
+|              |---template1.hbs
+|
+|---big_module/
+       |
+       |---big_module.js
+       |
+       |---big_module_controller.js
+       |
+       |---big_module_model.js
+       |
+       |---new
+       |    |
+       |    |---big_module_new_view.js
+       |    |
+       |    |---templates/
+       |            |
+       |            |---template1.hbs
+       |            |---template2.hbs
+       |---edit
+       |    |
+       |    |---big_module_edit_view.js
+       |    |
+       |    |---templates/
+       |            |
+       |            |---template1.hbs
+       |            |---template2.hbs
+</code></pre>
+
+<p>```</p>
+
+<p><code>application.js</code> is where you want to decalre global things of your app. This includes</p>
+
+<ul>
+<li>App initialization code</li>
+<li>App starting code (Ex: <code>App.start()</code>)</li>
+<li>Route definition and initilalization</li>
+<li>Useful global helper (Ex: <code>App.currentUser()</code>, <code>App.showSuccessNotification()</code>)</li>
+</ul>
+
+
+<p>I like module-based file hierarchy.</p>
+
+<p>In module based organization, files other than application.js goes under each module directory. If the module is big one, they are further broken down into seperate directories by action.</p>
+
+<p>The role of each file under module direclty is self-explanatory except <code>&lt;module_name&gt;.js</code>.</p>
+
+<p><code>&lt;module_name&gt;.js</code> is used to define basic things for the entier module. These includes:</p>
+
+<ul>
+<li>module option (Ex. <code>this.startWithParent = false</code>)</li>
+<li>module initilaization (Ex. <code>addInitializer({})</code> )</li>
+<li>event listener (Ex. <code>Module1.on("event", function({}))</code>)</li>
+</ul>
+
+
+<p>Maybe it is fair to explain <code>&lt;module_name&gt;_controller.js</code> since it does not exist in Backbone as well.</p>
+
+<p><code>&lt;module_name&gt;_controller.js</code> holds methods that redpond to user entry to your app. One example of such method is something like <code>showItem()</code>. What <code>showItem()</code> does is that instantiate a view, fetch model, pass it to view, and call <code>render()</code> of view to display html. It is similar to what Rails ActionController does.</p>
+
+<p>At last, you may think it is redudant to prefix every files with module name, but this makes it easy to search files by module name. Not must to have, but it is useful once your project becomes bigger where you have many <code>controller.js</code> or <code>view.js</code>.</p>
+
+<h1>About View</h1>
+
+<h2>Organizing DOM with ui</h2>
+
+<p>This pattern is inspired by <a href="http://lxyuma.hatenablog.com/entry/2014/01/23/002644">the blog post</a>.</p>
+
+<p><a href="https://github.com/marionettejs/backbone.marionette/blob/master/docs/marionette.itemview.md#organizing-ui-elements">ui</a> is simple yet very powerful feature of Marionette. You can organize view&rsquo;s DOM by using <code>ui</code>. Here is simple example. Say your have a template.</p>
+
+<p>```html</p>
+
+<div id="edit_form">
+  <input class="name_input">Name
+  <input class="email_input">Name
+  <button type="submit" class="js-submit">Submit</button>
+</div>
+
+
+<p>```</p>
+
+<p>And your view code looks like this.</p>
+
+<p>```js
+MyView = Marionette.ItemView.extend({</p>
+
+<pre><code>template: "#edit_form",
+
+ui: {
+    nameInput: "input.name_input",
+    emailInput: "input.email_input",
+    submitButton: "button.js-submit"
+}
+</code></pre>
+
+<p>});
+```</p>
+
+<p>If you don&rsquo;t have ui, you can access name input by using jQuery like this.</p>
+
+<p><code>js
+var myView = new MyView()
+var input = myView.$el.find("input.name_input");
+</code></p>
+
+<p>By using <code>ui</code>, you can access this way.</p>
+
+<p><code>js
+var myView = new MyView()
+var input = myView.ui.nameInput;
+</code></p>
+
+<p>The difference is subtle, but later one is more maintainable. Here is why.</p>
+
+<p>Html markups are the subject of frequent changes. This is not an issue if the DOM is referenced from a single place. However, when multiple places look at a single DOM, it becomes difficult to maintain.</p>
+
+<p>Suppose one person changes the class name of a input field from <code>name_input</code> to <code>name_field</code>. Also suppose that many codes refer the DOM by using jQuery: <code>myView.$el.find("input.name_input")</code>. Now, you have to change every codes that uses jQuery to  access the DOM. If the DOM is referenced from tests codes, these tests all suddenly break  and updating every places is the nightmare.</p>
+
+<p><code>ui</code> solves the issue. If your codes refer the DOM by using <code>myView.ui.nameInput</code>, then the person who changes the html only needs to change <code>ui</code> object.</p>
+
+<p>```js
+ui: {</p>
+
+<pre><code>nameInput: "input.name_field",
+// edited for brevity //
+</code></pre>
+
+<p>}
+```</p>
+
+<p>And the rest of codes stay the same. Huge improvement.</p>
+
+<p>So here is the pattern statement. <strong>Avoid jQuery and always use ui to access view&rsquo;s DOM</strong></p>
+
+<h2>Using LayoutView to create nested sub-views</h2>
+
+<p>This pattern is inspired by <a href="http://lostechies.com/derickbailey/2012/03/22/managing-layouts-and-nested-views-with-backbone-marionette/">the blog post</a>.</p>
+
+<p>I saw different people use different ways to create nested views in vanilla Backbone app. Marionette however provides us a nice pattern to archive this.</p>
+
+<p>We will use Marionette <a href="https://github.com/marionettejs/backbone.marionette/blob/master/docs/marionette.layoutview.md#marionettelayoutview">LayoutView</a> and <a href="https://github.com/marionettejs/backbone.marionette/blob/master/docs/marionette.region.md#marionetteregion">Region</a>.</p>
+
+<p>Let&rsquo;s take a example of creating shopping car page. The page contains two sub-views: item list view and pricing view.</p>
+
+<p><img src="/images/shopping_cart1.png" alt="" /></p>
+
+<p>Here is our code that creates this shopping cart page. First we create a layout html and layout view.</p>
+
+<p><strong>shopping_cart_layout.html</strong>
+```html</p>
+
+<div id="shopping_cart_layout">
+  <div id="itemlist_region"></div>
+  <div id="price_region"></div>
+</div>
+
+
+<p>```</p>
+
+<p><strong>shopping_cart_layout_view.js</strong>
+```js
+ShoppingCartLayoutView = Marionette.LayoutView.extend({</p>
+
+<pre><code>template: "#shopping_cart_layout",
+
+regions: {
+    itemListRegion: "#itemlist_region",
+    priceListRegion: "#price_region",
+}
+</code></pre>
+
+<p>});
+```</p>
+
+<p>Let&rsquo;s talk briefly about what <code>LayoutView</code> is. According to <a href="https://github.com/marionettejs/backbone.marionette/blob/master/docs/marionette.layoutview.md#marionettelayoutview">official doc</a>,</p>
+
+<blockquote><p>A LayoutView is a hybrid of an ItemView and a collection of Region objects.</p></blockquote>
+
+<p>So, it is simply extended from <code>ItemView</code> and add <code>Region</code> objects. Since it is extended from <code>ItemView</code>, you can attach template where you can speficy region container DOM. Layout can hold as many region objects as you want so they are suitable to create a parent view.</p>
+
+<p>Now, let&rsquo;s quickly create our sub-views. The template for these views are not important at this subject so let&rsquo;s imagine we have templates for them.</p>
+
+<p><strong>item_list_view.js</strong>
+```js
+ItemView = Marionette.ItemView.extend({</p>
+
+<pre><code>template: ItemTpl,
+</code></pre>
+
+<p>});</p>
+
+<p>ItemListView = Marionette.CollectionView.extend({</p>
+
+<pre><code>childView: ItemView
+</code></pre>
+
+<p>});
+```</p>
+
+<p><strong>price_view.js</strong>
+```js
+PriceListView = Marionette.ItemView.extend({</p>
+
+<pre><code>template: PriceTpl,
+</code></pre>
+
+<p>});
+```</p>
+
+<p>Now we are ready to put all things together. Here is the code that renders the shopping cart page. Again, model and collection are not important at this subject, so let&rsquo;s assume we have <code>items</code> collections already.</p>
+
+<p>```js
+// Instantiate views
+layoutView = new ShoppingCartLayoutView()
+itemListView = new ItemListView({collections: items}) // We assume that items is the collection
+priceListView = new PriceListView()</p>
+
+<p>// Put them into layout regions
+layoutView.itemListRegion.show(itemListView);
+layoutView.priceListRegion.show(priceview);
+```</p>
+
+<p>That&rsquo;s it. Marionette region provides a convenient method called <code>show()</code> where you can pass any views to be rendered. <code>el</code> property of passed views are automatically provided by region. This is the reason why you don&rsquo;t see <code>el</code> object often when using Marionette.</p>
+
+<p>Creating further nested sub-view is easy. Let&rsquo;s say you want to divide <code>PriceListView</code> into <code>TotalPriceListView</code> and <code>SubTotalPriceListView</code>.</p>
+
+<p><img src="/images/shopping_cart2.png" alt="" /></p>
+
+<p>What you have to do is extending <code>PriceListView</code> from <code>LayoutView</code> instead of <code>ItemView</code> and add region objects.</p>
+
+<p><strong>price_view.js</strong>
+```js
+PriceListView = Marionette.Layout.extend({</p>
+
+<pre><code>// Let's assume the template has #total_price_region and #sub_total_price_region
+template: PriceTpl,
+
+regions: {
+    totalRegion: "#total_price_region",
+    subTotalRegion: "#sub_total_price_region",
+}
+</code></pre>
+
+<p>});</p>
+
+<p>totalPriceListView = Marionette.ItemView.extend({</p>
+
+<pre><code>template: totalPriceTpl,
+</code></pre>
+
+<p>});</p>
+
+<p>subTotalPriceListView = Marionette.ItemView.extend({</p>
+
+<pre><code>template: subTotalPriceTpl,
+</code></pre>
+
+<p>});
+```</p>
+
+<p>And put them together.</p>
+
+<p>```js
+priceListView = new PriceListView()
+totalPriceListView = new TotalPriceListView()
+subTotalPriceListView = new SubTotalPriceListView()</p>
+
+<p>priceListView.totalRegion.show(totalPriceListView)
+priceListView.subTotalRegion.show(subTotalPriceListView)
+```</p>
+
+<p>It&rsquo;s a piece of cake.</p>
+
+<p>Before closing this section, let me introduce how to access views rendered inside region because you will often use it.</p>
+
+<p>Let&rsquo;s say you want to access <code>&lt;div id="total_price"&gt;$10000&lt;/div&gt;</code> DOM to get the total price of the shopping cart from your code. In this case, you will use <code>currentView()</code> API. The code looks like this:</p>
+
+<p><code>js
+layoutView.priceListRegion.currentView.totalRegion.currentView.ui.totalPrice
+</code></p>
+
+<p>As you can see, it&rsquo;s easy to access the value of nested sub-views.</p>
+
+<p>So here is the pattern statement. <strong>Use LayoutView to create sub-views over simple ItemView.</strong></p>
+
+<h1>About Controller</h1>
+
+<p>If you come from vanilla Backbone, you are not sure what the role of Controller in Marionette. Unforunately, official doc doesn&rsquo;t help you either.</p>
+
+<p>Quoted from <a href="https://github.com/marionettejs/backbone.marionette/blob/master/docs/marionette.controller.md">here</a></p>
+
+<blockquote><p>Its name can be a cause for confusion, as it actually has nothing to do with the popular MVC architectural pattern. Instead, it&rsquo;s better to think of the Controller as a base object from which you can build.</p>
+
+<p>Controllers should be used when you have a task that you would like an object to be responsible for, but none of the other Marionette Classes quite make sense to do it. It&rsquo;s a base object for you to use to create a new Class altogether.</p></blockquote>
+
+<p>This makes you further puzzled. How should I use Controller?</p>
+
+<p>Here is how I use Controller.</p>
+
+<h2>Use Controller as integrator</h2>
+
+<p>This pattern is inspired by <a href="https://leanpub.com/marionette-gentle-introduction">the book</a>.</p>
+
+<p>The role of Controller is to instantiate objects, access backend, and build complex vies: performs everything required to render a complete page in a browser.</p>
+
+<p>Let&rsquo;s imagine that we want to render previous shopping cart page.</p>
+
+<p><img src="/images/shopping_cart1.png" alt="" /></p>
+
+<p>To render the page, several things has to be done.</p>
+
+<ul>
+<li>Instantiate views (layout views, item list views, etc)</li>
+<li>Retrieve items and prices (ajax call to backend server)</li>
+<li>Render views (call show() method of views)</li>
+<li>Error handling (when ajax call fail )</li>
+</ul>
+
+
+<p>I will perform these things in a single method <code>showShoppingCart()</code> and this method goes to our imaginary ShoppingCart module.</p>
+
+<p>```js
+MyApp.module(&ldquo;ShoppingCart&rdquo;, function(ShoppingCart, MyApp, Backbone, Marionette, $, _){</p>
+
+<pre><code>ShoppingCart.Controller = {
+    showShoppingCart: function() {
+        // implementation of this methods
+    }
+}
+</code></pre>
+
+<p>})
+```</p>
+
+<p>Inside the method, you write codes that perform things that I mentioned above.</p>
+
+<p>```js
+MyApp.module(&ldquo;ShoppingCart&rdquo;, function(ShoppingCart, MyApp, Backbone, Marionette, $, _){</p>
+
+<pre><code>ShoppingCart.Controller = Marionette.Controller.extend({
+    showShoppingCart: function() {
+        // Let's suppose that items and its prices are saved in backend.
+        // So, we need to retrive them from backend server asynchronously.
+        // Imaginary MyApp.request("items") and MyApp.request("price")
+        // returns promise object that fetches items and prices respectively.
+        var fetchingItems = MyApp.request("items");
+        var fetchingPrice = MyApp.request("prices");
+
+        // Instantiate a layout view that provides regions
+        var layoutView = new ShoppingCartLayoutView();
+
+        $.when(fetchingItems, fetchingPrice).done(function(items, prices){
+            // Add callback method when ajax call is successfully done.
+            // First, we will build collections
+            var itemList = new ItemList([items]);
+            var priceList = new PriceList([prices]);
+
+            // Now we can instantiate views and pass colletion to them
+            var itemListView = new ItemListView({collection: itemList});
+            var priceListView = new PriceListView({collection: priceList});
+
+            // At this point we are ready to render a complete paga for user
+            layoutView.itemListRegion.show(itemListView);
+            layoutView.priceListRegion.show(priceListView);
+        });
+
+        // We don't want user to see nasty error, so let's add error handling
+        $.when(fetchingItems, fetchingPrice).fail(function() {
+            // OopsView will show error message to user
+            var oopsView = new OopsView({error: "oops, something went wrong"});
+            layoutView.render(oopsView);
+        });
+    }
+});
+</code></pre>
+
+<p>})
+```</p>
+
+<p>The example above is pseudo code so it doesn&rsquo;t work, but should be easy enough to demonstrate my idea.</p>
+
+<p>As you can see, my <code>showShoppingCart()</code> method does everthing including error handling required to show a shopping cart page to user. Now, somebody must call the method. Who will it be?</p>
+
+<p>It is the responsibility of <code>Marionette.AppRouter</code>. Router is the first one that responds when user enters your app. It&rsquo;s job is to look at url and call Controller&rsquo;s methods. Here is how you can pass your <code>ShoppingCart.Controller</code> to router.</p>
+
+<p>```js
+// First we need to define router
+MyApp.Router = Marionette.AppRouter.extend({</p>
+
+<pre><code>appRoutes: {
+    "shopping_cart": "showShoppingCart",
+}
+</code></pre>
+
+<p>});</p>
+
+<p>// Instantiate controller object
+var shoppingCartController = new ShoppingCat.Controller();</p>
+
+<p>// Register controller
+new MyApp.Router({</p>
+
+<pre><code>controller: shoppingCartController
+</code></pre>
+
+<p>});
+```</p>
+
+<p>Now, if user accesses <code>/shopping_cart</code> page, router will call <code>showShoppingCart()</code> method of <code>ShoppingCat.Controller</code>.</p>
+
+<p>There is one implicit thing involved here. The object you pass to <code>controller</code> property of router must implement the method that you define in <code>appRoutes</code> objects.</p>
+
+<p>In this case, since you define <code>"shopping_cart": "showShoppingCart"</code> in routing, <code>shoppingCartController</code> object must implement <code>showShoppingCart()</code> method, which is exactly how we implemented our controller earlier.</p>
+
+<p>If you have experiences with server side MVC frameworks, like RoR, then you may notice that I am using the Marionette Controller like the way I use ActionController of Rails: called by router and does everything needed to render a view. Isn&rsquo;t this contradictory to what <a href="[here](https://github.com/marionettejs/backbone.marionette/blob/master/docs/marionette.controller.md">official doc</a> says?</p>
+
+<p><strong><em>Yes and no</em></strong>. Yes, because it is used by router and both performs similar tasks. No, because the role of server side Controller is providing HTTP terminal point whereas client side Controller does not do this.</p>
+
+<p>Anyway, I am currently satisfied with the way I use Controller.</p>
+
+<p>So here is the pattern statement. <strong>Use Controller to provide public methods to router that integrates different componetns</strong></p>
+
+<h2>Add event listener on view inside Controller</h2>
+
+<p>I often ask this question myself: <em>Is it ok that my View does ajax call?</em> Can you imagine what I am talking about? The View that makes ajax call looks like this.</p>
+
+<p>```js
+FormView = Marionette.ItemView.extend({</p>
+
+<pre><code>events: {
+    'click button.submit': 'submitForm'
+},
+
+submitForm: function() {
+    // Get form data somehow//
+    var data = getFormData();
+
+    // Model.save fires ajax call to remote server
+    this.model.save(data, {
+        success: function(){
+            console.log("form is submitted");
+        },
+        error: function(){
+            console.log("error");
+        }
+    });  
+}
+</code></pre>
+
+<p>})
+```</p>
+
+<p>So, the code above does:</p>
+
+<ul>
+<li>Listens on <code>click</code> event and call <code>submitForm</code> method</li>
+<li>Makes ajax call to save form data to backend server</li>
+<li>Execute callbacks for ajax call</li>
+</ul>
+
+
+<p>This is perfectly valid code in Backbone. However, having Controller in Marionette now, I&rsquo;d rather want to push this task to Controller and let View simply listening and triggering event.</p>
+
+<p>```js
+FormView = Marionette.ItemView.extend({</p>
+
+<pre><code>events: {
+    'click button.submit': 'submitForm'
+},
+
+submitForm: function() {
+    this.trigger("form:submit");
+}
+</code></pre>
+
+<p>});</p>
+
+<p>FormController = Marionette.Controller.extend({</p>
+
+<pre><code>showForm: function(options){
+    var formView = FormView.new();
+
+    formView.on("form:submit", function(data) {
+        model.save(data, {
+            success: function() {
+                console.log("form is submitted");
+            },
+
+            error: function(){
+                console.log("error");
+            }
+        })
+    })
+
+    MyApp.region.show(formView);
+},
+</code></pre>
+
+<p>});
+```</p>
+
+<p>So, I simply move codes from View to Controller. What&rsquo;s the benefits of doing this? One thing is that View code gets slimed and it can focus on the mapping of DOM and event.</p>
+
+<p>Our Controller instead gets messy but that&rsquo;s the tradeoff. After all, that&rsquo;s how Controller is designed to be used: <strong><em>put things that fit nowhere else</em></strong>.</p>
+
+<p>It also makes sense to put codes to Controller because Controller has more accesses to other components than a view. Imagine a case where you have to access other views inside the event listener.
+You can&rsquo;t access other views directly from a view. Instead, you need to use App level event publishing to archive this.</p>
+
+<p>On the other hand, Controller has an access to everything needed to render the page so it can easily talk to other views.</p>
+
+<p>Before, finishing this section, let me slightly imporve the code above. We will use <a href="https://github.com/marionettejs/backbone.marionette/blob/master/docs/marionette.view.md#viewtriggers">View.triggers</a>.</p>
+
+<p>Here is the new version of View:</p>
+
+<p>```js
+FormView = Marionette.ItemView.extend({</p>
+
+<pre><code>triggers: {
+    'click button.submit': 'form:submit'
+}
+</code></pre>
+
+<p>});
+```</p>
+
+<p>We removed <code>submitForm</code> method and <code>event</code> objects. Instead, we use <code>trigger</code> object that does the two thing at the same time: <em>listen on events</em> and <em>trigger events</em>. Now, our view is much cleaner than before!!</p>
+
+<p>So here is the pattern statement. <strong>Add event listener on Views inside Controller</strong></p>
+
+<!--
+## Responsibility of MVC Components
+
+Marionette brings consistency to your Backbone app. However, this is not enough if you are working in a team. Marionette still allows developrs to write codes whatever they want which rapidly makes your project spaghetti. It's important to understand your codes must go where. To understand this, let's clarify the role of MVC components in Marionette.
+
+### M
+The responsibility of model is clearer than other components, so I will go quickly.
+
+#### Business logic
+Just like model of server side, this is the place where you write code for business logic.
+
+**Ex.** Calculate and return total price by adding tax to sub-total.
+
+#### Ajax ####
+When modle is mapped to external resource, it fetches resource from external servers.
+
+#### Validation ####
+Before modle is saved into exteranl database, it needs to validate data. When validation fails, it must notifies by using event. View must respond to validation event and notifies user.
+
+### V
+This is the place which easily becomes chaotic because vanilla Backbone puts much burden to View.
+
+#### Render html
+When you define View, you will speficy which template to use. Template value is fetched by a model that View holds and rendered as html document.
+
+#### Define mapping of DOM and event
+You can define what action of user for DOM elements do what in View. This is done by `events` propety. I don't want to go detail about this since implementation is not the the subject of post, but just briefly showing an example.
+
+```js
+var MyView = Marionette.ItemView.extend({
+    ui: {
+        paragraph: 'p',
+        button: '.my-button'
+    },
+
+    events: {
+        'click ui.button': 'clickedButton'
+    },
+
+    clickedButton: function() {
+        console.log('I clicked the button!');
+    }
+});
+```
+
+View listens on click event of `ui.button` and trigger clickedButton() event. Notice `ui` propety. This does not exist in Backbone. You can pass a object that mappes properties and jQuery DOM. You can access the DOM like this.
+
+```js
+ MyView.ui.paragraph
+```
+
+This is simple yet very powerful feature. I will write more about this in subsequent post.
+
+#### Listens on Model/Collection change event
+Most of Views are passed model or collection. Whenever there are changes to model/collection (Ex. setting new value to the field of model / model is removed from collection ), View responds to the event, changes its $el, and modifies its own html.
+
+### C
+Controller is loosely defined even in official doc.
+
+Quoted from [here](https://github.com/marionettejs/backbone.marionette/blob/master/docs/marionette.controller.md)
+> Its name can be a cause for confusion, as it actually has nothing to do with the popular MVC architectural pattern. Instead, it's better to think of the Controller as a base object from which you can build.
+>
+> Controllers should be used when you have a task that you would like an object to be responsible for, but none of the other Marionette Classes quite make sense to do it. It's a base object for you to use to create a new Class altogether.
+
+So, as the doc says, Controller is the place where you can put things that fit nowhere else.
+
+But, what exactly are they?
+
+#### Executing action for router
+When user enters your app, router will invoke controller actions. Let's assume you have controller like so:
+
+```js
+MyApp.module("ModuleA", function(ModuleA, MyApp, Backbone, Marionette, $, _){
+    ModuleA.Controller = Marionette.Controller.extend({
+        listItem: function() {
+            // Some codes to show item here
+        }
+    })
+
+    return ModuleA
+})
+```
+
+Now you can pass your controller to `controller` property of router.
+```js
+MyApp.module("ModuleA", function(ModuleA, MyApp, Backbone, Marionette, $, _){
+    var controller = new ModuleA.Controller();
+
+    ModuleA.Router = Marionette.AppRouter.extend({
+        controller: controller,
+        appRoutes: {
+            "items": "listItem"
+        },
+    });
+})
+
+```
+Then when user enters your app from `/items`, router will execute `controller.listItem()` method which is defined at `ModuleA.Controller`.
+
+So, as you can see, I am using Controller pretty much like the way I use Rails ActionController. I don't see no reason why this is wrong even if doc says it is nothing to do with server side MVC.
+
+#### Assemble things together
+You saw how router invokes Controller methods. Now, let's look at `listItem()` method. The method looks something like this:
+
+```js
+listItem: function() {
+    var deferredFetch = MyApp.request("items")
+    var collectionView = new ItemCollectionView()
+
+    // Let's assume you have Spinner class.
+    // This will show loading spinner until items are fetched from server.
+    MyApp.mainRegion.show(new Spinner())
+
+    $.when(deferredFetch).done(function(items) {
+        var collectionView = new ItemCollectionView({collection: items});
+
+        // Once fetching is done, show items
+        MyApp.mainRegion.show(collectionView)
+    })/
+
+    $.when(deferredFetch).fail(function() {
+        // Let's assume you have OopsView.
+        // This will show "oops, something went wrong" when fethcing fails
+        var oopsView = new OopsView()
+    });
+```
+
+As you can see, `listItem()` method interacts many things. It also takes care of showing loading spinner as well as error handling. This is the main responsibility of Controller. It assemble many parts defined in different modules and control the flow of action.
+
+-->
+
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Creating Web Application with Ruby Lotus]]></title>
+    <link href="http://kimh.github.io/blog/en/lotus/creating-web-application-with-ruby-lotus/"/>
+    <updated>2014-09-11T18:40:00+09:00</updated>
+    <id>http://kimh.github.io/blog/en/lotus/creating-web-application-with-ruby-lotus</id>
+    <content type="html"><![CDATA[<p><img src="/images/lotus.jpeg" alt="" /></p>
+
+<p><strong><em>WARNING</em></strong>  This is not your article if you are looking for information about the collaboration software made by IBM.
+Instead, this article is about <a href="http://lotusrb.org/">Lotus</a>, a new web framework written in Ruby.</p>
+
+<h2>Contents</h2>
+
+<ul>
+<li><a href="#what_is_lotus">What is Lotus</a></li>
+<li><a href="#why_lotus_instead_of_rails">Why Lotus instead of Rails</a></li>
+<li><a href="#creating_one_file_application">Creating one file aplication</a></li>
+</ul>
+
+
+<p><a id="what_is_lotus"></a></p>
+
+<h2>What is Lotus</h2>
+
+<p><a href="http://lotusrb.org/">Lotus</a> is a web framework that is being developed by relatively small team of <a href="https://github.com/lotus">lotus team</a>.
+You can use Lotus and build a complete MVC web application just like Rails.
+Lotus is still under active development and not production ready as of Sep, 2014, but you can definitely use it to create a web application.</p>
+
+<p>I fell in love with Lotus at first sight of the mission that Lotus tries to archive in the project page.</p>
+
+<p>The page reads</p>
+
+<blockquote><p>Lotus is lightweight, fast and testable. It aims to bring back Object Oriented Programming to web development, leveraging on a stable API, a minimal DSL, and plain objects.</p></blockquote>
+
+<p>I felt this is what I was looking for (explained more later) and decided to use Lotus to create a small API server in my private project.
+Since there are not much documentation and information about Lotus in the wild yet, I sometimes had a hard time to figure out how to use it.
+But, I am recently getting used to the <strong><em>Lotus way</em></strong> so I&rsquo;d like to share them in this and subsequent posts.</p>
+
+<p><a id="why_lotus_instead_of_rails"></a></p>
+
+<h2>Why Lotus instead of Rails</h2>
+
+<p>Recent applications are built in modular way more than ever before.
+Whether you call this type of application architecture SOA or microservices,
+it is true that many recent great projects <a href="https://github.com/flynn">(my favorite example is Fylnn)</a> are taking this design approach.</p>
+
+<p>There are a few major benefits of taking this approach</p>
+
+<ul>
+<li>more testability</li>
+<li>more portability</li>
+<li>more reusability</li>
+<li>easier deployment</li>
+</ul>
+
+
+<p>You will realize that it is not easy to accomplish all of these with Rails.
+Rails is definitely great, but the framework stack is huge and lots of things are built in. After all, Rails is a big framework, so not a good option if you want to create lots of small components.</p>
+
+<p>You may think there are small frameworks such as <a href="https://github.com/sinatra/sinatra">Sinatra</a> or <a href="https://github.com/rails-api/rails-api">rails-api</a>.
+Yes, Sinatra is lightweight, but I recently prefer to <strong><em>pure ruby code</em></strong> than DSL because it gives me steep learning curve (meaning easy to learn).
+To be honest, I never tried rails-api by myself, but I am suspicious that it is lightweight because the base is still Rails. Let me know if you have different opinions.</p>
+
+<p>As you can tell from <a href="https://github.com/lotus">Lotus github page</a>, it is made of many components. You can easily bring one of components into your application.
+For example, you can just grab <a href="https://github.com/lotus/router">lotus-router</a> and mixin to your Rack application to handle http request.</p>
+
+<p>Although, Lotus is made modular way, you can still use it as fullstack web-framework with relatively small amount of codes.
+Apparently, Lotus steals many good designs from Rails such as CoC and that allows you to build applications easy.</p>
+
+<p>So, my point in this section is this: <strong>Lotus is flexible but easy to use, so why not give it a shot?</strong></p>
+
+<p>Hopefully, this article helps you starting Lotus.</p>
+
+<p><a id="creating_one_file_application"></a></p>
+
+<h2>Creating one file application</h2>
+
+<p>Let&rsquo;s make our first Lotus application. We will follow the example of <a href="https://github.com/lotus/lotus#one-file-application">one file application</a>.</p>
+
+<p>First, create a project directory. I am assuming that you set your current directory to this directory in the subsequent instructions.</p>
+
+<p><code>
+mkdir onefileapp &amp;&amp; cd onefileapp
+</code></p>
+
+<p>Lotus does not publish official gem as far as I know. There is <a href="https://rubygems.org/gems/lotusrb">one</a> here but the last update was on Jan, 2014.
+Current master branch is far ahead of this release. So, clone the Lotus project in order to install from source.</p>
+
+<p><code>
+git clone https://github.com/lotus/lotus.git
+</code></p>
+
+<p>We need bundler to manage gem dependancy. Let&rsquo;s create a Gemfile.</p>
+
+<p><code>
+bundle init
+</code></p>
+
+<p>Edit your Gemfile. Change <code>&lt;your-path-to-lotus-repo&gt;</code> to the directory where you clone Lotus repo.</p>
+
+<p><code>ruby
+source "https://rubygems.org"
+gem 'lotusrb', :path =&gt; &lt;your-path-to-lotus-repo&gt;
+</code></p>
+
+<p>Then install gems.</p>
+
+<p><code>
+bundle install --path vendor/
+</code></p>
+
+<p>Now, we can start writing our application which is just one file. Save below codes as <strong><em>config.ru</em></strong>.</p>
+
+<p><strong><em>config.ru</em></strong>
+```ruby
+require &lsquo;lotus&rsquo;</p>
+
+<p>module OneFile
+  class Application &lt; Lotus::Application</p>
+
+<pre><code>configure do
+  routes do
+    get '/', to: 'home#index'
+  end
+end
+load!
+</code></pre>
+
+<p>  end</p>
+
+<p>  module Controllers</p>
+
+<pre><code>module Home
+  include OneFile::Controller
+
+  action 'Index' do
+    def call(params)
+    end
+  end
+end
+</code></pre>
+
+<p>  end</p>
+
+<p>  module Views</p>
+
+<pre><code>module Home
+  class Index
+    include OneFile::View
+
+    def render
+      "Hello, Lotus"
+    end
+  end
+end
+</code></pre>
+
+<p>  end
+end</p>
+
+<p>run OneFile::Application.new
+```</p>
+
+<p>You can run the app with rackup command.</p>
+
+<p><code>
+bundle exec lotus server
+</code></p>
+
+<p>Successfully run? Then, access <a href="http://localhost:2300">http://localhost:2300</a> from your browser. You should see <code>Hello, Lotus</code>.</p>
+
+<p>Let me explain what is doing.</p>
+
+<p>First, you will notice that classes inside <code>Controllers</code> and <code>Views</code> modules not using inheritance.
+One important philosophy of Lotus is this:<code>include a module and implement a minimal interface.</code>
+This philosophy encourages developers to use only what you need with mixin.</p>
+
+<p>Now let&rsquo;s look at <code>Application</code> class. In our application, the class only configures routes.
+We use <code>get</code> method to configure a route for http <code>GET /</code> method that uses <code>Home::Index</code> controller.
+Here we only configure <code>get</code> http method, but you can configure other methods easily such as these:</p>
+
+<p>```ruby
+routes do
+  post   &lsquo;/books&rsquo;,             to: &lsquo;book#create&rsquo;
+  put    &lsquo;/books/:id&rsquo;,         to: &lsquo;book#update&rsquo;
+  delete &lsquo;/books/:id&rsquo;,         to: &lsquo;book#destroy&rsquo;</p>
+
+<p>  # You can also define one liner response
+  get    &lsquo;/ping&rsquo;,              to: &ndash;>(env) {[200, {}, [&lsquo;pong&rsquo;]]}
+end
+```</p>
+
+<p>Next, let&rsquo;s look at <code>Controllers</code>. We are not doing anything but defining <code>action</code>.
+What is <code>action</code>? <code>action</code> is the HTTP endpoint where you can handle incoming request and creating response.
+This is also the place where you can implement your business logic. I think it is safe to think that the responsibility of Lotus action is very similar to Rails controller.
+We define <code>Index</code> action so that we can use it from our router code that we looked at previously.</p>
+
+<p>Last thing to look at is <code>Views</code>. The responsibility of the class is not the same as the Rails view class.
+In Rails, you write codes that is actually rendered by browser (if html format) in view. This is done by <code>Template</code> in Lotus which I don&rsquo;t cover in this post.
+In Lotus, the responsibility of view is more like of presenter which does not come with Rails by default (you can use gems such as Draper to implement presetation layer in Rails, too.)
+What presenter does is receiving data from controller and abstracts them to template layer.
+In this way, your template layer gets clean and can focus on redning content.</p>
+
+<p>Let&rsquo;s go back to our code. Here we define <code>render</code> method and simply print <code>Hello, Lotus</code> message.</p>
+
+<p>This is neither interesting nor useful. We will make view to interact with controller by via data.</p>
+
+<p>Let&rsquo;s modify your controller.</p>
+
+<p>```ruby
+module Controllers
+  module Home</p>
+
+<pre><code>include OneFile::Controller
+action 'Index' do
+
+  expose :time
+
+  def call(params)
+    @time = Time.now
+  end
+end
+</code></pre>
+
+<p>  end
+end
+```</p>
+
+<p>Now, we see two new things <code>expose</code> and <code>call</code>.</p>
+
+<p>To pass data from controller to view, you need to manually expose what you want to pass.
+Again, here you see Lotus philosophy: <code>only use what you need</code>.</p>
+
+<p><code>call</code> is the entry point of http request. As I mentioned earlier, you can write business logic as well as response handling codes here.</p>
+
+<p>Let&rsquo;s modify your view to get data from the controller.</p>
+
+<p>```ruby
+module Views
+  module Home</p>
+
+<pre><code>class Index
+  include OneFile::View
+
+  def render
+    "Current time: #{time}"
+  end
+end
+</code></pre>
+
+<p>  end
+end
+```</p>
+
+<p>Since our controller exposes <code>@time</code>, you can access the data via <code>time</code> from your view.
+Now, restart your Rack process and access from your browser. Now you should see something like this: <code>Current time: 2014-09-11 23:18:30 +0900</code></p>
+
+<h2>Wrap up</h2>
+
+<p>Did you see it is quite easy to write Lotus application?</p>
+
+<p>Ok, I can hear your voice: <em>this example is too simple. I want to see real Lotus application.</em></p>
+
+<p>Yes, let me do that in the next post. I thought I can do that in the same post, but writing this takes more time than I thought&hellip;</p>
+
+<p>Next post will be something like this: <strong><em>Creating Full Stack Web Application with Lotus</em></strong></p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Experiment To Suspend/Resume Docker Container With CRIU]]></title>
+    <link href="http://kimh.github.io/blog/en/criu/experiment-to-suspend-and-resume-docker-container-with-criu/"/>
+    <updated>2014-06-22T01:08:00+09:00</updated>
+    <id>http://kimh.github.io/blog/en/criu/experiment-to-suspend-and-resume-docker-container-with-criu</id>
+    <content type="html"><![CDATA[<p><img src="/images/criu.jpeg" alt="" /></p>
+
+<h3>TL;DR: You CANNOT suspend/resume Docker container as of Jun 2014 and this article ends with a bit disappointed result, but you can still find CRIU is cool thing.</h3>
+
+<p>With the rapid emergence of Docker, everybody knows many advantages of using LXC over virtual machines like VMWare or Xen.</p>
+
+<p>However, there is one thing that VM has and LXC still misses: suspend/resume containers.</p>
+
+<p>This is where <a href="http://criu.org/Main_Page">CRIU</a> comes in.</p>
+
+<p>CRIU is a so called CR (checkpoint/restart) tool. It suspends a running process and save the memory state into files which can be resumed at anytime.</p>
+
+<p>And since LXC container is a process, we should be able to suspend/resume containers. But does it really work?</p>
+
+<p>In this article, we will install CRIU and see whether we can suspend/resume a Docker container.</p>
+
+<p><strong>Note:</strong>
+You may say that LXC already has <a href="http://lxc.sourceforge.net/man/lxc-checkpoint.html">C/R feature</a>. My impression with the tool is not good from the past experience. So, I really didn&rsquo;t try this time.</p>
+
+<h2>Installing CRIU</h2>
+
+<h3>Building Kernel</h3>
+
+<p>To get the fully functional CRIU, you need to have a kernel with certain options are enabled. We use Vagrant box as LXC host machine, but I couldn&rsquo;t find a box with kernel that meets the requirement of CRIU.</p>
+
+<p>So, we need to rebeild kernel. Don&rsquo;t worry, building kernel is not difficult as it sounds.</p>
+
+<p>We will use <a href="https://cloud-images.ubuntu.com/vagrant/trusty/current/trusty-server-cloudimg-amd64-vagrant-disk1.box">official Ubuntu14.04 cloud image</a>.</p>
+
+<p>First you need to add the box.</p>
+
+<p><code>sh
+$ vagrant box add ubuntu14.04 https://cloud-images.ubuntu.com/vagrant/trusty/current/trusty-server-cloudimg-amd64-vagrant-disk1.box
+$ vagrant init ubuntu14.04
+</code></p>
+
+<p>Before hit <code>vagrant up</code> command, let&rsquo;s increase CPU cores and memory of the box. Otherwise, it takes a few hours to build kernel. It really depends, but 2 cores with 2048M RAM would be enough.</p>
+
+<p>Open <code>Vagrantfile</code> and add the following lines.</p>
+
+<p><code>
+config.vm.provider :virtualbox do |vb|
+  vb.customize ["modifyvm", :id, "--memory", "2048"]
+  vb.customize ["modifyvm", :id, "--cpus", 2]
+end
+</code></p>
+
+<p>Once you increase cpu and memory, do <code>vagrant up &amp;&amp; vagrant ssh</code> and ssh into the box. Become root user and install necessary packages to rebuild kernel.</p>
+
+<p><code>sh
+$ apt-get -y update
+$ apt-get -y install libncurses-dev build-essential libncurses-dev build-essential fakeroot kernel-package linux-source
+</code></p>
+
+<p>After installing these, you should have <code>/usr/src/linux-source-&lt;kernel version&gt;</code> directory. Go into the directory and untar the source files.</p>
+
+<p><code>sh
+$ cd /usr/src/linux-source-&lt;kernel version&gt;
+$ tar xvjf linux-source-&lt;kernel version&gt;.tar.bz2
+$ cd ./linux-source-&lt;kernel version&gt;
+</code></p>
+
+<p>Now you need to prepare a kernel configuration <em>.config</em> file which enables certain options for CRIU.</p>
+
+<p>I uploaded the one to save your time into gist. Just run this command. (Make sure to change current directory to kernel source directory where you just untared.)</p>
+
+<p><code>sh
+$ curl https://gist.githubusercontent.com/kimh/c93f42981d14a33c63c0/raw/a73af0f7f745c2538253ef153a62a8ba1a2d97be/.config -o .config
+</code></p>
+
+<p>If you want to know which kernel options should be enabled, the list is <a href="http://criu.org/Installation#Kernel_configuration">here</a>.</p>
+
+<p>Once you put <code>.config</code> file, you are ready to build kernel.</p>
+
+<p><strong>Once again, make sure you increased cpu and memory in the previous seteps before start building kernel. Otherwise you will waste your time.</strong></p>
+
+<p><code>sh
+$ export LC_CTYPE=C
+$ make-kpkg clean
+$ CONCURRENCY_LEVEL=4 make-kpkg --rootcmd fakeroot --initrd --revision=`date +%Y%m%d` kernel_image kernel_headers
+</code></p>
+
+<p>Once the kernel build is done, you should have <code>linux-headers-&lt;kernel version&gt;_amd64.deb</code> and <code>linux-image-&lt;kernel version&gt;_amd64.deb</code> under <code>/usr/src/</code> directory.</p>
+
+<p>Now, let&rsquo;s install them.</p>
+
+<p><code>sh
+$ dpkg -i linux-headers-&lt;kernel version&gt;_amd64.deb
+$ dpkg -i linux-image-&lt;kernel version&gt;_amd64.deb
+$ reboot
+</code></p>
+
+<p>Done! Now You are running the kernel that works well with CRIU.</p>
+
+<h3>Compile CRIU from source</h3>
+
+<p>Let&rsquo;s install CRIU now. Ubuntu doesn&rsquo;t provide up-to-date debian package of CRIU, so we need to build from source.</p>
+
+<p><code>sh
+$ apt-get install bsdmainutils build-essential libprotobuf-c0-dev linux-headers-generic protobuf-c-compiler
+$ mkdir /src
+$ cd /src
+$ curl http://download.openvz.org/criu/criu-1.3-rc2.tar.bz2 | tar -jxf-
+$ make -C criu-1.3-rc2/
+$ cp criu-1.3-rc2/criu /usr/local/sbin/
+</code></p>
+
+<p>Now CRIU is installed. Let&rsquo;s try if it works. CRIU provides a command for this.</p>
+
+<p><code>sh
+$ criu check --ms
+Warn  (tun.c:55): Skipping tun support check
+Warn  (cr-check.c:259): Skipping mnt_id support check
+Looks good.
+</code></p>
+
+<p>Did you get <code>Looks good.</code> message? You may get some warnings, but you can ignore them.</p>
+
+<p>Before doing our expriment with containers, let&rsquo;s checkpoint and restore normal Linux process with CRIU. The example comes from <a href="http://criu.org/Simple_loop">one of CRIU HOWTO pages</a>.</p>
+
+<p>First, we need to create a simple loop script.</p>
+
+<p>```
+$ cat > test.sh &lt;&lt;-EOF</p>
+
+<h1>!/bin/sh</h1>
+
+<p>while :; do</p>
+
+<pre><code>sleep 1
+date
+</code></pre>
+
+<p>done
+EOF</p>
+
+<p>$ chmod +x test.sh
+$ ./test.sh
+```</p>
+
+<p>We can suspend with <code>criu dump</code> command.</p>
+
+<p><code>sh
+$ PID=`pgrep test.sh`
+$ mkidr /tmp/test
+$ criu dump -t $PID --images-dir /tmp/test --shell-job
+</code></p>
+
+<p>If the dump succeeds, you should have many files under <code>/tmp/test</code> directory.</p>
+
+<p><code>sh
+$ ls /tmp/test
+cgroup.img         fanotify-mark.img   fs-4898.img     netlinksk.img     pstree.img         signalfd.img
+core-4521.img      fanotify.img        ids-4521.img    ns-files.img      reg-files.img      sk-queues.img
+core-4898.img      fdinfo-2.img        ids-4898.img    packetsk.img      remap-fpath.img    stats-dump
+creds-4521.img     fdinfo-3.img        inetsk.img      pagemap-4521.img  sigacts-4521.img   tty-info.img
+creds-4898.img     fifo-data.img       inotify-wd.img  pagemap-4898.img  sigacts-4898.img   tty.img
+eventfd.img        fifo.img            inotify.img     pages-1.img       signal-p-4521.img  tunfile.img
+eventpoll-tfd.img  filelocks-4521.img  inventory.img   pages-2.img       signal-p-4898.img  unixsk.img
+eventpoll.img      filelocks-4898.img  mm-4521.img     pipes-data.img    signal-s-4521.img
+ext-files.img      fs-4521.img         mm-4898.img     pipes.img         signal-s-4898.img
+</code></p>
+
+<p>Let&rsquo;s resume the process with <code>criu restore</code> command.</p>
+
+<p><code>sh
+$ criu restore -t $PID --images-dir /tmp/test  --shell-job
+</code></p>
+
+<p>If the process is successfully resumed, <code>test.sh</code> starts printing the output of <code>date</code> command to your terminal.</p>
+
+<h2>Trying CRIU with containers</h2>
+
+<p>So far so good? Now, we will try to suspend and resume Docker containers. Docker is not installed on your vagrant box, so let&rsquo;s install.</p>
+
+<p><code>sh
+$ apt-get install docker.io jq
+$ ln -sf /usr/bin/docker.io /usr/local/bin/docker
+$ sed -i '$acomplete -F _docker docker' /etc/bash_completion.d/docker.io
+</code></p>
+
+<p>And run a Ubuntu container executing a simple command.</p>
+
+<p><code>sh
+$ docker run -t -i ubuntu /bin/bash
+</code></p>
+
+<p>To suspend the container, we need to know the pid of the container.</p>
+
+<p><code>sh
+$ ID=`docker ps -l -q`
+$ PID=`docker inspect $ID | jq '.[0].State.Pid'`
+</code></p>
+
+<p>Ok, our long journey is almost done. Let&rsquo;s suspend the container!!</p>
+
+<p><code>sh
+$ criu dump -t $PID --images-dir /tmp/docker
+Error (mount.c:449): 102:./dev/console doesn't have a proper root mount
+Error (cr-dump.c:1882): Dumping FAILED.
+</code></p>
+
+<p>CRIU said dumping failed. After googling the error message, I found this discussion.</p>
+
+<p><a href="https://lists.linuxcontainers.org/pipermail/lxc-devel/2013-November/006326.html">[lxc-devel] [CRIU] LXC live migrate</a></p>
+
+<blockquote><p>That&rsquo;s container&rsquo;s console which is a bind mounted tty from
+the host. And since this is an external connection, CRIU doesn&rsquo;t dump one.</p></blockquote>
+
+<p>What?! But, <a href="http://criu.org/LXC">this page</a> says CRIU supports LXC checkpoint/restart. Docker uses LXC under the hood, so how come it doesn&rsquo;t work?</p>
+
+<p>In the same thread of the discussion, I also found this.</p>
+
+<p><a href="https://lists.linuxcontainers.org/pipermail/lxc-devel/2013-November/006326.html">[lxc-devel] [CRIU] LXC live migrate</a></p>
+
+<blockquote><p>AFAIK cgroups are used <em>inside</em> containers only with recent guest templates.
+In OpenVZ we use more old ones (and more stable) so haven&rsquo;t meet this yet.
+And yes, cgroups are in plans for the nearest future :)</p></blockquote>
+
+<p>So, it seems CRIU does not support cgroup at the time of writing this (Jun 2014). However Docker uses LXC template that uses cgroups. Therefore, CRIU doesn&rsquo;t work with Docker containers.</p>
+
+<p>Sigh&hellip;</p>
+
+<h2>Conclusion</h2>
+
+<p>With this experiment, I found that we cannot checkpoint/resume Docker container with CRIU v1.3 because it does not support cgroups.</p>
+
+<p>The result turned out to be a bit disappointed. However, I&rsquo;m sure now you know that CRIU is extremely exciting project.</p>
+
+<p>In contrast to its potential impact to LXC ecosystem, I believe the project is not receiving enough attention, so give a star and start watching their <a href="https://github.com/xemul/criu">Github repo</a> now!! I will definitely cover more things about CRIU on this blog, too.</p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[(WIP) Ruby To Go: How can I do X in Ruby with Go? (Part I)]]></title>
+    <link href="http://kimh.github.io/blog/en/go/how-can-i-do-x-in-ruby-with-go-part-1/"/>
+    <updated>2014-05-16T23:39:00+09:00</updated>
+    <id>http://kimh.github.io/blog/en/go/how-can-i-do-x-in-ruby-with-go-part-1</id>
+    <content type="html"><![CDATA[<p>I am a programmer who can write decent Ruby and some Javascript.</p>
+
+<p>These two languages were all I know. I wanted to add Go to my list of programming language, so I started learning Go.</p>
+
+<p>It&rsquo;s boring to read programming books to study programming languages, so I decided to learn Go by porting some programs written in Ruby.</p>
+
+<p>While I was porting Ruby program to Go, I came to think it is useful if there is a cheatsheet that I can loop up in order to convert idiomatic Ruby code to Go.</p>
+
+<p>Ruby and Go are totally different language, so sometimes it is impossible to simply translate Ruby code to Go.
+However, it is possible in most cases to write Go code that is sematically equivalant to Ruby code.</p>
+
+<p>So, here is a <strong><em>How can I do X in Ruby with Go?</em></strong> cheetsheet.</p>
+
+<p>I hope you find it useful.</p>
+
+<h2>Contents of this artcile</h2>
+
+<h3>Array and Enumerable Operation</h3>
+
+<ul>
+<li><a href="#create_array">Create array</a></li>
+<li><a href="#append_an_element_to_array">Append element to array</a></li>
+<li><a href="#concatenate_arrays">Concatenate arrays</a></li>
+<li><a href="#create_multi_dimension_aray">Create multi dimension array</a></li>
+<li><a href="#create_empty_array">Create empty array</a></li>
+<li><a href="#iterate_on_an_array">Iterate on array</a></li>
+<li><a href="#looping_n_times">Looping N times</a></li>
+<li><a href="#clone_array">Clone array</a></li>
+<li><a href="#accessing_elements_of_an_array_by_range">Accessing elements of array by range</a></li>
+<li><a href="#compare_array">Compare array</a></li>
+<li><a href="#check_if_array_includes_an_element">Check if array includes an element</a></li>
+</ul>
+
+
+<h3>Method Definition</h3>
+
+<ul>
+<li><a href="#define_a_method_with_optional_parameter">Define a method with optional parameter</a></li>
+<li><a href="#define_a_method_with_variable_length_argument">Define a method with variable length arugment</a></li>
+</ul>
+
+
+<h3>MathematicOperation</h3>
+
+<ul>
+<li><a href="#modular_of_negative_number">Modular of negative number</a></li>
+</ul>
+
+
+<h3>Misc</h3>
+
+<ul>
+<li><a href="#nil_checking">Nil checking</a></li>
+<li><a href="#checking_the_class">Checking the class</a></li>
+</ul>
+
+
+<p><a id="array_and_enumerable_operation"></a></p>
+
+<h2>Array and Enumerable Operation</h2>
+
+<p>Array is very powerful data structure and enumerable is probably the most frequently used object in Ruby.</p>
+
+<p>In Go, we have two different enumerable data structures: <strong>array</strong> and <strong>slice</strong>.
+I don&rsquo;t write about details about them since it is not the goal of this post, but array is low-level data structure that slice refers to.</p>
+
+<p><a id="create_array"></a></p>
+
+<h3>Create array</h3>
+
+<p><strong><em>Ruby:</em></strong>
+<code>ruby
+numbers = [1,2,3]
+fruits = ["apple", "banana", "grape"]
+</code></p>
+
+<p><strong><em>Go:</em></strong>
+<code>go
+numbers := []int{1,2,3}
+fruits := []string{"apple", "banana", "grape"}
+</code>
+In the case of Go, <code>numbers</code> and <code>words</code> are <strong>slice</strong>, not <strong>array</strong>. Array is primitive data structure, not frequently used in Go code.
+If you want to archive similar things to Ruby array, slice should work for you.</p>
+
+<p><a id="append_an_element_to_array"></a></p>
+
+<h3>Append an element to array</h3>
+
+<p><strong><em>Ruby:</em></strong>
+<code>ruby
+numbers = [1,2,3]
+numbers &lt;&lt; 4
+</code></p>
+
+<p><strong><em>Go:</em></strong>
+<code>go
+numbers := []int{1,2,3}
+numbers.append(numbers, 4)
+</code>
+<strong>append</strong> adds elements to slice and <strong><em>return new slice</em></strong>. Therefore, you have to reassign to itself.</p>
+
+<p><a id="concatenate_arrays"></a></p>
+
+<h3>Concatenate arrays</h3>
+
+<p><strong><em>Ruby:</em></strong>
+<code>ruby
+numbers1 = [1,2,3]
+numbers2 = [4,5,6]
+numbers1 = numbers1 + numbers2
+</code></p>
+
+<p><strong><em>Go:</em></strong>
+<code>go
+numbers1 := []int{1,2,3}
+numbers2 := []int{4,5,6}
+numbers1 = append(numbers1, numbers2...)
+</code>
+<code>...</code> suffix on the slice indicates that it should be passed as the variadic argument, expanded as each <code>int</code> elements inside <code>append</code>.
+Thus, this is equivalent to below:</p>
+
+<p><code>go
+numbers1 := []int{1,2,3}
+numbers1 = append(numbers1, 4, 5, 6)
+</code>
+<a id="create_multi_dimension_aray"></a></p>
+
+<h3>Create multi dimension array</h3>
+
+<p><strong><em>Ruby:</em></strong>
+<code>ruby
+multi_array = [[1,2,3],[4,5,6]]
+</code></p>
+
+<p><strong><em>Go:</em></strong>
+<code>go
+var mul [][]int = [][]int{ {1, 2, 3}, {4,5,6} }
+</code>
+<a id="create_empty_array"></a></p>
+
+<h3>Create empty array</h3>
+
+<p><strong><em>Ruby:</em></strong>
+<code>ruby
+array = []
+</code></p>
+
+<p><strong><em>Go:</em></strong>
+<code>go
+var array []int
+</code>
+When slice is declared, but not initialised, the slice points to an array of size 0.</p>
+
+<p><a id="iterate_on_an_array"></a></p>
+
+<h3>Iterate on array</h3>
+
+<p><strong><em>Ruby:</em></strong>
+<code>ruby
+numbers = [1,2,3]
+numbets.each {|num| puts num }
+</code></p>
+
+<p><strong><em>Go:</em></strong>
+<code>go
+numbers := []int{1,2,3}
+for _, num := range numbers {
+  fmt.Println(num)
+}
+</code>
+If you want to access the index while iterating over the slice, replace <code>_</code> with other variable, for example, <code>i</code>.
+<code>go
+numbers := []int{1,2,3}
+for i, num := range numbers {
+  fmt.Println("index: ", i, "number: ", num)
+}
+</code></p>
+
+<p><a id="looping_n_times"></a></p>
+
+<h3>Looping N times</h3>
+
+<p><strong><em>Ruby:</em></strong>
+<code>ruby
+5.times {|num| puts num}
+</code></p>
+
+<p><strong><em>Go:</em></strong>
+<code>go
+for num:=0; num &lt;5; num++ {
+  fmt.Println(num)
+}
+</code></p>
+
+<p><a id="clone_array"></a></p>
+
+<h3>Clone array</h3>
+
+<p><strong><em>Ruby:</em></strong>
+<code>ruby
+new_array = old_array.clone
+</code></p>
+
+<p><strong><em>Go:</em></strong>
+<code>go
+new_array := make([]int, len(old_array))
+copy(new_array, old_array)
+</code></p>
+
+<p><a id="accessing_elements_of_an_array_by_range"></a></p>
+
+<h3>Accessing elements of array by range</h3>
+
+<p><strong><em>Ruby:</em></strong>
+<code>ruby
+numbers=[1,2,3,4,5]
+numbers[0..3]
+</code></p>
+
+<p><strong><em>Go:</em></strong>
+<code>go
+ary := []int{1,2,3,4,5}
+ary[0:4]
+</code>
+Note that, with <code>from:to</code>, <code>to</code> is the index where to end <strong>but not including the index itself</strong>.</p>
+
+<p><a id="compare_array"></a></p>
+
+<h3>Compare array</h3>
+
+<p><strong><em>Ruby:</em></strong>
+<code>ruby
+if ary1 == ary2
+  puts "Same array"
+end
+</code></p>
+
+<p><strong><em>Go:</em></strong>
+```go
+same := true
+for i, elm:= range ary1 {
+   if ary2[i] != r { same = false }
+}</p>
+
+<p>if same == true {
+  fmt.Println(&ldquo;Same slice&rdquo;)
+}
+<code>``
+You cannot compare slice in Go. You will get</code>slice can only be compared to nil` error if you try to do that.</p>
+
+<p><a id="check_if_array_includes_an_element"></a></p>
+
+<h3>Check if array includes an element</h3>
+
+<p><strong><em>Ruby:</em></strong>
+```ruby
+fruits = [&ldquo;apple&rdquo;, &ldquo;banana&rdquo;, &ldquo;grape&rdquo;]</p>
+
+<p>if fruits.include?(&ldquo;apple&rdquo;)
+  puts &ldquo;include!&rdquo;
+end
+```</p>
+
+<p><strong><em>Go:</em></strong>
+```go
+include := false
+fruits := []string{&ldquo;apple&rdquo;, &ldquo;banana&rdquo;, &ldquo;grape&rdquo;}
+for _, elm := range fruits {
+  if elm == &ldquo;apple&rdquo; {</p>
+
+<pre><code>include = true
+break
+</code></pre>
+
+<p>  }
+}</p>
+
+<p>if include == true {
+  fmt.Println(&ldquo;include!&rdquo;)
+}
+```</p>
+
+<h2>Method Definition</h2>
+
+<p>There are two things that are equivalant to Ruby&rsquo;s method in Go: <strong>method</strong> and <strong>function</strong>.
+Method is a type of function but requires specific receiver.</p>
+
+<p><a id="define_a_method_with_optional_parameter"></a></p>
+
+<h3>Define a method with optional parameter</h3>
+
+<p><strong><em>Ruby:</em></strong>
+<code>ruby
+def greeting(word="hello!")
+  puts word
+end
+</code></p>
+
+<p><strong><em>Go:</em></strong></p>
+
+<p>This is not possbile in Go. Go does not support optional parameter in function or method definition.
+One workaround is using struct.
+```go
+type greetingArg struct { word string }
+func greeting(opt greetingArg) {
+  word := opt.word
+  if word == &ldquo;&rdquo; {</p>
+
+<pre><code>fmt.Println("hello!")
+</code></pre>
+
+<p>  } else {</p>
+
+<pre><code>fmt.Println(word)
+</code></pre>
+
+<p>  }
+}</p>
+
+<p>greeting(greetingArg{})
+greeting(greetingArg{&ldquo;bye!&rdquo;})
+```</p>
+
+<p><a id="define_a_method_with_variable_length_argument"></a></p>
+
+<h3>Define a method with variable length argument</h3>
+
+<p><strong><em>Ruby:</em></strong>
+<code>ruby
+def foo(*args)
+  args.each {|arg| puts arg}
+end
+</code></p>
+
+<p><strong><em>Go:</em></strong>
+```go
+func foo(arg &hellip;int) {
+  for _, arg := range arg {</p>
+
+<pre><code>fmt.Prinln(arg)
+</code></pre>
+
+<p>  }
+}
+```</p>
+
+<h2>Mathematic Operation</h2>
+
+<p><a id="modular_of_negative_number"></a></p>
+
+<h3>Modular of negative number</h3>
+
+<p>Both Ruby and Go supports modular of negative number. However, their behavior is different.</p>
+
+<p><strong><em>Ruby:</em></strong>
+<code>ruby
+-5 % 3 =&gt; 1
+</code></p>
+
+<p><strong><em>Go:</em></strong>
+<code>go
+-5 % 3 =&gt; -2
+</code></p>
+
+<p>Go follows <strong><em>truncated toward zero</em></strong> for the division of negative number.</p>
+
+<p>If you want to get the same value that Ruby returns, here is how to do this.</p>
+
+<p><strong><em>Go:</em></strong>
+```go
+divider := 3
+mod := -5 % divider
+if mod &lt; 0 {</p>
+
+<pre><code>mod = mod + divider
+</code></pre>
+
+<p>}
+```</p>
+
+<p>Note that values returnd by Ruby and Go are both mathematically correct. It&rsquo;s just there are two ways to define negative modulo.</p>
+
+<h2>Misc</h2>
+
+<p><a id="nil_checking"></a></p>
+
+<h3>Nil checking</h3>
+
+<p><strong><em>Ruby:</em></strong>
+<code>ruby
+if val.nil?
+  puts "val is nil"
+end
+</code></p>
+
+<p><strong><em>Go:</em></strong>
+```go
+var str string
+if str ==&ldquo;&rdquo; {
+  fmt.Println(&ldquo;str is empty&rdquo;)
+}</p>
+
+<p>var i int
+if i == 0 {
+  fmt.Println(&ldquo;i is zero&rdquo;)
+}
+```</p>
+
+<p>When you declear a variable without intialization, the variable is set to zero value for its type.
+Below is default zero value for primitive types.</p>
+
+<table>
+<thead>
+<tr>
+<th></th>
+<th> Type </th>
+<th align="center"> Value </th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td></td>
+<td> string </td>
+<td align="center"> <strong>&lsquo;&rsquo;</strong></td>
+</tr>
+<tr>
+<td></td>
+<td> int    </td>
+<td align="center"> <strong>0</strong></td>
+</tr>
+<tr>
+<td></td>
+<td> float  </td>
+<td align="center"> <strong>0.0</strong></td>
+</tr>
+<tr>
+<td></td>
+<td> boolean </td>
+<td align="center"> <strong>false</strong></td>
+</tr>
+<tr>
+<td></td>
+<td> pointer </td>
+<td align="center"> <strong>nil</strong></td>
+</tr>
+<tr>
+<td></td>
+<td> interface </td>
+<td align="center"> <strong>nil</strong></td>
+</tr>
+<tr>
+<td></td>
+<td> slice </td>
+<td align="center"> <strong>nil</strong></td>
+</tr>
+<tr>
+<td></td>
+<td> map </td>
+<td align="center"> <strong>nil</strong></td>
+</tr>
+</tbody>
+</table>
+
+
+<p><a id="checking_the_class"></a></p>
+
+<h3>Checking the class</h3>
+
+<p><strong><em>Ruby:</em></strong>
+<code>ruby
+puts "abc".class
+</code></p>
+
+<p><strong><em>Go:</em></strong>
+```go
+import &ldquo;reflect&rdquo;</p>
+
+<p>fmt.Println(reflect.TypeOf(&ldquo;abc&rdquo;))
+```</p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Divide And Manage Secret Data Securely With Shamir's Secret Sharing]]></title>
+    <link href="http://kimh.github.io/blog/en/security/protect-your-secret-key-with-shamirs-secret-sharing/"/>
+    <updated>2014-04-22T20:51:00+09:00</updated>
+    <id>http://kimh.github.io/blog/en/security/protect-your-secret-key-with-shamirs-secret-sharing</id>
+    <content type="html"><![CDATA[<p><img src="/images/pieces.jpg" alt="" /></p>
+
+<p>Recently, I came to know an interesting and new idea about password storage schema called <a href="https://github.com/PolyPassHash/PolyPassHash">PollyPassHash</a>.</p>
+
+<p>I may write about PolyPassHasing in more details in separate post, but in summary, PolyPassHashing proposes a new password storage schema that requires certain numbers of shared keys to decrypt the encrypted password.</p>
+
+<p>In this post, I will write about <strong><em>Shamir&rsquo;s secret sharing</em></strong>, one of key technologies used in PolyPassHashing, and try to explain the mathematical basis that archive this great secret sharing technology.</p>
+
+<h2>Contents of This Article</h2>
+
+<h4><a href="#what_is_shamirs_secret_sharing">What is Shamir&rsquo;s secret sharing?</a></h4>
+
+<h4><a href="#basic_terms">Basic terms</a></h4>
+
+<h4><a href="#handson">HandsOn: Play Shamir&rsquo;s Secret with Ruby</a></h4>
+
+<h4><a href="#handson">Understanding mathematical basis</a></h4>
+
+<ul>
+<li><a href="#share_computation">Share Computation</a></li>
+<li><a href="#secret_reconstruction">Secret Reconstruction</a></li>
+</ul>
+
+
+<p><a id="what_is_shamirs_secret_sharing"></a></p>
+
+<h2>What is Shamir&rsquo;s secret sharing</h2>
+
+<p>As the name implies, Shamir&rsquo;s secret sharing is created by Adi Shamir, an famous Israeli cryptographer, who also contributed to the invention of RSA algorithm.</p>
+
+<p>Shamir&rsquo;s secret sharing is an algorithm that divides a secret into shares. Secret can be recovered by combining certain numbers of shares.</p>
+
+<p>Imagine a case where you have to encrypt some data. No matter which encryption method you use, you must store the secret key used in the encryption in order to decrypt later.</p>
+
+<p>The key has to be very secured. If the key is stolen by attacker, your data will be easily decrypted. However, storing key is always difficult problem. It gets even more difficult if you need to share the key with others.</p>
+
+<p>This problem of storing and sharing secret key is cause of headache for administrators.</p>
+
+<p>However, if you use Shamir&rsquo;s secret sharing algorithm, you can solve the two problems to greater extent.</p>
+
+<p>You can divide your secret key into pieces and distribute them to other administrators. Each administrator still needs to keep a piece of secret key, but knowing a piece is not enough to recover the original secret.</p>
+
+<p>Because attacker must compromise multiple administrator&rsquo;s pieces, secret generated by Shamir&rsquo;s secret sharing is very difficult to be compromised.</p>
+
+<p><a id="basic_terms"></a></p>
+
+<h2>Basic Terms</h2>
+
+<p>Before going into details, let&rsquo;s clarify some terms used in Shamir&rsquo;s Secret sharing.</p>
+
+<h4>Secret</h4>
+
+<p>Secret is a secret message or number that you want to share with others securely.</p>
+
+<h4>Share</h4>
+
+<p>Share is a piece of secret. Secret is divided into pieces and each piece is called share. It is computed from given secret. In order to recover the secret, you need to get certain numbers of shares.</p>
+
+<h4>Threshold</h4>
+
+<p>Threshold is the number of shares you need at least in order to recover your secret. You can restore your secret only when you have more than or equal to the number of threshold.</p>
+
+<p><a id="handson"></a></p>
+
+<h2>HandsOn: Play Shamir&rsquo;s Secret With Ruby</h2>
+
+<p>Do you want to see what you can do with Shamir&rsquo;s secret sharing? Let&rsquo;s use a small Ruby library that I wrote to demonstrate the idea. This library is ported from Python Shamir&rsquo;s secret sharing library used in <a href="https://github.com/PolyPassHash/PolyPassHash">PolyPassHash project</a> originally written by <a href="https://github.com/JustinCappos">JustinCappos</a>.</p>
+
+<p>First get the code from <a href="https://github.com/PolyPassHash/PolyPassHash-Ruby">PolyPassHash-Ruby</a> and load <code>shamirsecret.rb</code> into your <code>irb</code> session.</p>
+
+<p><code>sh
+$ git clone https://github.com/PolyPassHash/PolyPassHash-Ruby
+$ cd PolyPassHash-Ruby
+$ irb -r ./shamirsecret.rb
+</code></p>
+
+<p>Let&rsquo;s encrypt some messages and see if we can recover the message when giving enough numbers of shares.</p>
+
+<p>```ruby</p>
+
+<h1>First, you need to instantiate ShamirSecret class.</h1>
+
+<h1>You can specify the number of threshold in the first argument. In this case, two shares are required.</h1>
+
+<h1>You can pass a message to encrypt in the second argument.</h1>
+
+<p>shamirsecret = ShamirSecret.new(2, &ldquo;In the name of Adi Shamir&rdquo;)</p>
+
+<h1>We compute shares from the given secret. Let&rsquo;s assume we want to distribute to three parties, so lets create three shares.</h1>
+
+<h1>The argument is so called share number. You will know what it is later in this post.</h1>
+
+<h1>For now, just remember that it has to be unique number.</h1>
+
+<p>s1 = shamirsecret.compute_share(1)
+s2 = shamirsecret.compute_share(2)
+s3 = shamirsecret.compute_share(3)</p>
+
+<h1>Once we computed shares, we will throw the secret away because we should be able to recover from shares.</h1>
+
+<p>shamirsecret = nil</p>
+
+<h1>Then we will recover the secret. Instantiate ShamirSecret again. We don&rsquo;t pass secret this time because we just want to recover secret.</h1>
+
+<p>shamirsecret = ShamirSecret.new(2)</p>
+
+<h1>Now we can recover the secret by giving two shares or more since we set threshold to be 2.</h1>
+
+<p>shamirsecret.recover_secretdata([s1,s3])
+=> &ldquo;In the name of Adi Shamir&rdquo;
+```</p>
+
+<p>Let&rsquo;s confirm what happens if we gave wrong shares.</p>
+
+<p>```ruby</p>
+
+<h1>Instantiate and compute share in the same way</h1>
+
+<p>shamirsecret = ShamirSecret.new(2, &ldquo;In the name of Adi Shamir&rdquo;)
+s1 = shamirsecret.compute_share(1)
+s2 = shamirsecret.compute_share(2)
+s3 = shamirsecret.compute_share(3)</p>
+
+<h1>Make sure our share is valid</h1>
+
+<p>shamirsecret.is_valid_share(s1)
+=> true</p>
+
+<h1>Change a byte of share</h1>
+
+<p>s1[1][0] = s1[1][0] + 1 % 256</p>
+
+<h1>The share is not valid anymore</h1>
+
+<p>shamirsecret.is_valid_share(s1)
+=> false</p>
+
+<h1>Secret is corrupted with wrong share</h1>
+
+<p>shamirsecret = nil
+shamirsecret = ShamirSecret.new(2)
+shamirsecret.recover_secretdata([s1,s3])
+=> &ldquo;\xC6n the name of Adi Shamir&rdquo;
+```</p>
+
+<p><a id="how_this_works"></a></p>
+
+<h2>How This Works</h2>
+
+<p>It&rsquo;s time to do some math. Shamir&rsquo;s secret sharing is using the very basic idea of polynomial.</p>
+
+<p>We have two major steps: <strong>Share Computation</strong> and <strong>Secret Reconstruction</strong>. Let&rsquo;s do one by one.</p>
+
+<p><a id="share_computation"></a></p>
+
+<h3>Share Computation</h3>
+
+<h4>Step1: Decide secret</h4>
+
+<p>First, we need to decide our secret message. To make our story simple, let&rsquo;s choose dead simple one, <code>3</code>, as our secret.</p>
+
+<p>If you choose more complex message such as <em>I love you</em> or <em>4b0649b1faf1c1ea7cb0e900</em>, you just need to convert them to byte array so that you can treat them as a number.</p>
+
+<h4>Step2: Decide threshold</h4>
+
+<p>Next thing to decide is the threshold. We will choose <code>3</code> as our threshold. This means that you need at least three shares to recover the secret.</p>
+
+<h4>Step3: Create polynomial</h4>
+
+<p>We need to create our polynomial. Polynomial is the equation that looks like <strong>y=3x+1</strong> or <strong>y=5x<sup>2</sup>+10x-3</strong>.
+You can choose any numbers for coefficient, but the degree of your polynomial must be <strong>threshold -1 </strong>.</p>
+
+<p>Our threshold is <code>3</code>, so the degree must be <code>2</code> in our case. The polynomial of degree of 2 should takes the form of <strong>y=ax<sup>2</sup>+bx+c</strong>. Since you can choose any numbers
+for coefficient, we will use <code>2</code> for <strong><em>a</em></strong> and <code>1</code> for <strong><em>b</em></strong>.</p>
+
+<p>What <strong><em>c</em></strong> will be? <strong><em>c</em></strong> must to be our secret. Therefore, we use <code>3</code> for <strong><em>c</em></strong>.</p>
+
+<p>This is our polynomial: <strong>y=2x<sup>2</sup>+x+3</strong>.</p>
+
+<p>Now we have everything to demonstrate Shamir&rsquo;s secret sharing. This is our configuration</p>
+
+<blockquote><p><strong>Secret:</strong> 3</p>
+
+<p><strong>Threshold:</strong>  3</p>
+
+<p><strong>Polynomial:</strong> y=2x<sup>2</sup>+x+3</p></blockquote>
+
+<h4>Step4: Draw graph</h4>
+
+<p>Note that drawing graph is not necessary to do computation for Shamir&rsquo;s secret sharing. However, we can understand how this works better by drawing graph.</p>
+
+<p>The graph of our polynomial looks like this one.</p>
+
+<p><img src="/images/polygraph0.jpg" alt="Graph of y=2x^2+x+3" /></p>
+
+<h4>Step5: Plot points on the graph</h4>
+
+<p>Plot three points on the line of graph.</p>
+
+<p>For example, we plot <strong>(x,y)(1, 6)</strong>, <strong>(x,y)(2,13)</strong>, <strong>(x,y)(-2, 9)</strong> on the line of graph.</p>
+
+<p><img src="/images/polygraph1.jpg" alt="Plot points on the line of graph" /></p>
+
+<p>These points are your <strong><em>shares</em></strong>. The value in <strong>x</strong> is called <em>share number</em> and the value of <strong>y</strong> is a <em>share</em>.</p>
+
+<p>Remember that we decided our threshold to be <code>3</code>? Three shares are minimum number of shares that we need. That&rsquo;s why we plotted three points.</p>
+
+<p>You can get even more shares by plotting extra points if you want to distribute shares to more parties.</p>
+
+<p>Once you get shares, forget everything but your threshold and shares!! Throw your polynomial, the graph, and your secret.</p>
+
+<p>As long as you have your shares and threshold, you can recover everything else.</p>
+
+<p><a id="secret_reconstruction"></a></p>
+
+<h3>Secret Reconstruction</h3>
+
+<p>Now you know nothing but shares and threshold, but you can still recover your secret by combining the shares.</p>
+
+<p>To get this idea, we will again use graph.</p>
+
+<p>Plot points of your shares, <strong>(x,y)(1, 6)</strong>, <strong>(x,y)(2,13)</strong>, <strong>(x,y)(-2, 9)</strong>, on the graph.
+Then connecting your points and draw imaginary line. If you could do this, you can now recover your polynomial because you are connecting
+points derived from the polynomial.</p>
+
+<p><img src="/images/polygraph4.jpg" alt="" /></p>
+
+<p>Not sure if your line is accurate? Yes, it is is difficult to draw the completely same line because it is curving line. It doesn&rsquo;t matter because drawing graph is just to help you understand the idea.</p>
+
+<p>However, by definition, <a href="http://en.wikipedia.org/wiki/Shamir's_Secret_Sharing#Shamir.27s_secret-sharing_scheme">2 points are sufficient to define a line, 3 points are sufficient to define a parabola</a> (Wikipedia)</p>
+
+<p>Therefore, although it is difficult to draw the imaginary line by hands from points of shares,  you should be able to do that by doing some math. Now, let&rsquo;s do this.</p>
+
+<h4>Polynomial interpolation</h4>
+
+<p>Since we know that our threshold is <code>3</code>, we know that we need to get the polynomial of degree of <code>2</code> (remember that degree is threshold &ndash; 1) which looks like this: <strong>y=ax<sup>2</sup>+bx+c</strong></p>
+
+<p>Substitute three points into <strong>y=ax<sup>2</sup>+bx+c</strong>.</p>
+
+<blockquote><p><strong>(1)</strong> (1,6)  => <strong>c = a + b &ndash; 6</strong></p>
+
+<p><strong>(2)</strong> (2,13) => <strong>c = 4a + 2b &ndash; 13</strong></p>
+
+<p><strong>(3)</strong> (-2,9) => <strong>c = 4a &ndash; 2b &ndash; 9</strong></p></blockquote>
+
+<p>Now substitute <strong>(1)</strong> into <strong>(2)</strong> and <strong>(3)</strong> to get <strong>a</strong>.</p>
+
+<blockquote><p><strong>(4)</strong> substitute <strong>(1)</strong> into <strong>(2)</strong> => <strong>b = -3a + 7</strong></p>
+
+<p><strong>(5)</strong> substitute <strong>(1)</strong> into <strong>(3)</strong> => <strong>3b = 3a -3</strong></p>
+
+<p><strong>(6)</strong> substitute <strong>(4)</strong> into <strong>(5)</strong> => <strong>a = 2</strong></p></blockquote>
+
+<p>We could get <strong>a</strong>. Let&rsquo;s compute <strong>b</strong> next.</p>
+
+<blockquote><p><strong>(7)</strong> substitute <strong>a=2</strong> into <strong>(1)</strong> => <strong>c=b &ndash; 4</strong></p>
+
+<p><strong>(8)</strong> substitute <strong>a=2</strong> into <strong>(2)</strong> => <strong>c=2b &ndash; 5</strong></p>
+
+<p><strong>(9)</strong> substitute <strong>(7)</strong> into <strong>(8)</strong> => <strong>b = 1</strong></p></blockquote>
+
+<p>Now we could get <strong>a</strong> and <strong>b</strong>. At last, we can compute <strong>c</strong>.</p>
+
+<blockquote><p><strong>(10)</strong> substitute <strong>a=2</strong> and <strong>b=1</strong> into <strong>(1)</strong> => <strong>c=3</strong></p></blockquote>
+
+<p>We are done. We could recover original polynomial <strong>y=2x<sup>2</sup>+x+3</strong> and you can find your secret at free coefficient, which is <strong>3</strong>.</p>
+]]></content>
+  </entry>
+  
+</feed>

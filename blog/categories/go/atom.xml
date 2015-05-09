@@ -1,0 +1,503 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+  <title><![CDATA[Category: go | Program Is Made At Night]]></title>
+  <link href="http://kimh.github.io/blog/categories/go/atom.xml" rel="self"/>
+  <link href="http://kimh.github.io/"/>
+  <updated>2015-05-09T15:17:33+09:00</updated>
+  <id>http://kimh.github.io/</id>
+  <author>
+    <name><![CDATA[Kim, Hirokuni]]></name>
+    <email><![CDATA[yangkookkim@gmail.com]]></email>
+  </author>
+  <generator uri="http://octopress.org/">Octopress</generator>
+
+  
+  <entry>
+    <title type="html"><![CDATA[(WIP) Ruby To Go: How can I do X in Ruby with Go? (Part I)]]></title>
+    <link href="http://kimh.github.io/blog/en/go/how-can-i-do-x-in-ruby-with-go-part-1/"/>
+    <updated>2014-05-16T23:39:00+09:00</updated>
+    <id>http://kimh.github.io/blog/en/go/how-can-i-do-x-in-ruby-with-go-part-1</id>
+    <content type="html"><![CDATA[<p>I am a programmer who can write decent Ruby and some Javascript.</p>
+
+<p>These two languages were all I know. I wanted to add Go to my list of programming language, so I started learning Go.</p>
+
+<p>It&rsquo;s boring to read programming books to study programming languages, so I decided to learn Go by porting some programs written in Ruby.</p>
+
+<p>While I was porting Ruby program to Go, I came to think it is useful if there is a cheatsheet that I can loop up in order to convert idiomatic Ruby code to Go.</p>
+
+<p>Ruby and Go are totally different language, so sometimes it is impossible to simply translate Ruby code to Go.
+However, it is possible in most cases to write Go code that is sematically equivalant to Ruby code.</p>
+
+<p>So, here is a <strong><em>How can I do X in Ruby with Go?</em></strong> cheetsheet.</p>
+
+<p>I hope you find it useful.</p>
+
+<h2>Contents of this artcile</h2>
+
+<h3>Array and Enumerable Operation</h3>
+
+<ul>
+<li><a href="#create_array">Create array</a></li>
+<li><a href="#append_an_element_to_array">Append element to array</a></li>
+<li><a href="#concatenate_arrays">Concatenate arrays</a></li>
+<li><a href="#create_multi_dimension_aray">Create multi dimension array</a></li>
+<li><a href="#create_empty_array">Create empty array</a></li>
+<li><a href="#iterate_on_an_array">Iterate on array</a></li>
+<li><a href="#looping_n_times">Looping N times</a></li>
+<li><a href="#clone_array">Clone array</a></li>
+<li><a href="#accessing_elements_of_an_array_by_range">Accessing elements of array by range</a></li>
+<li><a href="#compare_array">Compare array</a></li>
+<li><a href="#check_if_array_includes_an_element">Check if array includes an element</a></li>
+</ul>
+
+
+<h3>Method Definition</h3>
+
+<ul>
+<li><a href="#define_a_method_with_optional_parameter">Define a method with optional parameter</a></li>
+<li><a href="#define_a_method_with_variable_length_argument">Define a method with variable length arugment</a></li>
+</ul>
+
+
+<h3>MathematicOperation</h3>
+
+<ul>
+<li><a href="#modular_of_negative_number">Modular of negative number</a></li>
+</ul>
+
+
+<h3>Misc</h3>
+
+<ul>
+<li><a href="#nil_checking">Nil checking</a></li>
+<li><a href="#checking_the_class">Checking the class</a></li>
+</ul>
+
+
+<p><a id="array_and_enumerable_operation"></a></p>
+
+<h2>Array and Enumerable Operation</h2>
+
+<p>Array is very powerful data structure and enumerable is probably the most frequently used object in Ruby.</p>
+
+<p>In Go, we have two different enumerable data structures: <strong>array</strong> and <strong>slice</strong>.
+I don&rsquo;t write about details about them since it is not the goal of this post, but array is low-level data structure that slice refers to.</p>
+
+<p><a id="create_array"></a></p>
+
+<h3>Create array</h3>
+
+<p><strong><em>Ruby:</em></strong>
+<code>ruby
+numbers = [1,2,3]
+fruits = ["apple", "banana", "grape"]
+</code></p>
+
+<p><strong><em>Go:</em></strong>
+<code>go
+numbers := []int{1,2,3}
+fruits := []string{"apple", "banana", "grape"}
+</code>
+In the case of Go, <code>numbers</code> and <code>words</code> are <strong>slice</strong>, not <strong>array</strong>. Array is primitive data structure, not frequently used in Go code.
+If you want to archive similar things to Ruby array, slice should work for you.</p>
+
+<p><a id="append_an_element_to_array"></a></p>
+
+<h3>Append an element to array</h3>
+
+<p><strong><em>Ruby:</em></strong>
+<code>ruby
+numbers = [1,2,3]
+numbers &lt;&lt; 4
+</code></p>
+
+<p><strong><em>Go:</em></strong>
+<code>go
+numbers := []int{1,2,3}
+numbers.append(numbers, 4)
+</code>
+<strong>append</strong> adds elements to slice and <strong><em>return new slice</em></strong>. Therefore, you have to reassign to itself.</p>
+
+<p><a id="concatenate_arrays"></a></p>
+
+<h3>Concatenate arrays</h3>
+
+<p><strong><em>Ruby:</em></strong>
+<code>ruby
+numbers1 = [1,2,3]
+numbers2 = [4,5,6]
+numbers1 = numbers1 + numbers2
+</code></p>
+
+<p><strong><em>Go:</em></strong>
+<code>go
+numbers1 := []int{1,2,3}
+numbers2 := []int{4,5,6}
+numbers1 = append(numbers1, numbers2...)
+</code>
+<code>...</code> suffix on the slice indicates that it should be passed as the variadic argument, expanded as each <code>int</code> elements inside <code>append</code>.
+Thus, this is equivalent to below:</p>
+
+<p><code>go
+numbers1 := []int{1,2,3}
+numbers1 = append(numbers1, 4, 5, 6)
+</code>
+<a id="create_multi_dimension_aray"></a></p>
+
+<h3>Create multi dimension array</h3>
+
+<p><strong><em>Ruby:</em></strong>
+<code>ruby
+multi_array = [[1,2,3],[4,5,6]]
+</code></p>
+
+<p><strong><em>Go:</em></strong>
+<code>go
+var mul [][]int = [][]int{ {1, 2, 3}, {4,5,6} }
+</code>
+<a id="create_empty_array"></a></p>
+
+<h3>Create empty array</h3>
+
+<p><strong><em>Ruby:</em></strong>
+<code>ruby
+array = []
+</code></p>
+
+<p><strong><em>Go:</em></strong>
+<code>go
+var array []int
+</code>
+When slice is declared, but not initialised, the slice points to an array of size 0.</p>
+
+<p><a id="iterate_on_an_array"></a></p>
+
+<h3>Iterate on array</h3>
+
+<p><strong><em>Ruby:</em></strong>
+<code>ruby
+numbers = [1,2,3]
+numbets.each {|num| puts num }
+</code></p>
+
+<p><strong><em>Go:</em></strong>
+<code>go
+numbers := []int{1,2,3}
+for _, num := range numbers {
+  fmt.Println(num)
+}
+</code>
+If you want to access the index while iterating over the slice, replace <code>_</code> with other variable, for example, <code>i</code>.
+<code>go
+numbers := []int{1,2,3}
+for i, num := range numbers {
+  fmt.Println("index: ", i, "number: ", num)
+}
+</code></p>
+
+<p><a id="looping_n_times"></a></p>
+
+<h3>Looping N times</h3>
+
+<p><strong><em>Ruby:</em></strong>
+<code>ruby
+5.times {|num| puts num}
+</code></p>
+
+<p><strong><em>Go:</em></strong>
+<code>go
+for num:=0; num &lt;5; num++ {
+  fmt.Println(num)
+}
+</code></p>
+
+<p><a id="clone_array"></a></p>
+
+<h3>Clone array</h3>
+
+<p><strong><em>Ruby:</em></strong>
+<code>ruby
+new_array = old_array.clone
+</code></p>
+
+<p><strong><em>Go:</em></strong>
+<code>go
+new_array := make([]int, len(old_array))
+copy(new_array, old_array)
+</code></p>
+
+<p><a id="accessing_elements_of_an_array_by_range"></a></p>
+
+<h3>Accessing elements of array by range</h3>
+
+<p><strong><em>Ruby:</em></strong>
+<code>ruby
+numbers=[1,2,3,4,5]
+numbers[0..3]
+</code></p>
+
+<p><strong><em>Go:</em></strong>
+<code>go
+ary := []int{1,2,3,4,5}
+ary[0:4]
+</code>
+Note that, with <code>from:to</code>, <code>to</code> is the index where to end <strong>but not including the index itself</strong>.</p>
+
+<p><a id="compare_array"></a></p>
+
+<h3>Compare array</h3>
+
+<p><strong><em>Ruby:</em></strong>
+<code>ruby
+if ary1 == ary2
+  puts "Same array"
+end
+</code></p>
+
+<p><strong><em>Go:</em></strong>
+```go
+same := true
+for i, elm:= range ary1 {
+   if ary2[i] != r { same = false }
+}</p>
+
+<p>if same == true {
+  fmt.Println(&ldquo;Same slice&rdquo;)
+}
+<code>``
+You cannot compare slice in Go. You will get</code>slice can only be compared to nil` error if you try to do that.</p>
+
+<p><a id="check_if_array_includes_an_element"></a></p>
+
+<h3>Check if array includes an element</h3>
+
+<p><strong><em>Ruby:</em></strong>
+```ruby
+fruits = [&ldquo;apple&rdquo;, &ldquo;banana&rdquo;, &ldquo;grape&rdquo;]</p>
+
+<p>if fruits.include?(&ldquo;apple&rdquo;)
+  puts &ldquo;include!&rdquo;
+end
+```</p>
+
+<p><strong><em>Go:</em></strong>
+```go
+include := false
+fruits := []string{&ldquo;apple&rdquo;, &ldquo;banana&rdquo;, &ldquo;grape&rdquo;}
+for _, elm := range fruits {
+  if elm == &ldquo;apple&rdquo; {</p>
+
+<pre><code>include = true
+break
+</code></pre>
+
+<p>  }
+}</p>
+
+<p>if include == true {
+  fmt.Println(&ldquo;include!&rdquo;)
+}
+```</p>
+
+<h2>Method Definition</h2>
+
+<p>There are two things that are equivalant to Ruby&rsquo;s method in Go: <strong>method</strong> and <strong>function</strong>.
+Method is a type of function but requires specific receiver.</p>
+
+<p><a id="define_a_method_with_optional_parameter"></a></p>
+
+<h3>Define a method with optional parameter</h3>
+
+<p><strong><em>Ruby:</em></strong>
+<code>ruby
+def greeting(word="hello!")
+  puts word
+end
+</code></p>
+
+<p><strong><em>Go:</em></strong></p>
+
+<p>This is not possbile in Go. Go does not support optional parameter in function or method definition.
+One workaround is using struct.
+```go
+type greetingArg struct { word string }
+func greeting(opt greetingArg) {
+  word := opt.word
+  if word == &ldquo;&rdquo; {</p>
+
+<pre><code>fmt.Println("hello!")
+</code></pre>
+
+<p>  } else {</p>
+
+<pre><code>fmt.Println(word)
+</code></pre>
+
+<p>  }
+}</p>
+
+<p>greeting(greetingArg{})
+greeting(greetingArg{&ldquo;bye!&rdquo;})
+```</p>
+
+<p><a id="define_a_method_with_variable_length_argument"></a></p>
+
+<h3>Define a method with variable length argument</h3>
+
+<p><strong><em>Ruby:</em></strong>
+<code>ruby
+def foo(*args)
+  args.each {|arg| puts arg}
+end
+</code></p>
+
+<p><strong><em>Go:</em></strong>
+```go
+func foo(arg &hellip;int) {
+  for _, arg := range arg {</p>
+
+<pre><code>fmt.Prinln(arg)
+</code></pre>
+
+<p>  }
+}
+```</p>
+
+<h2>Mathematic Operation</h2>
+
+<p><a id="modular_of_negative_number"></a></p>
+
+<h3>Modular of negative number</h3>
+
+<p>Both Ruby and Go supports modular of negative number. However, their behavior is different.</p>
+
+<p><strong><em>Ruby:</em></strong>
+<code>ruby
+-5 % 3 =&gt; 1
+</code></p>
+
+<p><strong><em>Go:</em></strong>
+<code>go
+-5 % 3 =&gt; -2
+</code></p>
+
+<p>Go follows <strong><em>truncated toward zero</em></strong> for the division of negative number.</p>
+
+<p>If you want to get the same value that Ruby returns, here is how to do this.</p>
+
+<p><strong><em>Go:</em></strong>
+```go
+divider := 3
+mod := -5 % divider
+if mod &lt; 0 {</p>
+
+<pre><code>mod = mod + divider
+</code></pre>
+
+<p>}
+```</p>
+
+<p>Note that values returnd by Ruby and Go are both mathematically correct. It&rsquo;s just there are two ways to define negative modulo.</p>
+
+<h2>Misc</h2>
+
+<p><a id="nil_checking"></a></p>
+
+<h3>Nil checking</h3>
+
+<p><strong><em>Ruby:</em></strong>
+<code>ruby
+if val.nil?
+  puts "val is nil"
+end
+</code></p>
+
+<p><strong><em>Go:</em></strong>
+```go
+var str string
+if str ==&ldquo;&rdquo; {
+  fmt.Println(&ldquo;str is empty&rdquo;)
+}</p>
+
+<p>var i int
+if i == 0 {
+  fmt.Println(&ldquo;i is zero&rdquo;)
+}
+```</p>
+
+<p>When you declear a variable without intialization, the variable is set to zero value for its type.
+Below is default zero value for primitive types.</p>
+
+<table>
+<thead>
+<tr>
+<th></th>
+<th> Type </th>
+<th align="center"> Value </th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td></td>
+<td> string </td>
+<td align="center"> <strong>&lsquo;&rsquo;</strong></td>
+</tr>
+<tr>
+<td></td>
+<td> int    </td>
+<td align="center"> <strong>0</strong></td>
+</tr>
+<tr>
+<td></td>
+<td> float  </td>
+<td align="center"> <strong>0.0</strong></td>
+</tr>
+<tr>
+<td></td>
+<td> boolean </td>
+<td align="center"> <strong>false</strong></td>
+</tr>
+<tr>
+<td></td>
+<td> pointer </td>
+<td align="center"> <strong>nil</strong></td>
+</tr>
+<tr>
+<td></td>
+<td> interface </td>
+<td align="center"> <strong>nil</strong></td>
+</tr>
+<tr>
+<td></td>
+<td> slice </td>
+<td align="center"> <strong>nil</strong></td>
+</tr>
+<tr>
+<td></td>
+<td> map </td>
+<td align="center"> <strong>nil</strong></td>
+</tr>
+</tbody>
+</table>
+
+
+<p><a id="checking_the_class"></a></p>
+
+<h3>Checking the class</h3>
+
+<p><strong><em>Ruby:</em></strong>
+<code>ruby
+puts "abc".class
+</code></p>
+
+<p><strong><em>Go:</em></strong>
+```go
+import &ldquo;reflect&rdquo;</p>
+
+<p>fmt.Println(reflect.TypeOf(&ldquo;abc&rdquo;))
+```</p>
+]]></content>
+  </entry>
+  
+</feed>

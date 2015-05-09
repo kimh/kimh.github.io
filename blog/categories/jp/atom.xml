@@ -1,0 +1,1283 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+  <title><![CDATA[Category: jp | Program Is Made At Night]]></title>
+  <link href="http://kimh.github.io/blog/categories/jp/atom.xml" rel="self"/>
+  <link href="http://kimh.github.io/"/>
+  <updated>2015-05-09T15:17:33+09:00</updated>
+  <id>http://kimh.github.io/</id>
+  <author>
+    <name><![CDATA[Kim, Hirokuni]]></name>
+    <email><![CDATA[yangkookkim@gmail.com]]></email>
+  </author>
+  <generator uri="http://octopress.org/">Octopress</generator>
+
+  
+  <entry>
+    <title type="html"><![CDATA[Ruby LotusでWeb Appを作ってみる]]></title>
+    <link href="http://kimh.github.io/blog/jp/lotus/creating-web-application-with-ruby-lotus-ja/"/>
+    <updated>2014-09-11T18:40:00+09:00</updated>
+    <id>http://kimh.github.io/blog/jp/lotus/creating-web-application-with-ruby-lotus-ja</id>
+    <content type="html"><![CDATA[<p><img src="/images/lotus.jpeg" alt="" /></p>
+
+<p><strong><em>注意</em></strong>  この記事はIBM製のコラボレーションソフトについてのページではありません。Rubyで書かれた<a href="http://lotusrb.org/">Lotus</a>というWebフレームワークについての記事です。</p>
+
+<h2>内容</h2>
+
+<ul>
+<li><a href="#what_is_lotus">Lotusとは何か</a></li>
+<li><a href="#why_lotus_instead_of_rails">なぜRailsじゃなくLotusか</a></li>
+<li><a href="#creating_one_file_application">One-fileアプリを作る</a></li>
+</ul>
+
+
+<p><a id="what_is_lotus"></a></p>
+
+<h2>Lotusとは何か</h2>
+
+<p><a href="http://lotusrb.org/">Lotus</a>は新しいRubyで書かれたWebフレームワークです。比較的少人数の<a href="https://github.com/lotus">lotusチーム</a>が開発しています。
+2014年9月の時点ではまだ本番環境では使えませんが、簡単なアプリを作るには十分に動作します。</p>
+
+<p>Lotusのプロジェクトページに書かれているスローガンを見たときに一瞬で一目惚れしました。</p>
+
+<p>ページにはこう書いてあります。(かなり意訳です)</p>
+
+<blockquote><p>Lotusは軽量で高速かつテストが容易なフレームワークです。Lotusはオブジェクト指向プログラミングのエッセンスを取り戻し、安定したAPI、最小限のDSLを提供してシンプルなオブジェクトに基づいたWeb開発を可能にします。</p></blockquote>
+
+<p>このスローガンを読んだ時、探していたものはこれだと思いました。（後で詳しく説明します）ちょうど個人でやっているプロジェクトでシンプルなAPIサーバを作ろうとしていたので早速Lotusを使ってみることにしました。
+まだ情報がほとんど世の中に存在しないので色々苦労しましたが、最近は少しずつ <strong><em>Lotus Way</em></strong> がわかってきたのでこの記事で紹介しようと思います。</p>
+
+<p><a id="why_lotus_instead_of_rails"></a></p>
+
+<h2>なぜRailsではなくLotusか</h2>
+
+<p>最近はアプリケーションをモジュール方式で開発する機会が増えてきました。この開発方法をSOAと呼ぼうがMicroserviceと呼ぼうがなんでもいいですが、多くのプロジェクトがこの開発方式を採用するようになってきています。
+<a href="https://github.com/flynn">(Fylnnはお気に入りの例です)</a></p>
+
+<p>アプリをモジュール方式で開発する利点はいくつかあります。</p>
+
+<ul>
+<li>テストがしやすい</li>
+<li>高いポータビリティ</li>
+<li>再利用しやすい</li>
+<li>デプロイが容易</li>
+</ul>
+
+
+<p>Railsを使ってこれらのことを実現するのは簡単ではありません。Railsは素晴らしいですが、フレームワークスタックは巨大で沢山の機能が最初からビルトインされています。
+要するにRailsは小さいコンポーネントを沢山作るには大きすぎます。</p>
+
+<p><a href="https://github.com/sinatra/sinatra">Sinatra</a>や<a href="https://github.com/rails-api/rails-api">rails-api</a>が使えるのでは？と思う人もいると思います。
+確かにSinatraは軽量です。ただ最近個人的にはDSLよりも <strong><em>純粋なRubyのコード</em></strong> を好むようになってきました。学習コストを低く抑えれるからです。
+正直rails-apiは使ったことがないのでよくわかりません。ただ、Railsがベースなのでそこまで軽量ではないのではないかと思っています。もし、知ってる人がいたら教えてください。</p>
+
+<p><a href="https://github.com/lotus">LotusのGithubページ</a>を見ればわかりますが、Lotusは複数のコンポーネントからできているので、この中の一つだけを自分のプロジェクトで使うことも可能です。
+例えば、<a href="https://github.com/lotus/router">lotus-router</a>だけを自分のRackアプリに組み込んでHTTPルーターとして使うことができます。</p>
+
+<p>またLotusはRailsのようにフルスタックなフレームワークとして使うこともできます。LotusはRailsのいいとこ取りをしているので(例えばCoCの積極的に採用)比較的少ないコードでアプリケーションを作ることもできます。</p>
+
+<p>つまり、LotusはSinatraのように軽量なアプリを作ることができる一方で、Railsのようにフルスタックなアプリも作ることができるということです。</p>
+
+<p><a id="creating_one_file_application"></a></p>
+
+<h2>One-fileアプリケーションを作る</h2>
+
+<p>Lotusを使ってOne-fileアプリケーションを作ってみます。LotusのGithubに掲載されている<a href="https://github.com/lotus/lotus#one-file-application">one file application</a>を参考にします。</p>
+
+<p>まずは、プロジェクト用のディレクトリを作成します。今後の説明はこのディレクトリをカレントディレクトリに設定しているいう前提で進めます。</p>
+
+<p><code>
+mkdir onefileapp &amp;&amp; cd onefileapp
+</code></p>
+
+<p>Lotusの公式なgemはまだ配布されていません。<a href="https://rubygems.org/gems/lotusrb">ここ</a>にありますが更新日は2014年1月となっています。最新のmasterブランチは
+これよりずっと進んでいるので、ソースからインストールします。そのために、まずLotusレポジトリをクローンします。</p>
+
+<p><code>
+git clone https://github.com/lotus/lotus.git
+</code></p>
+
+<p>Gemの管理にbundlerを使います。Gemfileを作成しましょう。</p>
+
+<p><code>
+bundle init
+</code></p>
+
+<p>次にGemfileを編集します。<code>&lt;your-path-to-lotus-repo&gt;</code>をクローンしてきたLotusのレポジトリのディレクトリに適宜変更してください。</p>
+
+<p><code>ruby
+source "https://rubygems.org"
+gem 'lotusrb', :path =&gt; &lt;your-path-to-lotus-repo&gt;
+</code></p>
+
+<p>Gemをインストールします。</p>
+
+<p><code>
+bundle install --path vendor/
+</code></p>
+
+<p>これでアプリケーションを書く準備が整いました(といっても１ファイルですが)。以下のコードを <strong><em>config.ru</em></strong> として保存してください。</p>
+
+<p><strong><em>config.ru</em></strong>
+```ruby
+require &lsquo;lotus&rsquo;</p>
+
+<p>module OneFile
+  class Application &lt; Lotus::Application</p>
+
+<pre><code>configure do
+  routes do
+    get '/', to: 'home#index'
+  end
+end
+load!
+</code></pre>
+
+<p>  end</p>
+
+<p>  module Controllers</p>
+
+<pre><code>module Home
+  include OneFile::Controller
+
+  action 'Index' do
+    def call(params)
+    end
+  end
+end
+</code></pre>
+
+<p>  end</p>
+
+<p>  module Views</p>
+
+<pre><code>module Home
+  class Index
+    include OneFile::View
+
+    def render
+      "Hello, Lotus"
+    end
+  end
+end
+</code></pre>
+
+<p>  end
+end</p>
+
+<p>run OneFile::Application.new
+```</p>
+
+<p>保存したらアプリを起動してみましょう。最新のmasterブランチには <code>lotus server</code> コマンドがあるのでこれを使います。</p>
+
+<p><code>
+bundle exec lotus server
+</code></p>
+
+<p>起動できましたか？それではブラウザで <a href="http://localhost:2300">http://localhost:2300</a> にアクセスしてみてください。 <code>Hello, Lotus</code> と表示されるはずです。</p>
+
+<p>コードの説明をします。</p>
+
+<p>まず、最初に気づくことは<code>Controllers</code>と<code>Views</code>モジュール内で定義されているクラスは継承を使っていないということです。
+Lotusの哲学の一つに<code>モジュールをインクルードして最小限のインターフェースを実装する</code>というものがあります。
+この哲学は開発者に本当に必要なものだけをMixinして使うことを推奨します。</p>
+
+<p>次に<code>Application</code>クラスを見てみましょう。今回の例ではこのクラスはルートの設定をしているだけです。
+<code>get '/', to: 'home#index'</code>とすることで<code>GET /</code>のルートは<code>Home::Index</code>コントローラを使うように設定しています。
+今回はひとつだけしかルートを設定していませんが他のHTTPメソッドも同じように設定できます。</p>
+
+<p>```ruby
+routes do
+  post   &lsquo;/books&rsquo;,             to: &lsquo;book#create&rsquo;
+  put    &lsquo;/books/:id&rsquo;,         to: &lsquo;book#update&rsquo;
+  delete &lsquo;/books/:id&rsquo;,         to: &lsquo;book#destroy&rsquo;</p>
+
+<p>  # ワンライナーレスポンス
+  get    &lsquo;/ping&rsquo;,              to: &ndash;>(env) {[200, {}, [&lsquo;pong&rsquo;]]}
+end
+```</p>
+
+<p>次に<code>Controllers</code>を見てみましょう。<code>action</code>を呼んでいる以外は何もしていません。</p>
+
+<p><code>action</code>とは何でしょうか？<code>action</code>はHTTPリクエストのエンドポイントとして動き、ここでリクエストの中身を見たりレスポンスを生成したりします。
+リクエストに対するビジネスロジックもここに書きます。多分、<code>action</code>はRailsのControllerとほとんど同じものだと考えていいと思います。
+ここでは先ほどみたルートから呼び出される<code>Index</code> actionを定義しています。</p>
+
+<p>最後に<code>Views</code>を見ましょう。このクラスの仕事はRailsのViewとは異なります。
+RailsではViewはブラウザでレンダリングされるコンテンツを吐き出すコードを書く場所でした。Lotusではこれは<code>Template</code>で行います。(今回の例ではTemplateはでてきません)</p>
+
+<p>LotusではViewはPresenterレイヤーとして動きます。RailsではPresenterは標準ではありません。(Draperなどのgemで使えるようになります)
+Presenterの仕事はデータをControllerから受け取って抽象化してTemplateに見せることです。
+このようにすることでコンテンツ描画コードをクリーンに保つことができるので最近では有名なデザインパターンです。</p>
+
+<p>コードの説明に戻ります。ここでは<code>render</code>メソッドを実装して<code>Hello, Lotus</code>というメッセージを表示しています。</p>
+
+<p>この例はあまり面白くないですね。ViewとControllerを連携させてデータのやりとりをさせてみましょう。</p>
+
+<p>Controllerのコードを以下のように編集します。</p>
+
+<p>```ruby
+module Controllers
+  module Home</p>
+
+<pre><code>include OneFile::Controller
+action 'Index' do
+
+  expose :time
+
+  def call(params)
+    @time = Time.now
+  end
+end
+</code></pre>
+
+<p>  end
+end
+```</p>
+
+<p>２つ新しいメソッドが出てきました。<code>expose</code>と<code>call</code>です。</p>
+
+<p>ControllerからViewにデータを渡すには、exposeを使って明示的に公開する変数を指定しないといけません。
+これも<code>本当に必要なものだけを使う</code>というLotusの哲学の現れです。</p>
+
+<p> <code>call</code>はHTTPリクエストのエントリーポイントとして動きます。さっきも少し触れたようにこの中にビジネスロジックやレスポンス生成のコードを書きます。</p>
+
+<p>ViewをControllerからデータを受け取るように変更しましょう。</p>
+
+<p>```ruby
+module Views
+  module Home</p>
+
+<pre><code>class Index
+  include OneFile::View
+
+  def render
+    "Current time: #{time}"
+  end
+end
+</code></pre>
+
+<p>  end
+end
+```</p>
+
+<p>Controllerが<code>@time</code>を<code>expose</code>で公開しているので、Viewはこのデータに<code>time</code>変数経由でアクセスすることができます。</p>
+
+<p>アプリケーションを再起動してください。ブラウザで同じページにアクセスすると<code>Current time: 2014-09-11 23:18:30 +0900</code>のように表示されるはずです。</p>
+
+<h2>まとめ</h2>
+
+<p>LotusでWebアプリを書くのはとても簡単だということがわかってもらえたでしょうか？</p>
+
+<p>ええ、あなたの心の声が聞こえてきますよ。<em>この例は単純すぎて全然実用的ではないじゃないか</em> という声が、、、</p>
+
+<p>確かにその通りです。ですが、それは次の記事で紹介させてください。本当はFull stackアプリケーションに作り方まで紹介する予定だったのですが
+この記事を書くのに予想より手間取ってしまいました。</p>
+
+<p>次の記事は、<strong><em>Ruby LotusでフルスタックWeb Appを作ってみる</em></strong> みたな感じになる予定です。</p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[CRIUを使ってDockerコンテナの停止/再開に挑戦]]></title>
+    <link href="http://kimh.github.io/blog/jp/criu/experiment-to-suspend-and-resume-docker-container-with-criu-jp/"/>
+    <updated>2014-06-22T21:18:00+09:00</updated>
+    <id>http://kimh.github.io/blog/jp/criu/experiment-to-suspend-and-resume-docker-container-with-criu-jp</id>
+    <content type="html"><![CDATA[<p><img src="/images/criu.jpeg" alt="" /></p>
+
+<h3>結論: 2014/6の時点ではCRIUを使ってDockerコンテナの停止/再開はできないという少し残念な結果でこの記事は終わります。しかし、記事を読んでもらえればCRIUの面白さはわかってもらえると思います。</h3>
+
+<p>Dockerが急速に広まったことで、LXCがVMWareやXenなどのVMに対して持つ利点はとても明確になりました。</p>
+
+<p>しかし、VMにあってLXCにはない機能が一つあります。それは、コンテナの停止/再開によるコンテナの状態の保存です。</p>
+
+<p>ここで<a href="http://criu.org/Main_Page">CRIU</a>の出番です。</p>
+
+<p>CRIUはいわゆるCR(checkpoint/restart)ツールです。走っているプロセスを途中で止めてファイルに保存して、いつでも途中からプロセスを再開することができます。</p>
+
+<p>LXCコンテナはプロセスなので、CRIUを使えばコンテナの停止/再開ができそうな気がしますが、本当にできるでしょうか？</p>
+
+<p>この記事では、CRIUをインストールしてDockerコンテナの停止/再開ができるかどうか試してみます。</p>
+
+<h2>CRIUをインスールする</h2>
+
+<h3>カーネルを再構築する</h3>
+
+<p>CRIUを動かすためには、CRIUが必要とするカーネルパラメータが有効になったカーネルを使わないといけません。今回はVagrat UbuntuをLXCのホストマシンとして使うのですが、既存のVagrant Boxで必要なカーネルパラメータが有効になっているものはなさそうでした。</p>
+
+<p>なので、まずはカーネルの再構築から始めないといけません。カーネルの再構築と言うと敷居が高そうですが、実際はとても簡単です。</p>
+
+<p>今回は<a href="https://cloud-images.ubuntu.com/vagrant/trusty/current/trusty-server-cloudimg-amd64-vagrant-disk1.box">公式Ubuntu14.04 cloud image</a>を使います。</p>
+
+<p>まずは、このボックスを追加します。</p>
+
+<p><code>sh
+$ vagrant box add ubuntu14.04 https://cloud-images.ubuntu.com/vagrant/trusty/current/trusty-server-cloudimg-amd64-vagrant-disk1.box
+$ vagrant init ubuntu14.04
+</code></p>
+
+<p> <code>vagrant up</code> コマンドを打つ前に、CPUとメモリーを増やしましょう。遅いマシンだと再構築にはとても時間がかかります。2コア、2048Mのメモリがあれば大丈夫だと思います。</p>
+
+<p> <code>Vagrantfile</code> をエディタで開いて、以下を追加してください。</p>
+
+<p><code>
+config.vm.provider :virtualbox do |vb|
+  vb.customize ["modifyvm", :id, "--memory", "2048"]
+  vb.customize ["modifyvm", :id, "--cpus", 2]
+end
+</code></p>
+
+<p>終わったら、<code>vagrant up &amp;&amp; vagrant ssh</code>してログインしてください。rootユーザになって再構築に必要なパッケージをインストールします。</p>
+
+<p><code>sh
+$ apt-get -y update
+$ apt-get -y install libncurses-dev build-essential libncurses-dev build-essential fakeroot kernel-package linux-source
+</code></p>
+
+<p>インストールしたら、<code>/usr/src/linux-source-&lt;kernel version&gt;</code> というディレクトリが作成されているはずです。そのディレクトリに移動します。</p>
+
+<p><code>sh
+$ cd /usr/src/linux-source-&lt;kernel version&gt;
+$ tar xvjf linux-source-&lt;kernel version&gt;.tar.bz2
+$ cd ./linux-source-&lt;kernel version&gt;
+</code></p>
+
+<p>次はカーネルのコンフィグファイルが必要になります。</p>
+
+<p>gistにアップロードしたのを使ってもらえれば、自分でコンフィグをする必要はありません。以下のコマンドを入力してください。(カレントディレクトリをKernelのソースを展開したディレクトリに変更しておくのを忘れずに)</p>
+
+<p><code>sh
+$ curl https://gist.githubusercontent.com/kimh/c93f42981d14a33c63c0/raw/a73af0f7f745c2538253ef153a62a8ba1a2d97be/.config -o .config
+</code></p>
+
+<p>もし、CRIUを動かすためにどのオプションが必要か知りたい場合は<a href="http://criu.org/Installation#Kernel_configuration">ここ</a>にリストがあります。</p>
+
+<p> <code>.config</code>ファイルを準備したら、再構築の準備完了です。</p>
+
+<p><strong>もう一度確認してください。CPUとメモリは増やしましたか？もししていないと、とても長い時間待たされることになります。</strong></p>
+
+<p><code>sh
+$ export LC_CTYPE=C
+$ make-kpkg clean
+$ CONCURRENCY_LEVEL=4 make-kpkg --rootcmd fakeroot --initrd --revision=`date +%Y%m%d` kernel_image kernel_headers
+</code></p>
+
+<p>ビルドが完了したら、<code>linux-headers-&lt;kernel version&gt;_amd64.deb</code> と <code>linux-image-&lt;kernel version&gt;_amd64.deb</code> というファイルが <code>/usr/src/</code> ディレクトリに作成された思います。</p>
+
+<p>さっそくインストールしましょう。</p>
+
+<p><code>sh
+$ dpkg -i linux-headers-&lt;kernel version&gt;_amd64.deb
+$ dpkg -i linux-image-&lt;kernel version&gt;_amd64.deb
+$ reboot
+</code></p>
+
+<p>再起動したらCRIUが使えるカーネルで動いているはずです。</p>
+
+<h3>CRIUをソースからコンパイルする</h3>
+
+<p>次はCRIUをインストールします。Ubuntuは最新のパッケージを用意していないので、自分でソースからコンパイルしないといけません。</p>
+
+<p><code>sh
+$ apt-get install bsdmainutils build-essential libprotobuf-c0-dev linux-headers-generic protobuf-c-compiler
+$ mkdir /src
+$ cd /src
+$ curl http://download.openvz.org/criu/criu-1.3-rc2.tar.bz2 | tar -jxf-
+$ make -C criu-1.3-rc2/
+$ cp criu-1.3-rc2/criu /usr/local/sbin/
+</code></p>
+
+<p>これでCRIUのインストールは完了です。ちゃんとインストールされているか確認しましょう。CRIUにはそのためのコマンドがあります。</p>
+
+<p><code>sh
+$ criu check --ms
+Warn  (tun.c:55): Skipping tun support check
+Warn  (cr-check.c:259): Skipping mnt_id support check
+Looks good.
+</code></p>
+
+<p> <code>Looks good.</code>が表示されましたか？いくつか警告がでますが、無視して構いません。</p>
+
+<p>コンテナに対して使う前に、まずは普通のプロセスを停止/再開してみましょう。以下の例は<a href="http://criu.org/Simple_loop">CRIUのHOWTOページ</a>からです。</p>
+
+<p>まず、ただループするだけのスクリプトを用意します。</p>
+
+<p>```
+$ cat > test.sh &lt;&lt;-EOF</p>
+
+<h1>!/bin/sh</h1>
+
+<p>while :; do</p>
+
+<pre><code>sleep 1
+date
+</code></pre>
+
+<p>done
+EOF</p>
+
+<p>$ chmod +x test.sh
+$ ./test.sh
+```</p>
+
+<p>プロセスを停止するには<code>criu dump</code>コマンドを使います。</p>
+
+<p><code>sh
+$ PID=`pgrep test.sh`
+$ mkidr /tmp/test
+$ criu dump -t $PID --images-dir /tmp/test --shell-job
+</code></p>
+
+<p>もし、ダンプが成功したら<code>/tmp/test</code>ディレクトリ配下に沢山のファイルができているはずです。</p>
+
+<p><code>sh
+$ ls /tmp/test
+cgroup.img         fanotify-mark.img   fs-4898.img     netlinksk.img     pstree.img         signalfd.img
+core-4521.img      fanotify.img        ids-4521.img    ns-files.img      reg-files.img      sk-queues.img
+core-4898.img      fdinfo-2.img        ids-4898.img    packetsk.img      remap-fpath.img    stats-dump
+creds-4521.img     fdinfo-3.img        inetsk.img      pagemap-4521.img  sigacts-4521.img   tty-info.img
+creds-4898.img     fifo-data.img       inotify-wd.img  pagemap-4898.img  sigacts-4898.img   tty.img
+eventfd.img        fifo.img            inotify.img     pages-1.img       signal-p-4521.img  tunfile.img
+eventpoll-tfd.img  filelocks-4521.img  inventory.img   pages-2.img       signal-p-4898.img  unixsk.img
+eventpoll.img      filelocks-4898.img  mm-4521.img     pipes-data.img    signal-s-4521.img
+ext-files.img      fs-4521.img         mm-4898.img     pipes.img         signal-s-4898.img
+</code></p>
+
+<p>今度はプロセスを再開してみましょう。<code>criu restore</code>コマンドを使います。</p>
+
+<p><code>sh
+$ criu restore -t $PID --images-dir /tmp/test  --shell-job
+</code></p>
+
+<p>プロセスが問題なく再開されたら<code>test.sh</code>が<code>date</code>コマンドの出力をターミナルに出すはずです。</p>
+
+<h2>CRIUでコンテナを停止/再開してみる</h2>
+
+<p>ここまでは大丈夫ですか？では、いよいよDockerコンテナに使ってみましょう。DockerはこのVagrantにはインストールされていないので、まずインストールしましょう。</p>
+
+<p><code>sh
+$ apt-get install docker.io jq
+$ ln -sf /usr/bin/docker.io /usr/local/bin/docker
+$ sed -i '$acomplete -F _docker docker' /etc/bash_completion.d/docker.io
+</code></p>
+
+<p>インストールしたら、簡単なコマンドをコンテナに実行させます。</p>
+
+<p><code>sh
+$ docker run -t -i ubuntu /bin/bash
+</code></p>
+
+<p>コンテナを停止するにはプロセスIDを知る必要があります。</p>
+
+<p><code>sh
+$ ID=`docker ps -l -q`
+$ PID=`docker inspect $ID | jq '.[0].State.Pid'`
+</code></p>
+
+<p>いよいよ、苦労が報われる時です。コンテナを停止してみましょう！！</p>
+
+<p><code>sh
+$ criu dump -t $PID --images-dir /tmp/docker
+Error (mount.c:449): 102:./dev/console doesn't have a proper root mount
+Error (cr-dump.c:1882): Dumping FAILED.
+</code></p>
+
+<p>あれ？CRIUはエラーを吐いてしまいました。ダンプに失敗したようです。エラーメッセージをGoogleで調べてみると、以下のスレッドを見つけました。</p>
+
+<p>CRIU said dumping failed. After googling the error message, I found this discussion.</p>
+
+<p><a href="https://lists.linuxcontainers.org/pipermail/lxc-devel/2013-November/006326.html">[lxc-devel] [CRIU] LXC live migrate</a></p>
+
+<blockquote><p>That&rsquo;s container&rsquo;s console which is a bind mounted tty from
+the host. And since this is an external connection, CRIU doesn&rsquo;t dump one.</p></blockquote>
+
+<p>ガーン。どうやら、現状のCRIUではLXCのの停止/再開はできないみたいです。でも、<a href="http://criu.org/LXC">ここのページ</a>にはCRIUを使ってLXCを停止/再開する方法が書かれていますよ。Dockerは内部でLXCを使っているので動くはずじゃ、、、</p>
+
+<p>以下は同じスレッドに書かれていました。</p>
+
+<p><a href="https://lists.linuxcontainers.org/pipermail/lxc-devel/2013-November/006326.html">[lxc-devel] [CRIU] LXC live migrate</a></p>
+
+<blockquote><p>AFAIK cgroups are used <em>inside</em> containers only with recent guest templates.
+In OpenVZ we use more old ones (and more stable) so haven&rsquo;t meet this yet.
+And yes, cgroups are in plans for the nearest future :)</p></blockquote>
+
+<p>要するに、CRIUはcgroupsを2014/06の時点ではサポートしていないらしいです。でも、Dockerが使っているLXCのテンプレートはcgroupsを使っているようです。よって、CRIUではDockerコンテナの停止/再開はできないみたいです。</p>
+
+<p>残念な結果です。。。</p>
+
+<h2>結論</h2>
+
+<p>今回の実験で、CRIU v1.3ではDockerコンテナの停止/再開はできないことがわかりました。CRIUがまだcgroupsに対応していないからです。</p>
+
+<p>今回は少し残念な結果になってしまいましたが、ここまで読んでもらえた方にはCRIUの可能性がわかってもらえたかと思います。</p>
+
+<p>CRIUがLXCのエコシステムにもたらす将来の可能性に対して、このプロジェクトの認知度はとても低いです。この記事を読んでくださった方は、今すぐ<a href="https://github.com/xemul/criu">Github</a>でスターしてウォッチしましょう！このブログでもこれから色々CRIUについて書いて行きたいと思います。</p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[シャミアの秘密分散法で秘密のデータを分割管理する]]></title>
+    <link href="http://kimh.github.io/blog/jp/security/protect-your-secret-key-with-shamirs-secret-sharing-jp/"/>
+    <updated>2014-05-03T22:07:00+09:00</updated>
+    <id>http://kimh.github.io/blog/jp/security/protect-your-secret-key-with-shamirs-secret-sharing-jp</id>
+    <content type="html"><![CDATA[<p><img src="/images/pieces.jpg" alt="" /></p>
+
+<p>つい最近<a href="https://github.com/PolyPassHash/PolyPassHash">PollyPassHash</a>という新しいパスワード管理手法を知りました。</p>
+
+<p>PolyPassHashingについては時間があれば別のポストで書きますが、要約すると、ある一定数の管理者の正しいパスワードが入力されないと暗号化されたパスワードデータベースを復号化できないようにするための仕組みです。</p>
+
+<p>このポストではPolyPassHashingの中核の暗号技術である <strong><em>シャミアの秘密分散法</em></strong> の紹介とそれを実現する数学的な仕組みを解説したいと思います。</p>
+
+<h2>この記事の内容</h2>
+
+<h4><a href="#what_is_shamirs_secret_sharing">シャミアの秘密分散法とはなにか</a></h4>
+
+<h4><a href="#basic_terms">用語</a></h4>
+
+<h4><a href="#handson">実際にやってみる: Rubyでシャミアの秘密分散</a></h4>
+
+<h4><a href="#handson">仕組み</a></h4>
+
+<ul>
+<li><a href="#share_computation">シェアの計算</a></li>
+<li><a href="#secret_reconstruction">シークレットの復元</a></li>
+</ul>
+
+
+<p><a id="what_is_shamirs_secret_sharing"></a></p>
+
+<h2>シャミアの秘密分散法とはなにか</h2>
+
+<p>名前からわかるとおり、シャミアの秘密分散法はRSAのアルゴリズムにも貢献した有名なイスラエル人の暗号研究者アディ・シャミアによって作られました。</p>
+
+<p>シャミアの秘密分散法は秘密のデータであるシークレットを複数のシェアに分割します。一定数のシェアを持ち寄ることで元のデータを復元することができます。</p>
+
+<p>何かデータを暗号化しなければいけないとしましょう。どんな暗号化方式を使ってもいいですが、暗号の鍵はあとで復号するためにどこかに保存しなければいけません。</p>
+
+<p>この鍵は安全な場所と方法で保管されないといけません。もし、この鍵が盗まれたら攻撃者は暗号化したデータを簡単に復号化できてしまいます。しかし、鍵を安全に保管するというのはとても難しい問題です。その鍵を誰かと共有する場合はもっと難しくなります。</p>
+
+<p>鍵の保管と共有は管理者にとって常に頭痛のタネです。</p>
+
+<p>しかし、シャミアの秘密分散法を使えば二つの問題をかなりの割合で解決することができます。</p>
+
+<p>まず、暗号の鍵を複数に分割してそれぞれを別々の管理者に渡します。各管理者は渡された鍵の断片を大切に保管しなければいけませんが、仮に一つの断片が盗まれたとしても元の鍵は復元することはできません。</p>
+
+<p>攻撃者は複数の管理者が持っている断片を盗まないといけないので、もとの鍵を盗むことは格段に難しくなります。</p>
+
+<p><a id="basic_terms"></a></p>
+
+<h2>用語</h2>
+
+<p>詳細に行く前に使われる用語を明確にしておきましょう。</p>
+
+<h4>シークレット</h4>
+
+<p>シークレットは攻撃者には知られてはいけないデータです。メッセージや数字の羅列の形を取り、用途は暗号の鍵だったり秘密にしたいメッセージだったりします。
+(英語だと<strong><em>Secret</em></strong>と簡潔に言えますが、日本語でピンとくる単語が見つからなかったのでカタカナにしました。)</p>
+
+<h4>シェア</h4>
+
+<p>シークレットを分割してできた各断片をシェアと呼びます。シェアはシークレットから計算して得られます。シークレットを復元するためには一定数のシェアがそろわないといけません。(シェアは英語だと<strong><em>share</em></strong>です。直訳すると<strong><em>割り符</em></strong>になりますが、これもなんかしっくりこないのでシェアと書くことにします。)</p>
+
+<h4>閾値</h4>
+
+<p>閾値はシークレットを復元するために最低必要なシェアの数です。閾値以上のシェアがそろっている場合のみ、もとのシークレットを復元することができます。</p>
+
+<p><a id="handson"></a></p>
+
+<h2>実際にやってみる: Rubyでシャミアの秘密分散</h2>
+
+<p>そろそろシャミアの秘密分散が動くところを実際に見てみましょう。僕が書いた小さなRubyのライブラリを使ってデモします。このライブラリは<a href="https://github.com/PolyPassHash/PolyPassHash">PolyPassHash project</a>で使われているPythonで書かれたものをポートしたものです。Python版は<a href="https://github.com/JustinCappos">JustinCappos</a>によって書かれました。</p>
+
+<p>まず、コードを<a href="https://github.com/PolyPassHash/PolyPassHash-Ruby">PolyPassHash-Ruby</a>から落としてきて、<code>shamirsecret.rb</code>を<code>irb</code>セッションにロードします。</p>
+
+<p><code>sh
+$ git clone https://github.com/PolyPassHash/PolyPassHash-Ruby
+$ cd PolyPassHash-Ruby
+$ irb -r ./shamirsecret.rb
+</code></p>
+
+<p>実際に秘密のメッセージ<code>In the name of Adi Shamir</code>を分割して、閾値の数のシェアを使うことで復元できることを見てみましょう。</p>
+
+<p>```ruby</p>
+
+<h1>まず、ShamirSecretクラスのインスタンスを作成しましょう</h1>
+
+<h1>第一引数に閾値の数を渡します。以下の場合だと2が閾値なので、2つ以上のシェアが必要ということになります</h1>
+
+<h1>第二引数には分割したいシークレットを渡します</h1>
+
+<p>shamirsecret = ShamirSecret.new(2, &ldquo;In the name of Adi Shamir&rdquo;)</p>
+
+<h1>次に与えられたシークレットからシェアを計算します。ここでは３人にシェアを渡すことにしましょう。3つシェアを生成します</h1>
+
+<h1>引数にはシェア番号を渡します。シェア番号が何かは後で説明するので、ここでは一意な整数とだけ覚えておいてください</h1>
+
+<p>s1 = shamirsecret.compute_share(1)
+s2 = shamirsecret.compute_share(2)
+s3 = shamirsecret.compute_share(3)</p>
+
+<h1>シェアを計算したら、シークレットは捨てます。シェアがそろえば復元できるので保管する必要はありません</h1>
+
+<p>shamirsecret = nil</p>
+
+<h1>今度は復元です。もう一度ShamirSecretクラスのインスタンスを作成します。今回は復元なのでシークレットは引数に渡しません</h1>
+
+<p>shamirsecret = ShamirSecret.new(2)</p>
+
+<h1>閾値は2に設定したので2つのシェアがあればシークレットを復元できます</h1>
+
+<p>shamirsecret.recover_secretdata([s1,s3])
+=> &ldquo;In the name of Adi Shamir&rdquo;
+```</p>
+
+<p>今度は正しくないシェアを使ったらどうなるかを見てみましょう。</p>
+
+<p>```ruby</p>
+
+<h1>同じようにインスタンスを作成してシェアを計算します</h1>
+
+<p>shamirsecret = ShamirSecret.new(2, &ldquo;In the name of Adi Shamir&rdquo;)
+s1 = shamirsecret.compute_share(1)
+s2 = shamirsecret.compute_share(2)
+s3 = shamirsecret.compute_share(3)</p>
+
+<h1>この時点ではシェアが正しいものであることを確認します</h1>
+
+<p>shamirsecret.is_valid_share(s1)
+=> true</p>
+
+<h1>シェアの1バイトを変更します</h1>
+
+<p>s1[1][0] = s1[1][0] + 1 % 256</p>
+
+<h1>このシェアはもう正しくありません</h1>
+
+<p>shamirsecret.is_valid_share(s1)
+=> false</p>
+
+<h1>正しくないシェアを使って復元されたシークレットは壊れています</h1>
+
+<p>shamirsecret = nil
+shamirsecret = ShamirSecret.new(2)
+shamirsecret.recover_secretdata([s1,s3])
+=> &ldquo;\xC6n the name of Adi Shamir&rdquo;
+```</p>
+
+<p><a id="how_this_works"></a></p>
+
+<h2>仕組み</h2>
+
+<p>少しだけ数学を勉強しましょう。シャミアの秘密分散法は基礎的な多項式を使います。</p>
+
+<p>シャミアの秘密分散は２つのステップに分かれます: <strong>シェアの計算</strong>と<strong>シークレットの復号</strong>です。一つずつ見ていきましょう。</p>
+
+<p><a id="share_computation"></a></p>
+
+<h3>シェアの計算</h3>
+
+<h4>ステップ1: シークレットを決める</h4>
+
+<p>まず最初にシークレットを決めます。説明を簡単にするために、ここではとてもシンプルなシークレットにしましょう。<code>3</code>という数字をシークレットにします。</p>
+
+<p>もちろんもっと複雑なシークレット、<em>I love you</em> とか <em>4b0649b1faf1c1ea7cb0e900</em> とかでも構いません。その場合は、数字として扱う必要があるので文字列をバイト配列に変換すればいいだけです。</p>
+
+<h4>ステップ2: 閾値を決める</h4>
+
+<p>次に閾値を決めます。ここでは <code>3</code> を閾値にしましょう。閾値が3なのでシークレットを復元するために三つシークレットが必要ということになります。</p>
+
+<h4>ステップ3: 多項式を生成する</h4>
+
+<p>シェアを計算するための多項式を生成します。多項式とは<strong>y=3x+1</strong> や <strong>y=5x<sup>2</sup>+10x-3</strong>の形をした方程式のことです。
+多項式の係数は自由に決めて構いませんが、次数は<strong>閾値 &ndash; 1</strong>じゃないといけません。</p>
+
+<p>今回は閾値を<code>3</code>に設定したので、次数は<code>2</code>になります。次数が2の多項式は<strong>y=ax<sup>2</sup>+bx+c</strong>の形を取ります。係数はなんでもいいので<strong><em>a</em></strong>は<code>2</code>、<strong><em>b</em></strong>は<code>1</code>にしましょう。</p>
+
+<p><strong><em>c</em></strong>にはシークレットを使わないといけません。つまり、<strong><em>c</em></strong>は<code>3</code>ということになります。</p>
+
+<p>これで多項式ができました: <strong>y=2x<sup>2</sup>+x+3</strong></p>
+
+<p>準備は整いました。以下は上記の設定をまとめたものです。</p>
+
+<blockquote><p><strong>シークレット:</strong> 3</p>
+
+<p><strong>閾値:</strong>  3</p>
+
+<p><strong>多項式:</strong> y=2x<sup>2</sup>+x+3</p></blockquote>
+
+<h4>ステップ4: グラフを書く</h4>
+
+<p>このステップはシャミアの秘密分散の計算をするためには必ずしも必要ではありませんが、グラフを書くことで理解が簡単になります。</p>
+
+<p>多項式のグラフは以下のようになります。</p>
+
+<p><img src="/images/polygraph0.jpg" alt="y=2x^2+x+3のグラフ" /></p>
+
+<h4>ステップ5: 点をグラフに描画する</h4>
+
+<p>三つの点をグラフの線上に書きます。</p>
+
+<p>例として、<strong>(x,y)(1, 6)</strong>, <strong>(x,y)(2,13)</strong>, <strong>(x,y)(-2, 9)</strong>をグラフ線上に書いてみましょう。</p>
+
+<p><img src="/images/polygraph1.jpg" alt="点をグラフ線上に書く" /></p>
+
+<p>このそれぞれの点が<strong><em>シェア</em></strong>になります。<strong>x</strong>の値が前述した<em>シェア番号</em>になり<strong>y</strong>の値が<em>シェア</em>になります。</p>
+
+<p>閾値を<code>3</code>に設定したことを思い出してください。閾値が<code>3</code>なので、今回は三つの点を書きました。</p>
+
+<p>もっとシェアが必要であればさらに点を増やせばいいだけです。</p>
+
+<p>シェアが計算できたら、シェアと閾値以外はすべて忘れて構いません。多項式、グラフ、シークレットは捨ててしまいましょう。</p>
+
+<p>シェアと閾値を知っている限り他のすべてを復元することができます。</p>
+
+<p><a id="secret_reconstruction"></a></p>
+
+<h3>シークレットの復元</h3>
+
+<p>今、シェアと閾値以外は何も知らない状態ですが、ここから元のシークレットを復元することができます。</p>
+
+<p>わかりやすくするためにもう一度グラフを使いましょう。</p>
+
+<p><strong>(x,y)(1, 6)</strong>, <strong>(x,y)(2,13)</strong>, <strong>(x,y)(-2, 9)</strong> の点をグラフに書きます。</p>
+
+<p>次に、これらの点を線で結びます。これらの点は元の多項式から得た点なので線で結べばグラフを引くことができます。</p>
+
+<p><img src="/images/polygraph4.jpg" alt="" /></p>
+
+<p>グラフはあくまで理解の助けをするためなので正確なグラフが書けなくても構いません。</p>
+
+<p>しかし、多項式の定義では<a href="http://en.wikipedia.org/wiki/Shamir's_Secret_Sharing#Shamir.27s_secret-sharing_scheme">直線には２点、放射線には３点さえあれば正確な線を引くことができます。</a> (Wikipedia)</p>
+
+<p>これにより、たとえ手で正確なグラフを書くことができなくても計算すれば正確なグラフを求めることができます。</p>
+
+<h4>多項式補間</h4>
+
+<p>閾値は<code>3</code>と知っているので、次数が<code>2</code> (次数は閾値 &ndash; 1) の<strong>y=ax<sup>2</sup>+bx+c</strong>の形の多項式に点を代入すれば元の多項式を得ることができます。</p>
+
+<p>３つの点を<strong>y=ax<sup>2</sup>+bx+c</strong>に代入します。</p>
+
+<blockquote><p><strong>(1)</strong> (1,6)  => <strong>c = a + b &ndash; 6</strong></p>
+
+<p><strong>(2)</strong> (2,13) => <strong>c = 4a + 2b &ndash; 13</strong></p>
+
+<p><strong>(3)</strong> (-2,9) => <strong>c = 4a &ndash; 2b &ndash; 9</strong></p></blockquote>
+
+<p>次に<strong>(1)</strong>を<strong>(2)</strong>と<strong>(3)</strong>に代入して<strong>a</strong>を得ます。</p>
+
+<blockquote><p><strong>(4)</strong> <strong>(1)</strong>を<strong>(2)</strong>に代入します => <strong>b = -3a + 7</strong></p>
+
+<p><strong>(5)</strong> <strong>(1)</strong>を<strong>(3)</strong>に代入します => <strong>3b = 3a -3</strong></p>
+
+<p><strong>(6)</strong> <strong>(4)</strong>を<strong>(5)</strong>に代入します => <strong>a = 2</strong></p></blockquote>
+
+<p>これで、<strong>a</strong>を得ることができました。今度は<strong>b</strong>を求めます。</p>
+
+<blockquote><p><strong>(7)</strong> <strong>a=2</strong>を<strong>(1)</strong>に代入します => <strong>c=b &ndash; 4</strong></p>
+
+<p><strong>(8)</strong> <strong>a=2</strong>を<strong>(2)</strong>に代入します => <strong>c=2b &ndash; 5</strong></p>
+
+<p><strong>(9)</strong> <strong>(7)</strong>を<strong>(8)</strong>に代入します => <strong>b = 1</strong></p></blockquote>
+
+<p>これで<strong>a</strong>と<strong>b</strong>を得ることができました。最後に<strong>c</strong>を得ます。</p>
+
+<blockquote><p><strong>(10)</strong> <strong>a=2</strong>と<strong>b=1</strong>を<strong>(1)</strong>に代入します => <strong>c=3</strong></p></blockquote>
+
+<p>これで終わりです。無事元の多項式である<strong>y=2x<sup>2</sup>+x+3</strong>を得ることができました。係数がない項がシークレットなので正しいシークレットである<strong>3</strong>を復元することができました。</p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[「ライト、ついてますか」から学ぶ問題発見の心得]]></title>
+    <link href="http://kimh.github.io/blog/jp/thoughts/important-things-about-problem-finding-learnd-from-are-your-lights-on-ja/"/>
+    <updated>2014-03-20T23:46:00+09:00</updated>
+    <id>http://kimh.github.io/blog/jp/thoughts/important-things-about-problem-finding-learnd-from-are-your-lights-on-ja</id>
+    <content type="html"><![CDATA[<p><img src="/images/lighton.jpg" alt="Lights on?" /></p>
+
+<p>エンジニアの一日は問題解決の連続です。普段は当たり前すぎて意識していませんが、気にしてみるといかにそうであるかがわかります。</p>
+
+<ul>
+<li>落ちたサーバを復旧させる</li>
+<li>与えられた文字列を正規化するコードを書く</li>
+<li>関係者全員のスケジュールが合うようにミーティングをセッティングする</li>
+</ul>
+
+
+<p>優れた解決方法を考えだすには、まず問題を正しく定義しなければいけません。</p>
+
+<p>この記事では問題発見学の名著、「<a href="" title="http://www.amazon.co.jp/%E3%83%A9%E3%82%A4%E3%83%88%E3%80%81%E3%81%A4%E3%81%84%E3%81%A6%E3%81%BE%E3%81%99%E3%81%8B%E2%80%95%E5%95%8F%E9%A1%8C%E7%99%BA%E8%A6%8B%E3%81%AE%E4%BA%BA%E9%96%93%E5%AD%A6-%E3%83%89%E3%83%8A%E3%83%AB%E3%83%89%E3%83%BBC%E3%83%BB%E3%82%B4%E3%83%BC%E3%82%B9/dp/4320023684">ライト、ついてますか</a>」 から重要な点を引用して、どのようにすればより良い問題定義ができるかについて書きたいと思います。</p>
+
+<p><strong>注：</strong>引用が英語なのは原本しか読んでいないからです。"訳："とあるところは自分で翻訳しただけなので日本語版の実際の言い回しとは異なります。
+また今回読んだKindle版にはページ情報がなかったので、引用元はページ番号ではなくその引用があった章を代わりに書いています。</p>
+
+<h2>問題とは何か？</h2>
+
+<p><strong><em>A problem is a difference between things as desired and things as perceived</em></strong> <strong>（３章）</strong></p>
+
+<p><strong>訳：</strong>問題とはそうあるべき状態と今ある状態の差である</p>
+
+<p>そもそも問題とはなんでしょうか？著者は問題を上記のように定義しています。
+問題をこのように定義するといいことがひとつあります。それは、見方を変えることで問題が解決する可能性があることです。</p>
+
+<p>とても時間のかかる処理があるとします。真っ先に思いつく解決方法は処理を早くすることです。しかし、見方を変えて
+処理に時間がかかってもいいと考えたらどうでしょうか？バッチ処理にして夜中にやればどうでしょうか？このように見方を変えるだけで
+問題そのものをなくすことができます。</p>
+
+<p><strong><em>Don&rsquo;t take their solution method for a problem definition</em></strong> <strong>（４章）</strong></p>
+
+<p><strong>訳：</strong>他人の解決方法を問題の定義としてはいけない</p>
+
+<p>人が問題だと言っていることが本当の問題とは限りません。本に書かれている例が一番わかりやすいので要約して紹介します。</p>
+
+<blockquote><p>会社の購入担当者がある競売で一番有利になる競り方を考えるように命じられました。この競売にはとても複雑なルールがあり
+沢山のケースを考慮しなければいけないと考え、考える限りのケース想定してその中で一番いいものを使うことにしました。</p>
+
+<p>ケースの組み合わせは、４の１１乗、4,000,000パターンありそのすべてをシミュレーションするようにプログラマのグループに命じました。
+パターンが多いので普通にやると彼らのコンピュータでは１２時間かかってしまい、それだと競売の時間までにぎりぎりです。</p>
+
+<p>プログラマのグループは上司の自分たちの抱えている問題は4,000,000パターンの計算をいかにして高速化することだと言い、アドバイスを求めました。</p>
+
+<p>上司は少し考え、購入担当者の部屋に言って詳しい競売のルールを聞きに行きました。</p>
+
+<p>詳しいルールを理解した上司はベストな競売の方法を一瞬で導きだしました。</p>
+
+<p>ルールを正しく分析すれば、4,000,000パターンの計算など必要なかったのです。</p></blockquote>
+
+<p>この話で学ぶことは、他人（購入担当者とプログラマ）が問題の解決方法だと信じた計算を本当の問題と考えてはいけないということです。
+真の問題は4,000,000ケースの計算の高速化ではなく、競売で一番有利な方法を導きだすことなのです。</p>
+
+<h2>問題を解決する前に</h2>
+
+<p>問題がきちんと定義されれば解決することはさほど難しくありません。しかし、ちょっと待ってください。その問題はあなたの問題ですか？
+本当にあなたが解決しないといけませんか？まずは、次の質問を自分に問いかけてみましょう。</p>
+
+<p><strong><em>Whose problem is it?</em></strong> <strong>（１１章）</strong></p>
+
+<p><strong>訳：</strong>誰の問題か？</p>
+
+<p>本当にあなたが解決しなければいけませんか？もし、その問題が誰かの問題ならあなたが解決しようとするべきではありません。
+もし、あなたの問題でなければ、頼まれないかぎり何もしないのがベストです。私たちは自分の問題解決に時間に忙しいはずですから。</p>
+
+<p><strong><em>Where does this problem come from?</em></strong> <strong>（１４章）</strong></p>
+
+<p><strong>訳：</strong>この問題はどこから来たのか？</p>
+
+<p>この問いも問題が本当に自分の問題なのか調べるのに役立ちます。なぜ自分はその問題に直面しているのか？なぜこんなことになったのか？
+自分に落ち度があるか？それとも、誰か他人に巻き込まれたか？</p>
+
+<p>もし、問題の出所が自分であった場合は自分がしていることを正せばいいので解決は比較的簡単です。</p>
+
+<p><strong><em>Ignoring the problem</em></strong> <strong>（３章）</strong></p>
+
+<p><strong>訳：</strong>問題を無視する</p>
+
+<p>時には問題そのものを無視するのもありです。気づかないふりをしていまいましょう。問題は、あるべき状態と現在の状態の差ですが、
+人間はすぐに適応する生き物です。最初はみんな問題だと感じてもいつの間にかそれが当たり前のようになるものです。</p>
+
+<p>あなたが作り出したバグのワークアラウンドのために、オペレーションの人に余計な手動の作業が発生したとします。"近い内に直す"と言って、
+１年も経てばワークアラウンド作業はオペレーションの業務に組み込まれて、その作業が当たり前のものになります。おめでとう！ <strong>あるべき状態</strong> と <strong>今ある状態</strong> が同じになり問題そのものが消えました。</p>
+
+<p>&hellip;.もちろん、勧められる方法ではありませんがこれも一つの問題解決方法と言えます。</p>
+
+<h2>考えをやめない</h2>
+
+<p>あなたは問題を正しく定義して適切な解答を導き出しました。しかし、まだリラックスはできません。</p>
+
+<p><strong><em>Each solution is the source of the next problem</em></strong> <strong>（７章）</strong></p>
+
+<p><strong>訳：</strong>あるひとつの解決方法は別の新しい問題を生む</p>
+
+<p>私たちが問題を解決してもリラックスできないのは、その解決方法がまた別の問題を生み出すからです。これはエンジニアは直感的に理解していると思います。
+PythonやRubyのような動的型付けなスクリプトプログラミング言語はそれまで他の言語が抱えていた問題を沢山解決しました。
+インタープリタさえあればどこでも同じコードを走らせることもできるし、対話的にプログラミングすることもできます。
+メタプログラミングを使うことで動的にコードを生成することでコードのDRY化をもたらしました。</p>
+
+<p>しかし、今では動的片付け言語がもたらした解決方法は他の問題を生むことは広く知られています。インタープリタを挟むのでスクリプト言語の実行速度は遅く、
+メタプログラミングはコードをデバックしずらくして、コードの保守性を下げてしまうことがしばしばあります。</p>
+
+<p>PythonやRubyがもたらした過去の問題への解決は新たな問題を生み、今度は静的型付けの言語がそれらの問題を解決すべく注目されています。そして、この連鎖は恐らくずっと続くでしょう。</p>
+
+<p>これに対してできることはそれほどないはずです。一つ言えるのは、問題への解決方法が新たな問題を生む、ということを認識して常に考えることをやめないことです。</p>
+
+<p><strong><em>The really important thing in dealing with problems is to know that the question is never answered, but that it doesn&rsquo;t matter, as long as you keep asking</em></strong> <strong>（第６章）</strong></p>
+
+<p><strong>訳：</strong>最も重要なことは問題は解決されることがないと知ることだ。しかし、考えることを止めなければは大したことではない。</p>
+
+<p>無事に解決方法を見つけても、その解決方法が最も正しかったかどうかはわかりません。それどころか、問題定義がそもそも正しくなかったかもしれません。
+自分の出した答えが完璧だったと信じることが一番厄介です。なぜなら、完璧な答えなどないからです。だから、私たちは常に問題を振り返って見直さなければいけないのです。</p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Dashingのカスタムウィジェットを作成する]]></title>
+    <link href="http://kimh.github.io/blog/jp/dashing/creating-custom-dashing-widget-ja/"/>
+    <updated>2014-02-09T21:05:00+09:00</updated>
+    <id>http://kimh.github.io/blog/jp/dashing/creating-custom-dashing-widget-ja</id>
+    <content type="html"><![CDATA[<p><img src="/images/dashing_preview.png" alt="Dashing Preview" /></p>
+
+<h2>Dashingの紹介</h2>
+
+<p><a href="https://github.com/Shopify/dashing">Dashing</a>というダッシュボード作成のフレームワークをご存知ですか？ Dashingを使えば、上のようなダッシュボードを簡単に作ることができます。いいですよね？欲しいですよね？</p>
+
+<p>この記事では、自分で一からウィジェットを作成する方法を解説していきます。Dashingの基本的な使い方は、<a href="http://shopify.github.io/dashing/">公式ページ</a> を見ればすぐわかると思うのでここでは割愛です。</p>
+
+<h2>目次</h2>
+
+<h4><a href="#creating_sample_dashboard">サンプルダッシュボードの作成</a></h4>
+
+<h4><a href="#files_for_widget">ウィジェットに必要なファイル</a></h4>
+
+<h4><a href="#creating_job_file">ジョブファイルを作成</a></h4>
+
+<h4><a href="#writing_job_code">ジョブのコードを書く</a></h4>
+
+<h4><a href="#writing_widget_code">ウィジェットのコードを書く</a></h4>
+
+<h4><a href="#using_widget">ウィジェットを使う</a></h4>
+
+<h4><a href="#publishing_widget">ウィジェットを公開する</a></h4>
+
+<p><a id="creating_sample_dashboard"></a></p>
+
+<h2>サンプルダッシュボードの作成</h2>
+
+<p>このチュートリアルで使うサンプルのダッシュボードをまず作成しましょう。サンプルダッシュボードは <strong>My Dashboard</strong> という名前にして、<strong>Fizz Buzz</strong> ウィジェットを作成しましょう。
+FizzBuzzウィジェットは一定間隔で数字をインクリメントしていって、３で割り切れる数字の場合は<strong>Fizz</strong>と、５で割り切れる場合は<strong>Buzz</strong>と、どちらでも割り切れる場合は、<strong>FizzBuzz</strong>と表示するウィジェットです。</p>
+
+<p><img src="/images/fizzbuzz.png" alt="Widget Preview" /></p>
+
+<p>新しいダッシュボードを作成するのは以下のコマンドを実行するだけです。</p>
+
+<p>```bash
+$ dashing new my_dashboard</p>
+
+<pre><code>  create  my_dashboard
+  create  my_dashboard/.gitignore
+  create  my_dashboard/Gemfile
+  create  my_dashboard/README.md
+  .... 省略 ....
+  create  my_dashboard/widgets/text/text.coffee
+  create  my_dashboard/widgets/text/text.html
+  create  my_dashboard/widgets/text/text.scss
+</code></pre>
+
+<p>```</p>
+
+<p>これでカレントディレクトリに<code>my_dashboard</code>というディレクトリが作成されます。このディレクトリがダッシュボードのベースとなるので、以降の作業はすべて<code>my_dashboard</code>をrootディレクトリとして読んでください。</p>
+
+<p><a id="files_for_widget"></a></p>
+
+<h2>ウィジェットに必要なファイル</h2>
+
+<p>Dashingはフレームワークなので、ルール従って開発すれば簡単に自分のウィジェットを作成することができます。ルールの一つに必要なファイルを用意することと、Dashingの命名規則に従ってそれらのファイル/ディレクトリ名をつけることがあります。</p>
+
+<p>新たにウィジェットを作成するために必要なファイルは主に２つに分かれます。</p>
+
+<p>ひとつはウィジェットのメインとなるウィジェットファイルで<strong>/widgets</strong> ディレクトリ配下に作られます。</p>
+
+<p>もう一つはウィジェットにデータを渡すためのジョブファイルで、<strong>/jobs</strong>ディレクトリ配下に作られます。</p>
+
+<p>まずは、ウィジェットファイルを作成しましょう。</p>
+
+<h3>ウィジェットファイルを作成</h3>
+
+<p>テンプレートとなるファイルをコマンドで作成します。</p>
+
+<p>```bash
+$ dashing generate widget fizz_buzz</p>
+
+<pre><code>  create  widgets
+  create  widgets/fizz_buzz/fizz_buzz.coffee
+  create  widgets/fizz_buzz/fizz_buzz.html
+  create  widgets/fizz_buzz/fizz_buzz.scss
+</code></pre>
+
+<p>```</p>
+
+<p>簡単に各ファイルの役割を説明すると</p>
+
+<p><code>fizz_buzz.html</code> はウィジェットのhtmlそのものです。ジョブから渡されたデータをこのhtml内でレンダリングします。</p>
+
+<p><code>fizz_buzz.scss</code> はウィジェットのスタイルを書く場所です。</p>
+
+<p><code>fizz_buzz.coffee</code> はウィジェットで使うjavascriptを書くための場所です。ファイル名からもわかる通り、単なるJSファイルではなくcoffee script形式で書かないといけません。(私は普通のJSで書かせてほしいのですが、、、)</p>
+
+<p>ウィジェットの表示に効果をつけたり、ウィジェットの初期化動作などを書くことができます。</p>
+
+<p>このファイルは見た目のそこまでこだわらなければ、ほぼ空っぽでも構いません。これはDashingのいいところの一つだと思います。つまり、javascirptを全然知らなくても、それなりのウィジェットを作ることができるからです。</p>
+
+<p><a id="creating_job_file"></a></p>
+
+<h2>ジョブファイルを作成</h2>
+
+<p>次にジョブファイルを作成します。</p>
+
+<p>```bash
+$ dashing generate job fizz_buzz</p>
+
+<pre><code>  create  jobs
+  create  jobs/fizz_buzz.rb
+</code></pre>
+
+<p>```</p>
+
+<p><code>fizz_buzz.rb</code> はウィジェットに渡すためのデータを作るコードを書くファイルです。ジョブファイルの基本はcronのように定期的に実行される<a href="https://github.com/jmettraux/rufus-scheduler">Rufus Scheduler</a>で、
+メインのコードをrufusによっての定期実行されるブロックの中に書いていきます。</p>
+
+<p><code>ruby
+SCHEDULER.every '2s' do
+  # ここにメインのコードを書く
+  # 2sなのでウィジェットのデータが２秒毎に更新されることになる
+end
+</code></p>
+
+<p><a id="writing_job_code"></a></p>
+
+<h2>ジョブのコードを書く</h2>
+
+<p>まずはウィジェットにデータを提供するためのジョブのコーディングから始めましょう。以下のようなコードになります。</p>
+
+<p><strong>fizz_buzz.rb</strong> @ <a href="https://gist.github.com/kimh/8899670#file-fizz_buzz-rb">Gist</a>
+```ruby
+class FizzBuzz
+  FIZZ=3
+  BUZZ=5</p>
+
+<p>  def initialize</p>
+
+<pre><code>@current_num = 1
+</code></pre>
+
+<p>  end</p>
+
+<p>  def fizzbuzz</p>
+
+<pre><code>if fizzbuzz?
+  out = "fizzbuzz"
+elsif fizz?
+  out = "fizz"
+elsif buzz?
+  out = "buzz"
+else
+  out = @current_num
+end
+go_next
+out
+</code></pre>
+
+<p>  end</p>
+
+<p>  private</p>
+
+<p>  def go_next</p>
+
+<pre><code>@current_num+=1
+</code></pre>
+
+<p>  end</p>
+
+<p>  def fizz?</p>
+
+<pre><code>(@current_num % 3) == 0
+</code></pre>
+
+<p>  end</p>
+
+<p>  def buzz?</p>
+
+<pre><code>(@current_num % 5) == 0
+</code></pre>
+
+<p>  end</p>
+
+<p>  def fizzbuzz?</p>
+
+<pre><code>(@current_num % (FIZZ*BUZZ)) == 0
+</code></pre>
+
+<p>  end</p>
+
+<p>end</p>
+
+<p>fb = FizzBuzz.new</p>
+
+<p>SCHEDULER.every &lsquo;5s&rsquo;, :first_in => 0 do
+  send_event(&lsquo;fizz_buzz&rsquo;, { value: fb.fizzbuzz })
+end
+```</p>
+
+<p>1 ~ 43行は普通のRubyで書いたFizzBuzzクラスとそれのインスタンスを作っているだけです。これらのコードは、<code>SCHEDULER</code>の外に書かれているので定期実行はされず、<code>dashing start</code>で
+ダッシュボードを起動した時の一度だけ実行されるので一度だけ初期化したい処理 (例えば、ステータスを保存する変数とか)を書きます。</p>
+
+<p>46行目の<code>send_event</code>がジョブファイルのキモです。</p>
+
+<p><code>send_event</code>は一つ目の引数にウィジェットの名前を指定します。この名前は、後述するレイアウトファイルに書くウィジェットのhtmlの<code>data-id</code>属性で指定する名前とマッチしないといけません。</p>
+
+<p>二つめの引数には、ウィジェットに渡すデータをハッシュ形式で指定します。ハッシュのキーは<code>fizz_buzz.html</code>内の<code>data-bind</code>属性で指定している名前と同じにします。</p>
+
+<p><strong>fizz_buzz.html</strong>
+```</p>
+
+<div data-bind="value"></div>
+
+
+<p>```</p>
+
+<p><code>send_event</code>で送ったデータは<code>data-bind="value"</code>属性をもっている<code>div</code>タグの内容として挿入されます。</p>
+
+<p>つまり、<code>send_event('fizz_buzz', { value: "fizzbuzz" })</code> とすると、<code>fizz_buzz.html</code> は以下のように自動で変更されます。</p>
+
+<p>```</p>
+
+<div data-bind="value">fizzbuzz</div>
+
+
+<p>```</p>
+
+<p>この自動でhtmlの内容が更新される仕組みは<strong>batman.js</strong>の<a href="http://batmanjs.org/docs/api/batman.view_bindings.html">data binding</a>を使って実現しています。</p>
+
+<p><a id="writing_widget_code"></a></p>
+
+<h2>ウィジェットのコードを書く</h2>
+
+<p>ジョブファイルでデータを更新できる準備は整ったので今度はそのデータをウィジェットとして表示するコードを書きます。</p>
+
+<p>まずは、ウィジェットそのもののhtmlを担当するファイルです。今回はチュートリアルなのでシンプルにしています。</p>
+
+<p><strong>fizz_buzz.html</strong> @ <a href="https://gist.github.com/kimh/8899670#file-fizz_buzz-html">Gist</a>
+```</p>
+
+<h1 class="title" data-bind="title"></h1>
+
+
+<div data-bind="value"></div>
+
+
+<p>```</p>
+
+<p>。1行目はウィジェットのタイトルを表示します。このタイトルは後述するレイアウトファイルの<code>data-title</code>属性で指定した値が表示されます。</p>
+
+<p>2行目は前述したように、<code>send_event</code>から送られてくるデータを表示します。</p>
+
+<p>次にウィジェットのスタイルを担当するファイルです。</p>
+
+<p><strong>fizz_buzz.scss</strong> @ <a href="https://gist.github.com/kimh/8899670#file-fizz_buzz-scss">Gist</a>
+<code>
+.widget-fizz-buzz {
+  background-color: #444;
+}
+</code></p>
+
+<p>ここでは、ウィジェットの背景色を指定しています。セレクタは<code>.widget</code>で始めてその後に自分のウィジェットの名前をつなげた名前にします。そして、ブロック内にそのウィジェットに関わるスタイルを書いていきます。</p>
+
+<p><strong>ここで少し命名規則に注意です。</strong> rubyのジョブファイルではウィジェットの名前はアンダースコア区切りの<code>fizz_buzz</code>でしたが、こっちはCSSファイルなので、ウィジェットの名前の単語をつなげるのは<code>-</code>にしないといけません。</p>
+
+<p>最後にウィジェットにエフェクトをつけるcoffee scriptです。何もエフェクトを使わなければここはテンプレートのままでも構いませんが、せっかくなので少しだけエフェクトをつけてみます。</p>
+
+<p><strong>fizz_buzz.coffee</strong> @ <a href="https://gist.github.com/kimh/8899670#file-fizz_buzz-coffee">Gist</a></p>
+
+<p>```ruby
+class Dashing.FizzBuzz extends Dashing.Widget</p>
+
+<p>  ready: &ndash;></p>
+
+<pre><code># ここは初期化時に実行したいエフェクトを書く
+</code></pre>
+
+<p>  onData: (data) &ndash;></p>
+
+<pre><code>$(@node).fadeOut().fadeIn()
+</code></pre>
+
+<p>```</p>
+
+<p><code>$(@node)</code>でウィジェット全体のDOMを取得することができるので、これでデータが更新される度にエフェクトが効きます。</p>
+
+<p><a id="using_widget"></a></p>
+
+<h2>ウィジェットを使ってみる</h2>
+
+<p>これでFizzBuzzウィジェットは出来上がりました。あとはウィジェットを使うだけです。まずはレイアウトファイルを作成します。ここではレイアウトファイルの名前は<code>fizz_buzz_display</code>としましたが、なんでも構いません。</p>
+
+<p>```bash
+$ dashing generate dashboard fizz_buzz_display</p>
+
+<pre><code>  exist  dashboards
+  create  dashboards/fizz_buzz_display.erb
+</code></pre>
+
+<p>```</p>
+
+<p>レイアウトファイルができたら以下のように編集します。</p>
+
+<p><strong>fizz_buzz_display.erb</strong> @ <a href="https://gist.github.com/kimh/8899670#file-fizz_buzz_display-erb">Gist</a>
+```</p>
+
+<div class="gridster">
+  <ul>
+    <li data-row="1" data-col="1" data-sizex="1" data-sizey="1">
+      <div data-id="fizz_buzz" data-view="FizzBuzz" data-title="Fizz Buzz"></div>
+    </li>
+  </ul>
+</div>
+
+
+<p>```</p>
+
+<p><code>data-id</code>属性が一番重要な部分です。ここで表示するウィジェットを指定しています。<code>fizz_buzz.rb</code>内の<code>send_event</code>の第一引数でデータを送るウィジェットを指定しましたが、それはここの名前を指定しています。</p>
+
+<p><code>data-view</code>属性はウィジェットのcoffee scriptのクラスと一致しないといけません。coffee scriptはマッチする<code>data-view</code>を<code>@node</code>にマップします。</p>
+
+<p><code>data-title</code>属性で指定したタイトルが<code>fizz_buzz.html</code>内の<code>data-bind="title"</code>を持つ要素の内容として表示されます。ここでは"Fizz Buzz"と指定しているので</p>
+
+<p>```</p>
+
+<h1 class="title" data-bind="title">Fizz Buzz</h1>
+
+
+<p>```
+となります。</p>
+
+<p>これでFizzBuzzウィジェットが表示されるはずです。<code>dashing start</code>でダッシュボードを起動して、<code>http://localhost:3030/fizz_buzz_display</code>にアクセスしてみてください。ちゃんと表示されたでしょうか？</p>
+
+<p>今回は、チュートリアル用に個別で<code>fizz_buzz_display</code>を作りましたが、FizzBuzzウィジェットは他のダッシュボードでも使えます。使いたければ、</p>
+
+<p><code>
+&lt;li data-row="1" data-col="1" data-sizex="1" data-sizey="1"&gt;
+  &lt;div data-id="fizz_buzz" data-view="FizzBuzz" data-title="Fizz Buzz"&gt;&lt;/div&gt;
+&lt;/li&gt;
+</code></p>
+
+<p>をレイアウトファイルに書くだけです。</p>
+
+<p><a id="publishing_widget"></a></p>
+
+<h2>ウィジェットを公開する</h2>
+
+<p>最後に作成したウィジェットは<a href="https://github.com/Shopify/dashing/wiki/Additional-Widgets">公開して使ってもらいましょう。</a></p>
+
+<p>DashingはウィジェットをGistで管理しています。自分のGistページで新たにGistを作成して、ウィジェットに必要なファイル名と同じ名前でGistの内容に各ファイルのコードを書きます。</p>
+
+<p>今回で言えば、以下の４つのファイルを一つのGistに作成します。</p>
+
+<ul>
+<li>fizz_buzz.html</li>
+<li>fizz_buzz.css</li>
+<li>fizz_buzz.coffee</li>
+<li>fizz_buzz.rb</li>
+</ul>
+
+
+<p>Gistを作成したら、インストールできるか確認してください。</p>
+
+<p><code>bash
+$ dashing install GIST_ID
+</code></p>
+
+<p><code>GIST_ID</code>は作成したGistのIDです。また必須ではありませんが、自分のウィジェットの使い方をGistにREADMEとして書いておくのが定番のようです。</p>
+
+<p>正しく動けば、<a href="https://github.com/Shopify/dashing/wiki/Additional-Widgets">Additional Widgets</a>のWikiを修正して登録するのを忘れずに。</p>
+]]></content>
+  </entry>
+  
+</feed>
