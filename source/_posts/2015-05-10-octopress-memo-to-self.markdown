@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "octopress_memo_to_self"
+title: "Octopressメモ"
 date: 2015-05-10 12:55
 comments: true
 categories:
