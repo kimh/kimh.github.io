@@ -1,0 +1,298 @@
+<!doctype html>
+<!-- paulirish.com/2008/conditional-stylesheets-vs-css-hacks-answer-neither/ -->
+<!--[if lt IE 7]> <html class="no-js ie6 oldie" lang="en"> <![endif]-->
+<!--[if IE 7]>    <html class="no-js ie7 oldie" lang="en"> <![endif]-->
+<!--[if IE 8]>    <html class="no-js ie8 oldie" lang="en"> <![endif]-->
+<!-- Consider adding an manifest.appcache: h5bp.com/d/Offline -->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en"> <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+
+  <!-- Use the .htaccess and remove these lines to avoid edge case issues.
+       More info: h5bp.com/b/378 -->
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+
+  <title>octopress_memo_to_self |  kim hirokuni</title>
+  <meta name="author" content="kim hirokuni">
+  
+
+  
+  <!-- Mobile viewport optimized: j.mp/bplateviewport -->
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+
+  <!-- Place favicon.ico and apple-touch-icon.png in the root directory: mathiasbynens.be/notes/touch-icons -->
+  <link href="/favicon.png" rel="icon">
+
+  <!-- CSS: implied media=all -->
+  <!-- CSS concatenated and minified via ant build script-->
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <link href='https://fonts.googleapis.com/css?family=Inconsolata' rel='stylesheet' type='text/css'>
+  <!-- end CSS-->
+
+  <!-- More ideas for your <head> here: h5bp.com/d/head-Tips -->
+
+  <!-- All JavaScript at the bottom, except for Modernizr / Respond.
+       Modernizr enables HTML5 elements & feature detects; Respond is a polyfill for min/max-width CSS3 Media Queries
+       For optimal performance, use a custom Modernizr build: www.modernizr.com/download/ -->
+  <script src="/javascripts/libs/modernizr-2.0.6.min.js"></script>
+</head>
+
+<body id="post">
+
+  <div id="container">
+    <nav role="navigation" ><ul class="main-navigation">
+  <li style='float:left;margin-right:5px'><a class='nav' href="/">Home</a></li>
+</ul><br><br>
+</nav>
+    <article>
+
+
+  <h1 class="article-title">Octopress_memo_to_self</h1>
+  <div class="article-content"><p><strong><em>To: ３日後には全てを忘れている自分へ</em></strong></p>
+
+<p>今回、久しぶりにブログを書こうとしたらOctopressの仕組みを全く覚えていなくて、いろいろ回り道したせいで、ほぼ丸１日無駄にしてしまった。おそらく未来の自分はまた忘れるのだろうでここにメモをしておく。　</p>
+
+<h3>masterとsourceブランチ</h3>
+
+<p>ブログはGithub Pageでホスティングしている。ブログそのものは、<a href="http://kimh.github.io/">http://kimh.github.io/</a> で記事とかOctopressのコードは、<a href="https://github.com/kimh/kimh.github.io">https://github.com/kimh/kimh.github.io</a> で管理している。</p>
+
+<p><a href="https://github.com/kimh/kimh.github.io">https://github.com/kimh/kimh.github.io</a> には <strong>master</strong> と <strong>source</strong> の二つのブランチがある。<strong>soruce</strong> にはmardkdownで書かれた記事が保存されていて、デプロイするとここから静的HTMLを生成して <strong>master</strong> にpushする。</p>
+
+<p>今回このことを覚えていなくて時間の多くを無駄にしてしまった。というのも、新しいMacに移行した際に新しくブログのレポジトリをcloneしたんだけど、中身を見たら静的HTMLしか見当たらない。というかOctopressそのものが見当たらない。
+あるのはmarkdownから生成されたと思われるhtmlファイルばっかり。「なんてこった！！！markdownで書いた記事はどこか別の場所で管理していて、それをGithubにはpushしていなかったんだ！今まで書いた記事が消失してしまった。やってもたー！！！」</p>
+
+<p>それで、静的HTMLからmarkdownへがんばって変換して、復旧が完了した時にふと読んだOctopressの解説記事で <strong>source</strong> ブランチがあることを知った。恐る恐る <strong>source</strong> にcheckoutするとmarkdownで書かれた記事とOctopressがあるじゃないですか！</p>
+
+<p>この発見はすごくショッキングだったけど、きっと未来の自分は忘れているんだろう。ということで、メモ。</p>
+
+<ul>
+<li><a href="https://github.com/kimh/kimh.github.io">https://github.com/kimh/kimh.github.io</a> には <strong><em>master</em></strong> と <strong><em>source</em></strong> ブランチがある。</li>
+<li><strong><em>source</em></strong> にはmarkdownで書いた記事とOctopressがある</li>
+<li><strong><em>master</em></strong> にはmarkdownからOctopressが生成した静的HTMLファイルがある</li>
+<li><a href="http://kimh.github.io/">http://kimh.github.io/</a> は <strong><em>master</em></strong> を表示している</li>
+<li>記事を編集する時は <strong><em>source</em></strong> で行う</li>
+<li>というか、基本 <strong><em>master</em></strong> にcheckoutすることはない</li>
+</ul>
+
+
+<h3>Octopressのディレクトリ構成 (sourceブランチ)</h3>
+
+<p>多くの時間を無駄にしてしまった原因の一つにそもそもOctopressのファイル構成を理解していなかったことがある。幸い今回の復旧作業ではそれ学ぶことができた。</p>
+
+<p>以下は、<code>kimh.github.io</code>配下の重要ディレクトリ。</p>
+
+<p><code>source/_posts</code>ディレクトリにはmarkdown記事が置いてある。ブログの編集作業の大半はここにあるファイルを編集することになる。</p>
+
+<p><code>source/_includes</code>とか<code>source/_layouts</code>にはOctopressがブログサイトを構成するためのhtmlファイルが置いてある。ブログサイトそのものを変更したければここを直接いじることになる。3rd Party Themeがインストールされるのもここ（後述）</p>
+
+<p><code>.themes</code>には3rd Party Themeを置く。置き方は、<code>git clone https://github.com/rwwaskk/linkedlist.git .themes/linkedlist</code>のようにするのが一般的な方法のよう。
+<code>.themes</code>に置いたら、<code>rake install['name-of-theme']</code>でインストールできる。このコマンドを実行すると、<code>source</code>　配下にthemeが生成したHTMLやCSSやJavascriptが生成される。</p>
+
+<h3>ブログサイトそのものに変更を加える</h3>
+
+<p>前述したように、Octopressは<code>source</code>配下にあるファイルから静的HTMLを生成して、3rd Party Themeは<code>source</code>配下にインストールされる。しかし、時にはThemeが気に入らなくて自分で変更を加えたいこともあると思う。</p>
+
+<p>例えば今回の復旧作業でThemeを<a href="https://github.com/rwwaskk/linkedlist">Linked List</a>インストールした状態だとブログのタイトルを site.sub_title から取得しようとしている。コードは<a href="https://github.com/rwwaskk/linkedlist/blob/master/source/_layouts/home.html#L10">linkedlist/source/_layouts/home.html</a></p>
+
+<p>自分的にはここは site.title からとって欲しい。じゃー、どのファイルを編集するのかというと、一つは、<code>.themes/linkedlist/source/_layouts/home.html</code> 編集して、<code>rake install['name-of-theme']</code> で再インストールする。</p>
+
+<p>もう一つは、<code>source/_layouts/home.html</code>を直接編集する。ここで一つ注意するのは、<strong>themeを再インストールするとsource/配下は全て置き換えてしまうので自分で加えた変更も上書きされてしまう。</strong></p>
+
+<p>なので、この方法で編集した際はなんらかの理由でthemeを再インストールする時は要注意。(じゃー、やっぱりThemeのほうを変更すればよくない？と思うかもしれないけど、themeに自分の変更を加えるのはなんかおかしいと思う。この疑問は未解決。)</p>
+
+<h3>よく使うOctopressコマンド</h3>
+
+<p><strong><em>rake generate</em></strong></p>
+
+<p><code>source</code>にあるファイルを<code>public</code>配下に静的HTMLとして生成する。</p>
+
+<p><strong><em>rake preview</em></strong></p>
+
+<p><a href="http://localhost:4000">http://localhost:4000</a> を立ち上げて、<code>public</code>配下をブラウザからアクセスできるようにする。</p>
+
+<p><strong><em>rake setup_github_pages</em></strong></p>
+
+<p>Github Pageにデプロイするために一度だけ実行しないといけない。</p>
+
+<p><strong><em>rake deploy</em></strong></p>
+
+<p><code>public</code>配下にあるファイルを<code>_deploy</code>ディレクトリにコピーして、<strong>master</strong> ブランチにpushする。少ししたら、ブログのurlからアクセスできるようになる。</p>
+
+<p><strong><em>rake gen_deploy</em></strong></p>
+
+<p>generateとdeployを一気に行う。とりあえず、deployしたい時はこれを実行しておけば問題ない。</p>
+</div>
+  
+    <section>
+      <h1>Comments</h1>
+      <div id="disqus_thread"><div id="disqus_thread"></div>
+<script type="text/javascript">
+  var disqus_shortname = 'kimstechblog';
+  var disqus_identifier = 'http://kimh.github.io/blog/octopress-memo-to-self/';
+  var disqus_url = 'http://kimh.github.io/blog/octopress-memo-to-self/';
+  //var disqus_developer = 1;
+  (function() {
+    var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+    dsq.src = 'http://' + disqus_shortname + '.disqus.com/embed.js';
+    (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+  })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+</div>
+    </section>
+  
+
+</article>
+
+
+      <p class="meta">
+      
+        <a class="basic-alignment left nav" href="/blog/en/javascript/the-practices-of-backbone-marionette-that-i-believe-the-best-en/" title="Previous Post: The Practices of Backbone.Marionette That I believe The Best">&laquo; The Practices of Backbone.Marionette That I believe The Best</a>
+      
+      
+    </p>
+  </div>
+    <script>
+      var name = document.getElementById('name-helper').innerHTML;
+
+      var canvas = document.getElementById('myCanvas');
+
+      //The name (up to 28 characters long, including white space)
+      var length = name.length;
+      if (length>28){//Exceed character length limit, remove canvas
+          canvas.remove();
+      }
+      else{
+            
+
+        var context = canvas.getContext('2d');
+
+        //calculate width and length
+        var width=700/1.25/length;
+        var start;
+        if (width>40){
+          width=40;
+        }
+
+        var height= width/2;
+
+        //the start postion of the link list
+        var start = (700-width*length*1.25)/2;
+        var horizon = 5;
+
+        //DO NOT CHANGE THOSE
+        var mid_horizon = horizon+height/2;
+        var name_counter =0;
+
+        var x = height/5;
+        var y = height/5;
+        var interval=width/4;
+        
+        var radius = 0.75*width;
+        
+        var text_pos=width*1.1;
+
+
+        canvas.height=mid_horizon+width/2+width/2.1+5;
+        
+        for (var i=1;i<name.length+1;i++){
+
+          context.beginPath();
+          context.strokeStyle='#F9BF3B';
+          
+          //the rectangle
+          context.rect(start, horizon, width, height);
+
+          //the middle line
+          context.moveTo(start+width/2,horizon);
+          context.lineTo(start+width/2,horizon+height);
+
+          //if this is the last element
+          if (i==name.length){
+            context.moveTo(start+width/2,horizon+height);
+            context.lineTo(start+width,horizon);
+
+          }
+          else{
+            //the arrow
+            context.moveTo(start+0.75*width,mid_horizon);
+            context.lineTo(start+width+interval,mid_horizon);
+
+            context.moveTo(start+width+interval,mid_horizon);
+            context.lineTo(start+width+interval-x,mid_horizon+y);
+          
+            context.moveTo(start+width+interval,mid_horizon);
+            context.lineTo(start+width+interval-x,mid_horizon-y); 
+          }
+          
+       
+        
+          var startAngle = 1.2 * Math.PI;
+          var endAngle = 1 * Math.PI;
+          var counterClockwise = true;
+      
+          context.stroke();
+            
+          context.beginPath();
+          context.arc(start+width/4+radius*0.81, mid_horizon+width/2, radius, startAngle, endAngle, counterClockwise);
+
+          context.moveTo(start+width/4+radius*0.81-radius,mid_horizon+width/2);
+          context.lineTo(start+width/4+radius*0.81-radius-x,mid_horizon-y+width/2);
+
+          context.moveTo(start+width/4+radius*0.81-radius,mid_horizon+width/2);
+          context.lineTo(start+width/4+radius*0.81-radius+x,mid_horizon-y+width/2); 
+
+          context.font = ' 15pt Calibri';
+          context.fillStyle = '#859900';
+          context.fillText(name.charAt(name_counter), start+width/4+radius*0.81-radius-width/14, mid_horizon+width/2+width/2.1);
+
+          context.lineWidth=1;
+          context.strokeStyle='#F9BF3B';
+          context.stroke();
+          start+=width/2*2+interval;      
+          name_counter+=1;
+        }
+      }
+
+    </script>
+
+  <!-- JavaScript at the bottom for fast page loading -->
+
+  <!-- Grab Google CDN's jQuery, with a protocol relative URL; fall back to local if offline -->
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.6.2/jquery.min.js"></script>
+  <script>window.jQuery || document.write('<script src="js/libs/jquery-1.6.2.min.js"><\/script>')</script>
+
+
+  <!-- scripts concatenated and minified via ant build script-->
+  <script defer src="/javascripts/app.js"></script>
+  <!-- end scripts-->
+
+	
+
+  <!-- Prompt IE 6 users to install Chrome Frame. Remove this if you want to support IE 6.
+       chromium.org/developers/how-tos/chrome-frame-getting-started -->
+  <!--[if lt IE 7 ]>
+    <script src="//ajax.googleapis.com/ajax/libs/chrome-frame/1.0.3/CFInstall.min.js"></script>
+    <script>window.attachEvent('onload',function(){CFInstall.check({mode:'overlay'})})</script>
+  <![endif]-->
+ 
+
+  <script type="text/javascript">
+    (function(){
+      var twitterWidgets = document.createElement('script');
+      twitterWidgets.type = 'text/javascript';
+      twitterWidgets.async = true;
+      twitterWidgets.src = 'http://platform.twitter.com/widgets.js';
+      document.getElementsByTagName('head')[0].appendChild(twitterWidgets);
+    })();
+  </script>
+
+
+
+
+
+
+
+</body>
+</html>
+

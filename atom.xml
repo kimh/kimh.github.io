@@ -4,7 +4,7 @@
   <title><![CDATA[Program Is Made At Night]]></title>
   <link href="http://kimh.github.io/atom.xml" rel="self"/>
   <link href="http://kimh.github.io/"/>
-  <updated>2015-05-10T12:47:39+09:00</updated>
+  <updated>2015-05-10T14:46:54+09:00</updated>
   <id>http://kimh.github.io/</id>
   <author>
     <name><![CDATA[kim hirokuni]]></name>
@@ -12,6 +12,87 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[octopress_memo_to_self]]></title>
+    <link href="http://kimh.github.io/blog/octopress-memo-to-self/"/>
+    <updated>2015-05-10T12:55:00+09:00</updated>
+    <id>http://kimh.github.io/blog/octopress-memo-to-self</id>
+    <content type="html"><![CDATA[<p><strong><em>To: ３日後には全てを忘れている自分へ</em></strong></p>
+
+<p>今回、久しぶりにブログを書こうとしたらOctopressの仕組みを全く覚えていなくて、いろいろ回り道したせいで、ほぼ丸１日無駄にしてしまった。おそらく未来の自分はまた忘れるのだろうでここにメモをしておく。　</p>
+
+<h3>masterとsourceブランチ</h3>
+
+<p>ブログはGithub Pageでホスティングしている。ブログそのものは、<a href="http://kimh.github.io/">http://kimh.github.io/</a> で記事とかOctopressのコードは、<a href="https://github.com/kimh/kimh.github.io">https://github.com/kimh/kimh.github.io</a> で管理している。</p>
+
+<p><a href="https://github.com/kimh/kimh.github.io">https://github.com/kimh/kimh.github.io</a> には <strong>master</strong> と <strong>source</strong> の二つのブランチがある。<strong>soruce</strong> にはmardkdownで書かれた記事が保存されていて、デプロイするとここから静的HTMLを生成して <strong>master</strong> にpushする。</p>
+
+<p>今回このことを覚えていなくて時間の多くを無駄にしてしまった。というのも、新しいMacに移行した際に新しくブログのレポジトリをcloneしたんだけど、中身を見たら静的HTMLしか見当たらない。というかOctopressそのものが見当たらない。
+あるのはmarkdownから生成されたと思われるhtmlファイルばっかり。「なんてこった！！！markdownで書いた記事はどこか別の場所で管理していて、それをGithubにはpushしていなかったんだ！今まで書いた記事が消失してしまった。やってもたー！！！」</p>
+
+<p>それで、静的HTMLからmarkdownへがんばって変換して、復旧が完了した時にふと読んだOctopressの解説記事で <strong>source</strong> ブランチがあることを知った。恐る恐る <strong>source</strong> にcheckoutするとmarkdownで書かれた記事とOctopressがあるじゃないですか！</p>
+
+<p>この発見はすごくショッキングだったけど、きっと未来の自分は忘れているんだろう。ということで、メモ。</p>
+
+<ul>
+<li><a href="https://github.com/kimh/kimh.github.io">https://github.com/kimh/kimh.github.io</a> には <strong><em>master</em></strong> と <strong><em>source</em></strong> ブランチがある。</li>
+<li><strong><em>source</em></strong> にはmarkdownで書いた記事とOctopressがある</li>
+<li><strong><em>master</em></strong> にはmarkdownからOctopressが生成した静的HTMLファイルがある</li>
+<li><a href="http://kimh.github.io/">http://kimh.github.io/</a> は <strong><em>master</em></strong> を表示している</li>
+<li>記事を編集する時は <strong><em>source</em></strong> で行う</li>
+<li>というか、基本 <strong><em>master</em></strong> にcheckoutすることはない</li>
+</ul>
+
+
+<h3>Octopressのディレクトリ構成 (sourceブランチ)</h3>
+
+<p>多くの時間を無駄にしてしまった原因の一つにそもそもOctopressのファイル構成を理解していなかったことがある。幸い今回の復旧作業ではそれ学ぶことができた。</p>
+
+<p>以下は、<code>kimh.github.io</code>配下の重要ディレクトリ。</p>
+
+<p><code>source/_posts</code>ディレクトリにはmarkdown記事が置いてある。ブログの編集作業の大半はここにあるファイルを編集することになる。</p>
+
+<p><code>source/_includes</code>とか<code>source/_layouts</code>にはOctopressがブログサイトを構成するためのhtmlファイルが置いてある。ブログサイトそのものを変更したければここを直接いじることになる。3rd Party Themeがインストールされるのもここ（後述）</p>
+
+<p><code>.themes</code>には3rd Party Themeを置く。置き方は、<code>git clone https://github.com/rwwaskk/linkedlist.git .themes/linkedlist</code>のようにするのが一般的な方法のよう。
+<code>.themes</code>に置いたら、<code>rake install['name-of-theme']</code>でインストールできる。このコマンドを実行すると、<code>source</code>　配下にthemeが生成したHTMLやCSSやJavascriptが生成される。</p>
+
+<h3>ブログサイトそのものに変更を加える</h3>
+
+<p>前述したように、Octopressは<code>source</code>配下にあるファイルから静的HTMLを生成して、3rd Party Themeは<code>source</code>配下にインストールされる。しかし、時にはThemeが気に入らなくて自分で変更を加えたいこともあると思う。</p>
+
+<p>例えば今回の復旧作業でThemeを<a href="https://github.com/rwwaskk/linkedlist">Linked List</a>インストールした状態だとブログのタイトルを site.sub_title から取得しようとしている。コードは<a href="https://github.com/rwwaskk/linkedlist/blob/master/source/_layouts/home.html#L10">linkedlist/source/_layouts/home.html</a></p>
+
+<p>自分的にはここは site.title からとって欲しい。じゃー、どのファイルを編集するのかというと、一つは、<code>.themes/linkedlist/source/_layouts/home.html</code> 編集して、<code>rake install['name-of-theme']</code> で再インストールする。</p>
+
+<p>もう一つは、<code>source/_layouts/home.html</code>を直接編集する。ここで一つ注意するのは、<strong>themeを再インストールするとsource/配下は全て置き換えてしまうので自分で加えた変更も上書きされてしまう。</strong></p>
+
+<p>なので、この方法で編集した際はなんらかの理由でthemeを再インストールする時は要注意。(じゃー、やっぱりThemeのほうを変更すればよくない？と思うかもしれないけど、themeに自分の変更を加えるのはなんかおかしいと思う。この疑問は未解決。)</p>
+
+<h3>よく使うOctopressコマンド</h3>
+
+<p><strong><em>rake generate</em></strong></p>
+
+<p><code>source</code>にあるファイルを<code>public</code>配下に静的HTMLとして生成する。</p>
+
+<p><strong><em>rake preview</em></strong></p>
+
+<p><a href="http://localhost:4000">http://localhost:4000</a> を立ち上げて、<code>public</code>配下をブラウザからアクセスできるようにする。</p>
+
+<p><strong><em>rake setup_github_pages</em></strong></p>
+
+<p>Github Pageにデプロイするために一度だけ実行しないといけない。</p>
+
+<p><strong><em>rake deploy</em></strong></p>
+
+<p><code>public</code>配下にあるファイルを<code>_deploy</code>ディレクトリにコピーして、<strong>master</strong> ブランチにpushする。少ししたら、ブログのurlからアクセスできるようになる。</p>
+
+<p><strong><em>rake gen_deploy</em></strong></p>
+
+<p>generateとdeployを一気に行う。とりあえず、deployしたい時はこれを実行しておけば問題ない。</p>
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[The Practices of Backbone.Marionette That I believe The Best]]></title>
