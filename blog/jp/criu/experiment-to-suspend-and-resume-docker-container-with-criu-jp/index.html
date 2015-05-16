@@ -103,7 +103,7 @@
 <figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
 </pre></td><td class='code'><pre><code class='sh'><span class='line'><span class="nv">$ </span>apt-get -y update
-</span><span class='line'><span class="nv">$ </span>apt-get -y install libncurses-dev build-essential libncurses-dev build-essential fakeroot kernel-package linux-source
+</span><span class='line'><span class="nv">$ </span>apt-get -y install libncurses-dev build-essential libncurses-dev build-essential fakeroot kernel-package linux-source bc
 </span></code></pre></td></tr></table></div></figure>
 
 
@@ -207,9 +207,9 @@
 <span class='line-number'>10</span>
 </pre></td><td class='code'><pre><code class='sh'><span class='line'><span class="nv">$ </span>cat &gt; test.sh <span class="s">&lt;&lt;-EOF</span>
 </span><span class='line'><span class="s">#!/bin/sh</span>
-</span><span class='line'><span class="s">while :; do</span>
-</span><span class='line'><span class="s">    sleep 1</span>
-</span><span class='line'><span class="s">    date</span>
+</span><span class='line'><span class="s">while true; do</span>
+</span><span class='line'><span class="s"> date</span>
+</span><span class='line'><span class="s"> sleep 1</span>
 </span><span class='line'><span class="s">done</span>
 </span><span class='line'><span class="s">EOF</span>
 </span><span class='line'>
@@ -223,8 +223,12 @@
 <figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
 <span class='line-number'>3</span>
-</pre></td><td class='code'><pre><code class='sh'><span class='line'><span class="nv">$ PID</span><span class="o">=</span><span class="sb">`</span>pgrep test.sh<span class="sb">`</span>
-</span><span class='line'><span class="nv">$ </span>mkidr /tmp/test
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class='sh'><span class='line'><span class="c"># criuを実行するためにはrootじゃないといけない</span>
+</span><span class='line'><span class="nv">$ </span>sudo -s
+</span><span class='line'><span class="nv">$ </span><span class="nb">export </span><span class="nv">PID</span><span class="o">=</span><span class="sb">`</span>pgrep -f test.sh<span class="sb">`</span>
+</span><span class='line'><span class="nv">$ </span>mkdir /tmp/test
 </span><span class='line'><span class="nv">$ </span>criu dump -t <span class="nv">$PID</span> --images-dir /tmp/test --shell-job
 </span></code></pre></td></tr></table></div></figure>
 

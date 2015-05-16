@@ -54,11 +54,11 @@
 
 <p>With the rapid emergence of Docker, everybody knows many advantages of using LXC over virtual machines like VMWare or Xen.</p>
 
-<p>However, there is one thing that VM has and LXC still misses: suspend/resume containers.</p>
+<p>However, there is one thing that LXC is missing: suspend/resume containers.</p>
 
 <p>This is where <a href="http://criu.org/Main_Page">CRIU</a> comes in.</p>
 
-<p>CRIU is a so called CR (checkpoint/restart) tool. It suspends a running process and save the memory state into files which can be resumed at anytime.</p>
+<p>CRIU is so called CR (checkpoint/restart) tool. It suspends a running process and save the memory state into files which can be resumed at anytime.</p>
 
 <p>And since LXC container is a process, we should be able to suspend/resume containers. But does it really work?</p>
 
@@ -105,8 +105,8 @@ You may say that LXC already has <a href="http://lxc.sourceforge.net/man/lxc-che
 
 <figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
-</pre></td><td class='code'><pre><code class='sh'><span class='line'><span class="nv">$ </span>apt-get -y update
-</span><span class='line'><span class="nv">$ </span>apt-get -y install libncurses-dev build-essential libncurses-dev build-essential fakeroot kernel-package linux-source
+</pre></td><td class='code'><pre><code class='sh'><span class='line'><span class="nv">$ </span>et -y update
+</span><span class='line'><span class="nv">$ </span>apt-get -y install libncurses-dev build-essential libncurses-dev build-essential fakeroot kernel-package linux-source bc
 </span></code></pre></td></tr></table></div></figure>
 
 
@@ -134,7 +134,7 @@ You may say that LXC already has <a href="http://lxc.sourceforge.net/man/lxc-che
 
 <p>Once you put <code>.config</code> file, you are ready to build kernel.</p>
 
-<p><strong>Once again, make sure you increased cpu and memory in the previous seteps before start building kernel. Otherwise you will waste your time.</strong></p>
+<p><strong>Once again, make sure you increased cpu and memory in the previous seteps before start building kernel.</strong></p>
 
 <figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
@@ -169,13 +169,11 @@ You may say that LXC already has <a href="http://lxc.sourceforge.net/man/lxc-che
 <span class='line-number'>3</span>
 <span class='line-number'>4</span>
 <span class='line-number'>5</span>
-<span class='line-number'>6</span>
-</pre></td><td class='code'><pre><code class='sh'><span class='line'><span class="nv">$ </span>apt-get install bsdmainutils build-essential libprotobuf-c0-dev linux-headers-generic protobuf-c-compiler
-</span><span class='line'><span class="nv">$ </span>mkdir /src
-</span><span class='line'><span class="nv">$ </span><span class="nb">cd</span> /src
-</span><span class='line'><span class="nv">$ </span>curl http://download.openvz.org/criu/criu-1.3-rc2.tar.bz2 | tar -jxf-
-</span><span class='line'><span class="nv">$ </span>make -C criu-1.3-rc2/
-</span><span class='line'><span class="nv">$ </span>cp criu-1.3-rc2/criu /usr/local/sbin/
+</pre></td><td class='code'><pre><code class='sh'><span class='line'><span class="nv">$ </span>apt-get install bsdmainutils build-essential apt-get install libprotobuf-dev libprotobuf-c0-dev protobuf-c-compiler protobuf-compiler python-protobuf xmlto asciidoc
+</span><span class='line'><span class="nv">$ </span>git clone https://github.com/xemul/criu
+</span><span class='line'><span class="nv">$ </span><span class="nb">cd </span>criu/
+</span><span class='line'><span class="nv">$ </span>make
+</span><span class='line'><span class="nv">$ </span>sudo make install
 </span></code></pre></td></tr></table></div></figure>
 
 
@@ -192,9 +190,8 @@ You may say that LXC already has <a href="http://lxc.sourceforge.net/man/lxc-che
 </span></code></pre></td></tr></table></div></figure>
 
 
-<p>Did you get <code>Looks good.</code> message? You may get some warnings, but you can ignore them.</p>
-
-<p>Before doing our expriment with containers, let&rsquo;s checkpoint and restore normal Linux process with CRIU. The example comes from <a href="http://criu.org/Simple_loop">one of CRIU HOWTO pages</a>.</p>
+<p>Did you get <code>Looks good.</code> message? You may get some warnings, but you can ignore them.
+Before doing our experiment with containers, let&rsquo;s checkpoint and restore normal Linux process with CRIU. The example comes from <a href="http://criu.org/Simple_loop">one of CRIU HOWTO pages</a>.</p>
 
 <p>First, we need to create a simple loop script.</p>
 
@@ -210,9 +207,9 @@ You may say that LXC already has <a href="http://lxc.sourceforge.net/man/lxc-che
 <span class='line-number'>10</span>
 </pre></td><td class='code'><pre><code class='sh'><span class='line'><span class="nv">$ </span>cat &gt; test.sh <span class="s">&lt;&lt;-EOF</span>
 </span><span class='line'><span class="s">#!/bin/sh</span>
-</span><span class='line'><span class="s">while :; do</span>
-</span><span class='line'><span class="s">    sleep 1</span>
-</span><span class='line'><span class="s">    date</span>
+</span><span class='line'><span class="s">while true; do</span>
+</span><span class='line'><span class="s"> date</span>
+</span><span class='line'><span class="s"> sleep 1</span>
 </span><span class='line'><span class="s">done</span>
 </span><span class='line'><span class="s">EOF</span>
 </span><span class='line'>
@@ -226,8 +223,12 @@ You may say that LXC already has <a href="http://lxc.sourceforge.net/man/lxc-che
 <figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
 <span class='line-number'>3</span>
-</pre></td><td class='code'><pre><code class='sh'><span class='line'><span class="nv">$ PID</span><span class="o">=</span><span class="sb">`</span>pgrep test.sh<span class="sb">`</span>
-</span><span class='line'><span class="nv">$ </span>mkidr /tmp/test
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class='sh'><span class='line'><span class="c"># Need to be root to run criu</span>
+</span><span class='line'><span class="nv">$ </span>sudo -s
+</span><span class='line'><span class="nv">$ </span><span class="nb">export </span><span class="nv">PID</span><span class="o">=</span><span class="sb">`</span>pgrep -f test.sh<span class="sb">`</span>
+</span><span class='line'><span class="nv">$ </span>mkdir /tmp/test
 </span><span class='line'><span class="nv">$ </span>criu dump -t <span class="nv">$PID</span> --images-dir /tmp/test --shell-job
 </span></code></pre></td></tr></table></div></figure>
 

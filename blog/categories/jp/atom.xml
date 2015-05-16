@@ -4,7 +4,7 @@
   <title><![CDATA[Category: jp | Program Is Made At Night]]></title>
   <link href="http://kimh.github.io/blog/categories/jp/atom.xml" rel="self"/>
   <link href="http://kimh.github.io/"/>
-  <updated>2015-05-10T14:49:03+09:00</updated>
+  <updated>2015-05-16T22:34:42+09:00</updated>
   <id>http://kimh.github.io/</id>
   <author>
     <name><![CDATA[kim hirokuni]]></name>
@@ -331,7 +331,7 @@ end
 
 <p><code>sh
 $ apt-get -y update
-$ apt-get -y install libncurses-dev build-essential libncurses-dev build-essential fakeroot kernel-package linux-source
+$ apt-get -y install libncurses-dev build-essential libncurses-dev build-essential fakeroot kernel-package linux-source bc
 </code></p>
 
 <p>インストールしたら、<code>/usr/src/linux-source-&lt;kernel version&gt;</code> というディレクトリが作成されているはずです。そのディレクトリに移動します。</p>
@@ -407,13 +407,10 @@ $ cat > test.sh &lt;&lt;-EOF</p>
 
 <h1>!/bin/sh</h1>
 
-<p>while :; do</p>
-
-<pre><code>sleep 1
-date
-</code></pre>
-
-<p>done
+<p>while true; do
+ date
+ sleep 1
+done
 EOF</p>
 
 <p>$ chmod +x test.sh
@@ -422,11 +419,15 @@ $ ./test.sh
 
 <p>プロセスを停止するには<code>criu dump</code>コマンドを使います。</p>
 
-<p><code>sh
-$ PID=`pgrep test.sh`
-$ mkidr /tmp/test
-$ criu dump -t $PID --images-dir /tmp/test --shell-job
-</code></p>
+<p>```sh</p>
+
+<h1>criuを実行するためにはrootじゃないといけない</h1>
+
+<p>$ sudo -s
+$ export PID=<code>pgrep -f test.sh</code>
+$ mkdir /tmp/test
+$ criu dump -t $PID &mdash;images-dir /tmp/test &mdash;shell-job
+```</p>
 
 <p>もし、ダンプが成功したら<code>/tmp/test</code>ディレクトリ配下に沢山のファイルができているはずです。</p>
 
