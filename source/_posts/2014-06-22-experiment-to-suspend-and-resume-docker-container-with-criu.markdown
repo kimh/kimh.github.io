@@ -14,11 +14,11 @@ categories:
 
 With the rapid emergence of Docker, everybody knows many advantages of using LXC over virtual machines like VMWare or Xen.
 
-However, there is one thing that VM has and LXC still misses: suspend/resume containers.
+However, there is one thing that LXC is missing: suspend/resume containers.
 
 This is where [CRIU](http://criu.org/Main_Page) comes in.
 
-CRIU is a so called CR (checkpoint/restart) tool. It suspends a running process and save the memory state into files which can be resumed at anytime.
+CRIU is so called CR (checkpoint/restart) tool. It suspends a running process and save the memory state into files which can be resumed at anytime.
 
 And since LXC container is a process, we should be able to suspend/resume containers. But does it really work?
 
@@ -57,8 +57,8 @@ end
 Once you increase cpu and memory, do ```vagrant up && vagrant ssh``` and ssh into the box. Become root user and install necessary packages to rebuild kernel.
 
 ```sh
-$ apt-get -y update
-$ apt-get -y install libncurses-dev build-essential libncurses-dev build-essential fakeroot kernel-package linux-source
+$ et -y update
+$ apt-get -y install libncurses-dev build-essential libncurses-dev build-essential fakeroot kernel-package linux-source bc
 ```
 
 After installing these, you should have `/usr/src/linux-source-<kernel version>` directory. Go into the directory and untar the source files.
@@ -81,7 +81,7 @@ If you want to know which kernel options should be enabled, the list is [here](h
 
 Once you put ```.config``` file, you are ready to build kernel.
 
-**Once again, make sure you increased cpu and memory in the previous seteps before start building kernel. Otherwise you will waste your time.**
+**Once again, make sure you increased cpu and memory in the previous seteps before start building kernel.**
 
 ```sh
 $ export LC_CTYPE=C
@@ -105,12 +105,11 @@ Done! Now You are running the kernel that works well with CRIU.
 Let's install CRIU now. Ubuntu doesn't provide up-to-date debian package of CRIU, so we need to build from source.
 
 ```sh
-$ apt-get install bsdmainutils build-essential libprotobuf-c0-dev linux-headers-generic protobuf-c-compiler
-$ mkdir /src
-$ cd /src
-$ curl http://download.openvz.org/criu/criu-1.3-rc2.tar.bz2 | tar -jxf-
-$ make -C criu-1.3-rc2/
-$ cp criu-1.3-rc2/criu /usr/local/sbin/
+$ apt-get install bsdmainutils build-essential apt-get install libprotobuf-dev libprotobuf-c0-dev protobuf-c-compiler protobuf-compiler python-protobuf xmlto asciidoc
+$ git clone https://github.com/xemul/criu
+$ cd criu/
+$ make
+$ sudo make install
 ```
 
 Now CRIU is installed. Let's try if it works. CRIU provides a command for this.
@@ -123,17 +122,16 @@ Looks good.
 ```
 
 Did you get ```Looks good.``` message? You may get some warnings, but you can ignore them.
-
-Before doing our expriment with containers, let's checkpoint and restore normal Linux process with CRIU. The example comes from [one of CRIU HOWTO pages](http://criu.org/Simple_loop).
+Before doing our experiment with containers, let's checkpoint and restore normal Linux process with CRIU. The example comes from [one of CRIU HOWTO pages](http://criu.org/Simple_loop).
 
 First, we need to create a simple loop script.
 
 ```
 $ cat > test.sh <<-EOF
 #!/bin/sh
-while :; do
-    sleep 1
-    date
+while true; do
+ date
+ sleep 1
 done
 EOF
 
@@ -144,8 +142,10 @@ $ ./test.sh
 We can suspend with ```criu dump``` command.
 
 ```sh
-$ PID=`pgrep test.sh`
-$ mkidr /tmp/test
+# Need to be root to run criu
+$ sudo -s
+$ export PID=`pgrep -f test.sh`
+$ mkdir /tmp/test
 $ criu dump -t $PID --images-dir /tmp/test --shell-job
 ```
 

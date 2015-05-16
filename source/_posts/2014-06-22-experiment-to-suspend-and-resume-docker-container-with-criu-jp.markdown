@@ -54,7 +54,7 @@ end
 
 ```sh
 $ apt-get -y update
-$ apt-get -y install libncurses-dev build-essential libncurses-dev build-essential fakeroot kernel-package linux-source
+$ apt-get -y install libncurses-dev build-essential libncurses-dev build-essential fakeroot kernel-package linux-source bc
 ```
 
 インストールしたら、```/usr/src/linux-source-<kernel version>``` というディレクトリが作成されているはずです。そのディレクトリに移動します。
@@ -127,9 +127,9 @@ Looks good.
 ```
 $ cat > test.sh <<-EOF
 #!/bin/sh
-while :; do
-    sleep 1
-    date
+while true; do
+ date
+ sleep 1
 done
 EOF
 
@@ -140,8 +140,10 @@ $ ./test.sh
 プロセスを停止するには```criu dump```コマンドを使います。
 
 ```sh
-$ PID=`pgrep test.sh`
-$ mkidr /tmp/test
+# criuを実行するためにはrootじゃないといけない
+$ sudo -s
+$ export PID=`pgrep -f test.sh`
+$ mkdir /tmp/test
 $ criu dump -t $PID --images-dir /tmp/test --shell-job
 ```
 
