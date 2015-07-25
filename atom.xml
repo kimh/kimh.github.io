@@ -4,7 +4,7 @@
   <title><![CDATA[Program Is Made At Night]]></title>
   <link href="http://kimh.github.io/atom.xml" rel="self"/>
   <link href="http://kimh.github.io/"/>
-  <updated>2015-05-16T22:34:42+09:00</updated>
+  <updated>2015-07-26T00:27:56+09:00</updated>
   <id>http://kimh.github.io/</id>
   <author>
     <name><![CDATA[kim hirokuni]]></name>
@@ -2239,7 +2239,7 @@ You may say that LXC already has <a href="http://lxc.sourceforge.net/man/lxc-che
 
 <figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
-</pre></td><td class='code'><pre><code class='sh'><span class='line'><span class="nv">$ </span>et -y update
+</pre></td><td class='code'><pre><code class='sh'><span class='line'><span class="nv">$ </span>apt-get -y update
 </span><span class='line'><span class="nv">$ </span>apt-get -y install libncurses-dev build-essential libncurses-dev build-essential fakeroot kernel-package linux-source bc
 </span></code></pre></td></tr></table></div></figure>
 
@@ -2303,7 +2303,7 @@ You may say that LXC already has <a href="http://lxc.sourceforge.net/man/lxc-che
 <span class='line-number'>3</span>
 <span class='line-number'>4</span>
 <span class='line-number'>5</span>
-</pre></td><td class='code'><pre><code class='sh'><span class='line'><span class="nv">$ </span>apt-get install bsdmainutils build-essential apt-get install libprotobuf-dev libprotobuf-c0-dev protobuf-c-compiler protobuf-compiler python-protobuf xmlto asciidoc
+</pre></td><td class='code'><pre><code class='sh'><span class='line'><span class="nv">$ </span>apt-get install bsdmainutils build-essential libprotobuf-dev libprotobuf-c0-dev protobuf-c-compiler protobuf-compiler python-protobuf xmlto asciidoc
 </span><span class='line'><span class="nv">$ </span>git clone https://github.com/xemul/criu
 </span><span class='line'><span class="nv">$ </span><span class="nb">cd </span>criu/
 </span><span class='line'><span class="nv">$ </span>make

@@ -4,7 +4,7 @@
   <title><![CDATA[Category: criu | Program Is Made At Night]]></title>
   <link href="http://kimh.github.io/blog/categories/criu/atom.xml" rel="self"/>
   <link href="http://kimh.github.io/"/>
-  <updated>2015-05-16T22:34:42+09:00</updated>
+  <updated>2015-07-26T00:27:56+09:00</updated>
   <id>http://kimh.github.io/</id>
   <author>
     <name><![CDATA[kim hirokuni]]></name>
@@ -306,7 +306,7 @@ end
 <p>Once you increase cpu and memory, do <code>vagrant up &amp;&amp; vagrant ssh</code> and ssh into the box. Become root user and install necessary packages to rebuild kernel.</p>
 
 <p><code>sh
-$ et -y update
+$ apt-get -y update
 $ apt-get -y install libncurses-dev build-essential libncurses-dev build-essential fakeroot kernel-package linux-source bc
 </code></p>
 
@@ -355,7 +355,7 @@ $ reboot
 <p>Let&rsquo;s install CRIU now. Ubuntu doesn&rsquo;t provide up-to-date debian package of CRIU, so we need to build from source.</p>
 
 <p><code>sh
-$ apt-get install bsdmainutils build-essential apt-get install libprotobuf-dev libprotobuf-c0-dev protobuf-c-compiler protobuf-compiler python-protobuf xmlto asciidoc
+$ apt-get install bsdmainutils build-essential libprotobuf-dev libprotobuf-c0-dev protobuf-c-compiler protobuf-compiler python-protobuf xmlto asciidoc
 $ git clone https://github.com/xemul/criu
 $ cd criu/
 $ make
