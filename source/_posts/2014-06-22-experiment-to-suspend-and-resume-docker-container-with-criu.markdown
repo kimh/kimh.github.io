@@ -105,7 +105,7 @@ Done! Now You are running the kernel that works well with CRIU.
 Let's install CRIU now. Ubuntu doesn't provide up-to-date debian package of CRIU, so we need to build from source.
 
 ```sh
-$ apt-get install bsdmainutils build-essential libprotobuf-dev libprotobuf-c0-dev protobuf-c-compiler protobuf-compiler python-protobuf xmlto asciidoc
+$ apt-get install git bsdmainutils build-essential libprotobuf-dev libprotobuf-c0-dev protobuf-c-compiler protobuf-compiler python-protobuf xmlto asciidoc
 $ git clone https://github.com/xemul/criu
 $ cd criu/
 $ make
