@@ -54,6 +54,10 @@ https://github.com/kimh/kimh.github.io には **master** と **source** の二�
 
 ### よく使うOctopressコマンド
 
+***rake new_post["new-post-title"]***
+
+新しい記事を作成する。
+
 ***rake generate***
 
 `source`にあるファイルを`public`配下に静的HTMLとして生成する。
