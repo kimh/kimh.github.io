@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "experiment-to-suspend-and-resume-docker-container-with-criu-2"
+title: "Experiment To Suspend/Resume Docker Container With CRIU 2"
 date: 2015-08-08 21:51
 comments: true
 categories: 
