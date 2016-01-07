@@ -4,7 +4,7 @@
   <title><![CDATA[Program Is Made At Night]]></title>
   <link href="http://kimh.github.io/atom.xml" rel="self"/>
   <link href="http://kimh.github.io/"/>
-  <updated>2016-01-07T03:59:52+09:00</updated>
+  <updated>2016-01-07T17:56:13+09:00</updated>
   <id>http://kimh.github.io/</id>
   <author>
     <name><![CDATA[kim hirokuni]]></name>
@@ -377,6 +377,36 @@
 
 
 <p>これでUnprivilegedコンテナを起動することができた。</p>
+
+<p>どうやってこのコンテナがUnprivilegedコンテナだと確認できるだろうか？コンテナ内からはあくまでroot権限があるように見えるのでよくわからない。</p>
+
+<p>一番手っ取り早いファイルはコンテナで作られたファイルのuid/gidをコンテナの中と外で確認することだと思う。試しにやって見る。</p>
+
+<p>まずは <code>box1</code> にログインしてrootユーザーでファイルを作成して見る。</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>$ touch /foo</span></code></pre></td></tr></table></div></figure>
+
+
+<p>そしてこのファイルを作成したユーザのuid/gidを確認してみる。</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>$ ls -ln /foo
+</span><span class='line'>-rw-rw-r-- 1 0 0 0 Jan  7 08:51 /foo</span></code></pre></td></tr></table></div></figure>
+
+
+<p>rootで作成したのでuid/gidは0になっている。</p>
+
+<p>次に <code>box1</code> から抜けてホストマシン側で作成したファイルのuid/gidを確認する。コンテナのファイルシステムは <code>/mnt</code> に保存されている。</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>$ ls -ln /mnt/box16/rootfs/foo
+</span><span class='line'>-rw-rw-r-- 1 100000 100000 0 Jan  7 08:51 /mnt/box16/rootfs/foo</span></code></pre></td></tr></table></div></figure>
+
+
+<p>uid/gidが100000になっていることからちゃんと設定した通りコンテナのuid/gid 0がホスト側の100000にマッピングされているから <code>box1</code> はUnprivilegedコンテナだとわかる。</p>
 
 <p><strong><em>コンテナの入れ子</em></strong></p>
 
