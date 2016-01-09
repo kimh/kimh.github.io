@@ -4,7 +4,7 @@
   <title><![CDATA[Program Is Made At Night]]></title>
   <link href="http://kimh.github.io/atom.xml" rel="self"/>
   <link href="http://kimh.github.io/"/>
-  <updated>2016-01-07T17:58:01+09:00</updated>
+  <updated>2016-01-09T21:23:11+09:00</updated>
   <id>http://kimh.github.io/</id>
   <author>
     <name><![CDATA[kim hirokuni]]></name>
@@ -12,6 +12,69 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[Vagrantでディレクトリ共有ができない時]]></title>
+    <link href="http://kimh.github.io/blog/vagrant-vboxfs-missing/"/>
+    <updated>2016-01-09T21:11:00+09:00</updated>
+    <id>http://kimh.github.io/blog/vagrant-vboxfs-missing</id>
+    <content type="html"><![CDATA[<p>いっつも忘れるので自分ようにメモ。いつからかVagrantでUbuntuのVirtualBox VMを起動したら１００％ディレクトリ共有ができない。(多分使っているboxがvagrantに対応していないのだと思う。)</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>$ vagrant --version
+</span><span class='line'>Vagrant 1.8.1</span></code></pre></td></tr></table></div></figure>
+
+
+<p>VirtualBoxは5.0.10</p>
+
+<p><code>vagrant up</code>した時に以下のメッセージが出る。</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>Failed to mount folders in Linux guest. This is usually because
+</span><span class='line'>the "vboxsf" file system is not available. Please verify that
+</span><span class='line'>the guest additions are properly installed in the guest and
+</span><span class='line'>can work properly. The command attempted was:
+</span><span class='line'>
+</span><span class='line'>mount -t vboxsf -o uid=`id -u vagrant`,gid=`getent group vagrant | cut -d: -f3` vagrant /vagrant
+</span><span class='line'>mount -t vboxsf -o uid=`id -u vagrant`,gid=`id -g vagrant` vagrant /vagrant
+</span><span class='line'>
+</span><span class='line'>The error output from the last command was:
+</span><span class='line'>
+</span><span class='line'>stdin: is not a tty
+</span><span class='line'>mount: unknown filesystem type 'vboxsf'</span></code></pre></td></tr></table></div></figure>
+
+
+<p>以下直す手順。</p>
+
+<p>VM側作業</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>cd /tmp/
+</span><span class='line'>wget http://download.virtualbox.org/virtualbox/5.0.10/VBoxGuestAdditions_5.0.10.iso
+</span><span class='line'>sudo mount -t iso9660 /tmp/VBoxGuestAdditions_5.0.10.iso /mnt/
+</span><span class='line'>cd /mnt
+</span><span class='line'>sudo ./VBoxLinuxAdditions.run</span></code></pre></td></tr></table></div></figure>
+
+
+<p>あとはホスト側で <code>vagrant reload</code> するだけ。</p>
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[Btrfs で Unprivileged で Nested な LXCコンテナ]]></title>
@@ -6736,223 +6799,6 @@ For now, you have to remove the submodule to make build succeed.</p>
 </span></code></pre></td></tr></table></div></figure>
 
 
-
-]]></content>
-  </entry>
-  
-  <entry>
-    <title type="html"><![CDATA[Using docker to run cucumber tests in parallel]]></title>
-    <link href="http://kimh.github.io/blog/en/docker/using-docker-to-run-cucumber-tests-in-parallel/"/>
-    <updated>2013-09-08T21:30:00+09:00</updated>
-    <id>http://kimh.github.io/blog/en/docker/using-docker-to-run-cucumber-tests-in-parallel</id>
-    <content type="html"><![CDATA[<p><img src="http://kimh.github.io/images/homepage-docker-logo.png" alt="" /></p>
-
-<h2>What is Docker?</h2>
-
-<p>You can think of <a href="https://www.docker.io/">Docker</a> as a wrapper to create and run Linux LXC very easily. In addition to that, Docker comes with very unique technology called &ldquo;union file system&rdquo; that allows you to manage the version of your containers with familiar command like <em>commit</em> or <em>push</em> just like you are using git.</p>
-
-<p>LXC is the one of the virtualisation technology that allows you to run a container that is isolated from its host machine. In contrast to hypervisor type virtualisation like Xen Server, the LXC provides lightweight virtual machine. Typically, you can run more virtual machines in a host than hypervisor type with less resource.</p>
-
-<p>Because of the lightweight nature of LXC, one very good use of it is running many tests.</p>
-
-<p>You want to run your each test in very isolated so that running one test doesn&rsquo;t give other tests any side effects. To do that, running a each test in isolated virtual machine is very natural way. You can do this by using hypervisor type of virtual machine, but it gives you some cost starting and stopping hypervisor type of virtual machine isn&rsquo;t very fast.</p>
-
-<p>With LXC, you can easily archive this because running a machine is as light as running a process!!</p>
-
-<h2>Installing Docker</h2>
-
-<p>It is pretty easy to install Docker if you are using Ubuntu 12.04.</p>
-
-<p>The below instructions are from <a href="http://docs.docker.io/en/latest/installation/ubuntulinux/">instruction page of Docker</a> which worked for me.</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-</pre></td><td class='code'><pre><code class='bash'><span class='line'>sudo apt-get update
-</span><span class='line'>sudo apt-get install linux-image-generic-lts-raring linux-headers-generic-lts-raring
-</span><span class='line'>sudo reboot
-</span><span class='line'>sudo sh -c <span class="s2">&quot;curl https://get.docker.io/gpg | apt-key add -&quot;</span>
-</span><span class='line'>sudo sh -c <span class="s2">&quot;echo deb https://get.docker.io/ubuntu docker main &gt; /etc/apt/sources.list.d/docker.list&quot;</span>
-</span><span class='line'>sudo apt-get update
-</span><span class='line'>sudo apt-get install lxc-docker
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>Now you can provision a container via Docker.</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='bash'><span class='line'>sudo docker run -i -t ubuntu /bin/bash
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>If you are using Mac, you need to run Docker on vagrant since Docker doesn&rsquo;t suppor Mac at this point. Installing on Mac is explained <a href="http://docs.docker.io/en/latest/installation/vagrant/">here</a>.
-However, I recommend you first to try Docker on Ubuntu. I tried Docker on Vagant VM, too, but provisioned container does not run as fast as running on Ubuntu probably because Vagrant is already running virtualized resource.</p>
-
-<h2>Setting up test environment</h2>
-
-<p>As I mentioned earlier, Docker provides very similar interface to git. You can pull docker images from <a href="https://index.docker.io/">public Docker repository</a> and use it to make your own images and then push.
-Since we are running cucumber test, you need a container that has environment to run ruby program. Although you can create such container very easily, let&rsquo;s save time by using the image that I created before.</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-</pre></td><td class='code'><pre><code class='bash'><span class='line'><span class="c"># You need to be root to use Docker</span>
-</span><span class='line'>sudo -s
-</span><span class='line'>
-</span><span class='line'><span class="c"># Pulling images to your machine</span>
-</span><span class='line'>docker pull kimh/ruby-base
-</span><span class='line'>
-</span><span class='line'><span class="c"># Now let&#39;s see if it works</span>
-</span><span class='line'>docker run kimh/ruby-base <span class="nb">echo</span> <span class="s2">&quot;Running on Docker&quot;</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>Let&rsquo;s login to the container you just pulled and install our test app.</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-</pre></td><td class='code'><pre><code class='bash'><span class='line'><span class="c"># Login to the container</span>
-</span><span class='line'>docker run -i -t kimh/ruby-base /bin/bash
-</span><span class='line'><span class="nb">cd</span> /git
-</span><span class='line'>git clone https://github.com/kimh/docker_demo
-</span><span class='line'><span class="nb">cd </span>docker_demo/ci_app
-</span><span class='line'>bundle install
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>Now, since we have done time-consuming operation (pulling a image and bundle install), we want to save the state of the container. We will commit the change of container and save to images.</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-</pre></td><td class='code'><pre><code class='bash'><span class='line'><span class="c"># Dont&#39;t type exit on logged in container. If you do, your changes will be discarded!!</span>
-</span><span class='line'><span class="c"># Instead, you type Ctrl+p then Ctrl+q to quit from the console.</span>
-</span><span class='line'>Ctrl+p
-</span><span class='line'>Ctrl+q
-</span><span class='line'><span class="c"># First, you need to know the id of container</span>
-</span><span class='line'>docker ps <span class="c"># In my case, it gives me 23fd82dcc088. Maybe different in different env?</span>
-</span><span class='line'>docker commit 23fd82dcc088 kimh/ruby-base
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>You are ready to run the cucumber test on a container. Let&rsquo;s start only running one container.</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-</pre></td><td class='code'><pre><code class='bash'><span class='line'>docker run kimh/ruby-base /bin/bash -c <span class="s2">&quot;</span>
-</span><span class='line'><span class="s2">  source /etc/profile</span>
-</span><span class='line'><span class="s2">  cd /git/docker_demo/ci_app</span>
-</span><span class='line'><span class="s2">  export LC_CTYPE=&quot;</span>ja_JP.UTF-8<span class="s2">&quot;</span>
-</span><span class='line'><span class="s2">  export RAILS_ENV=test</span>
-</span><span class='line'><span class="s2">  bundle exec rake cucumber</span>
-</span><span class='line'><span class="s2">&quot;</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>With the script above, Docker runs kimh/ruby-base and execute bash script which runs cucumber test.</p>
-
-<p>Finally, let&rsquo;s run tests in paralell. The idea is running multiple containers and each container run one cucumber test. In this case, I will run 5 containers in parallel.</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-</pre></td><td class='code'><pre><code class='bash'><span class='line'><span class="nv">DID</span><span class="o">=</span><span class="s2">&quot;&quot;</span>
-</span><span class='line'><span class="nv">container</span><span class="o">=</span><span class="s2">&quot;kimh/ruby-base:latest&quot;</span>
-</span><span class='line'><span class="nv">dir</span><span class="o">=</span><span class="s2">&quot;/git/docker_demo/ci_app&quot;</span>
-</span><span class='line'>
-</span><span class='line'><span class="k">for </span>feature in <span class="o">{</span>0..4<span class="o">}</span>
-</span><span class='line'><span class="k">do</span>
-</span><span class='line'><span class="k">  </span><span class="nv">DID</span><span class="o">=</span><span class="nv">$DID</span><span class="s2">&quot; &quot;</span><span class="sb">`</span>sudo docker run -d <span class="nv">$container</span> /bin/bash -c <span class="s2">&quot;</span>
-</span><span class='line'><span class="s2">  source /etc/profile</span>
-</span><span class='line'><span class="s2">  cd $dir</span>
-</span><span class='line'><span class="s2">  export LC_CTYPE=&quot;</span>ja_JP.UTF-8<span class="s2">&quot;</span>
-</span><span class='line'><span class="s2">  export RAILS_ENV=test</span>
-</span><span class='line'><span class="s2">  bundle exec rake cucumber</span>
-</span><span class='line'><span class="s2">  &quot;</span><span class="sb">`</span>
-</span><span class='line'><span class="k">done</span>
-</span><span class='line'>docker <span class="nb">wait</span> <span class="nv">$DID</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>There are two things to note in above script.</p>
-
-<p>First, the script stores the ID&rsquo;s of running containers into DID variable. I need the variable because I want to know the status code (whether test succeeds or fails) later.</p>
-
-<p>Second, by calling <em>docker wait</em> against container ID&rsquo;s, the shell reports me the status code of each container and blocks until all container&rsquo;s execution finishes.</p>
-
-<p>You should see consecutive status code of 0 since all tests should pass. (cucumber returns 0 for success).</p>
-
-<h1>Wrapping up</h1>
-
-<p>You learned basics things about Docker and how to use it to run cucumber tests in parallel. Since each test is invoked by a container,
-tests are run in parallel and isolated environments. In this example, we only ran one test in multiple containers, so it is not very useful, but you see how you can passes different tests
-to each container and run them at once. This could be something like this.</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-</pre></td><td class='code'><pre><code class='bash'><span class='line'><span class="nv">DID</span><span class="o">=</span><span class="s2">&quot;&quot;</span>
-</span><span class='line'><span class="nv">container</span><span class="o">=</span><span class="s2">&quot;kimh/ruby-base:nice&quot;</span>
-</span><span class='line'><span class="nv">dir</span><span class="o">=</span><span class="s2">&quot;/git/your_repo&quot;</span>
-</span><span class='line'>
-</span><span class='line'><span class="k">for </span>feature in <span class="sb">`</span>find  ./features/<span class="sb">`</span>
-</span><span class='line'><span class="k">do</span>
-</span><span class='line'><span class="k">  </span><span class="nv">DID</span><span class="o">=</span><span class="nv">$DID</span><span class="s2">&quot; &quot;</span><span class="sb">`</span>docker run -d <span class="nv">$container</span> /bin/bash -c <span class="s2">&quot;</span>
-</span><span class='line'><span class="s2">  source /etc/profile</span>
-</span><span class='line'><span class="s2">  cd $dir</span>
-</span><span class='line'><span class="s2">  export LC_CTYPE=&quot;</span>ja_JP.UTF-8<span class="s2">&quot;</span>
-</span><span class='line'><span class="s2">  export RAILS_ENV=test</span>
-</span><span class='line'><span class="s2">  bundle exec cucumber $feature -r features/</span>
-</span><span class='line'><span class="s2">  &quot;</span><span class="sb">`</span>
-</span><span class='line'><span class="k">done</span>
-</span><span class='line'>docker <span class="nb">wait</span> <span class="nv">$DID</span>
-</span></code></pre></td></tr></table></div></figure>
 
 ]]></content>
   </entry>

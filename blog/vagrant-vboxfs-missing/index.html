@@ -1,4 +1,3 @@
-
 <!doctype html>
 <!-- paulirish.com/2008/conditional-stylesheets-vs-css-hacks-answer-neither/ -->
 <!--[if lt IE 7]> <html class="no-js ie6 oldie" lang="en"> <![endif]-->
@@ -13,7 +12,7 @@
        More info: h5bp.com/b/378 -->
   <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
 
-  <title> kim hirokuni</title>
+  <title>Vagrantでディレクトリ共有ができない時 |  kim hirokuni</title>
   <meta name="author" content="kim hirokuni">
   
 
@@ -38,248 +37,104 @@
   <script src="/javascripts/libs/modernizr-2.0.6.min.js"></script>
 </head>
 
-<body>
-    <div id="container">
-        <header>
-            <span id='name-helper'>kim hirokuni</span>
-            <canvas   id="myCanvas" width="700" ></canvas>
-                <br><br>
-                <h1>Program Is Made At Night</h1>
-                <br>
-        </header>
+<body id="post">
 
-        <div id="main" role="main">
-            <nav role="navigation" ><ul class="main-navigation">
-  <li style='float:left;margin-right:7px'><a class='nav' href="/">Blog</a></li>
-  <li style='float:left;margin-right:7px'><a class='nav' href="/archives">Archives</a></li>
-  <li ><a class='nav' href="/about">About</a></li>
+  <div id="container">
+    <nav role="navigation" ><ul class="main-navigation">
+  <li style='float:left;margin-right:5px'><a class='nav' href="/">Home</a></li>
 </ul><br><br>
 </nav>
-            
-
-
-  <article>
     <article>
 
 
-  <div class="article-read-more">
-    <p class="meta">
-      
+  <h1 class="article-title">Vagrantでディレクトリ共有ができない時</h1>
+  <div class="article-content"><p>いっつも忘れるので自分ようにメモ。いつからかVagrantでUbuntuのVirtualBox VMを起動したら１００％ディレクトリ共有ができない。(多分使っているboxがvagrantに対応していないのだと思う。)</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>$ vagrant --version
+</span><span class='line'>Vagrant 1.8.1</span></code></pre></td></tr></table></div></figure>
 
 
+<p>VirtualBoxは5.0.10</p>
 
-2016 01-09
-      <a rel="full-article" href="/blog/vagrant-vboxfs-missing/">Vagrantでディレクトリ共有ができない時</a>
-    </p>
-  </div>
+<p><code>vagrant up</code>した時に以下のメッセージが出る。</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>Failed to mount folders in Linux guest. This is usually because
+</span><span class='line'>the "vboxsf" file system is not available. Please verify that
+</span><span class='line'>the guest additions are properly installed in the guest and
+</span><span class='line'>can work properly. The command attempted was:
+</span><span class='line'>
+</span><span class='line'>mount -t vboxsf -o uid=`id -u vagrant`,gid=`getent group vagrant | cut -d: -f3` vagrant /vagrant
+</span><span class='line'>mount -t vboxsf -o uid=`id -u vagrant`,gid=`id -g vagrant` vagrant /vagrant
+</span><span class='line'>
+</span><span class='line'>The error output from the last command was:
+</span><span class='line'>
+</span><span class='line'>stdin: is not a tty
+</span><span class='line'>mount: unknown filesystem type 'vboxsf'</span></code></pre></td></tr></table></div></figure>
+
+
+<p>以下直す手順。</p>
+
+<p>VM側作業</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>cd /tmp/
+</span><span class='line'>wget http://download.virtualbox.org/virtualbox/5.0.10/VBoxGuestAdditions_5.0.10.iso
+</span><span class='line'>sudo mount -t iso9660 /tmp/VBoxGuestAdditions_5.0.10.iso /mnt/
+</span><span class='line'>cd /mnt
+</span><span class='line'>sudo ./VBoxLinuxAdditions.run</span></code></pre></td></tr></table></div></figure>
+
+
+<p>あとはホスト側で <code>vagrant reload</code> するだけ。</p>
+</div>
+  
+    <section>
+      <h1>Comments</h1>
+      <div id="disqus_thread"><div id="disqus_thread"></div>
+<script type="text/javascript">
+  var disqus_shortname = 'kimstechblog';
+  var disqus_identifier = 'http://kimh.github.io/blog/vagrant-vboxfs-missing/';
+  var disqus_url = 'http://kimh.github.io/blog/vagrant-vboxfs-missing/';
+  //var disqus_developer = 1;
+  (function() {
+    var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+    dsq.src = 'http://' + disqus_shortname + '.disqus.com/embed.js';
+    (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+  })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+</div>
+    </section>
+  
 
 </article>
 
 
-  </article>
-
-
-  <article>
-    <article>
-
-
-  <div class="article-read-more">
-    <p class="meta">
+      <p class="meta">
       
-
-
-
-2016 01-07
-      <a rel="full-article" href="/blog/buidling-btrfs-unprivileged-nested-lxc-container/">Btrfs で Unprivileged で Nested な LXCコンテナ</a>
+        <a class="basic-alignment left nav" href="/blog/buidling-btrfs-unprivileged-nested-lxc-container/" title="Previous Post: Btrfs で Unprivileged で Nested な LXCコンテナ">&laquo; Btrfs で Unprivileged で Nested な LXCコンテナ</a>
+      
+      
     </p>
   </div>
-
-</article>
-
-
-  </article>
-
-
-  <article>
-    <article>
-
-
-  <div class="article-read-more">
-    <p class="meta">
-      
-
-
-
-2015 08-08
-      <a rel="full-article" href="/blog/experiment-to-suspend-and-resume-docker-container-with-criu-2/">Experiment To Suspend/Resume Docker Container With CRIU 2</a>
-    </p>
-  </div>
-
-</article>
-
-
-  </article>
-
-
-  <article>
-    <article>
-
-
-  <div class="article-read-more">
-    <p class="meta">
-      
-
-
-
-2015 05-10
-      <a rel="full-article" href="/blog/octopress-memo-to-self/">Octopressメモ</a>
-    </p>
-  </div>
-
-</article>
-
-
-  </article>
-
-
-  <article>
-    <article>
-
-
-  <div class="article-read-more">
-    <p class="meta">
-      
-
-
-
-2014 12-12
-      <a rel="full-article" href="/blog/en/javascript/the-practices-of-backbone-marionette-that-i-believe-the-best-en/">The Practices of Backbone.Marionette That I believe The Best</a>
-    </p>
-  </div>
-
-</article>
-
-
-  </article>
-
-
-  <article>
-    <article>
-
-
-  <div class="article-read-more">
-    <p class="meta">
-      
-
-
-
-2014 09-11
-      <a rel="full-article" href="/blog/jp/lotus/creating-web-application-with-ruby-lotus-ja/">Ruby LotusでWeb Appを作ってみる</a>
-    </p>
-  </div>
-
-</article>
-
-
-  </article>
-
-
-  <article>
-    <article>
-
-
-  <div class="article-read-more">
-    <p class="meta">
-      
-
-
-
-2014 09-11
-      <a rel="full-article" href="/blog/en/lotus/creating-web-application-with-ruby-lotus/">Creating Web Application with Ruby Lotus</a>
-    </p>
-  </div>
-
-</article>
-
-
-  </article>
-
-
-  <article>
-    <article>
-
-
-  <div class="article-read-more">
-    <p class="meta">
-      
-
-
-
-2014 06-22
-      <a rel="full-article" href="/blog/jp/criu/experiment-to-suspend-and-resume-docker-container-with-criu-jp/">CRIUを使ってDockerコンテナの停止/再開に挑戦</a>
-    </p>
-  </div>
-
-</article>
-
-
-  </article>
-
-
-  <article>
-    <article>
-
-
-  <div class="article-read-more">
-    <p class="meta">
-      
-
-
-
-2014 06-22
-      <a rel="full-article" href="/blog/en/criu/experiment-to-suspend-and-resume-docker-container-with-criu/">Experiment To Suspend/Resume Docker Container With CRIU</a>
-    </p>
-  </div>
-
-</article>
-
-
-  </article>
-
-
-  <article>
-    <article>
-
-
-  <div class="article-read-more">
-    <p class="meta">
-      
-
-
-
-2014 05-16
-      <a rel="full-article" href="/blog/en/go/how-can-i-do-x-in-ruby-with-go-part-1/">(WIP) Ruby To Go: How can I do X in Ruby with Go? (Part I)</a>
-    </p>
-  </div>
-
-</article>
-
-
-  </article>
-
-
-        </div>
-           <footer role="contentinfo" >
-    	<p>
-		Copyright &copy; 2016 - kim hirokuni -
-		 <span class="credit">Powered by <a href="http://octopress.org">Octopress</a></span> |
-		 <span class="credit">Themed with <a href="https://github.com/rwwaskk/linkedlist">LinkedList</a></span>
-	</p>
-    </footer>
-
-
-    </div> <!--! end of #container -->
-      <script>
+    <script>
       var name = document.getElementById('name-helper').innerHTML;
 
       var canvas = document.getElementById('myCanvas');
@@ -421,3 +276,5 @@
 
 
 </body>
+</html>
+
