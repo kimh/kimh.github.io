@@ -4,7 +4,7 @@
   <title><![CDATA[Program Is Made At Night]]></title>
   <link href="http://kimh.github.io/atom.xml" rel="self"/>
   <link href="http://kimh.github.io/"/>
-  <updated>2016-01-09T21:23:11+09:00</updated>
+  <updated>2016-06-20T01:40:35+09:00</updated>
   <id>http://kimh.github.io/</id>
   <author>
     <name><![CDATA[kim hirokuni]]></name>
@@ -14,65 +14,91 @@
 
   
   <entry>
-    <title type="html"><![CDATA[Vagrantでディレクトリ共有ができない時]]></title>
-    <link href="http://kimh.github.io/blog/vagrant-vboxfs-missing/"/>
-    <updated>2016-01-09T21:11:00+09:00</updated>
-    <id>http://kimh.github.io/blog/vagrant-vboxfs-missing</id>
-    <content type="html"><![CDATA[<p>いっつも忘れるので自分ようにメモ。いつからかVagrantでUbuntuのVirtualBox VMを起動したら１００％ディレクトリ共有ができない。(多分使っているboxがvagrantに対応していないのだと思う。)</p>
+    <title type="html"><![CDATA[スタンディングデスクを始めようと考えている人へ]]></title>
+    <link href="http://kimh.github.io/blog/jp/standing-desk-review/"/>
+    <updated>2016-06-19T23:28:00+09:00</updated>
+    <id>http://kimh.github.io/blog/jp/standing-desk-review</id>
+    <content type="html"><![CDATA[<p>スタンディングデスクで仕事を始めてしばらく経ったのでこのあたりでレビューを書いてみようと思いました。日本ではスタンディングデスクは2016年の時点ではあまりポピュラーではないと思うので、これから始めようとしている人の参考になればと思います。</p>
 
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>$ vagrant --version
-</span><span class='line'>Vagrant 1.8.1</span></code></pre></td></tr></table></div></figure>
+<h2>スタンディングデスク導入の動機</h2>
 
+<p>以前勤めていた会社を辞めてアメリカに本社がある今の会社に入ったのがきっかけです。日本の自宅から働くという仕事形態です。仕事を始めて２週間くらいで昔の会社に勤めていた時には感じなかった背中と腰の違和感を感じ始めました。考えてみると前の会社では会社が支給してくれたいいオフィスチェアを使っていたのですが、自宅で仕事をするようになってからは、食事をするテーブルについている椅子で仕事をしていたので体に結構負荷がかかっていることに気づきました。</p>
 
-<p>VirtualBoxは5.0.10</p>
+<p>欧米ではスタンディングデスクはかなり普及しています。自分の会社の本社でも半分以上の人がスタンディングデスクを使っています。ちゃんとしたオフィスチェアを買うこともできたけど、せっかくなので前から興味のあったスタンディングに挑戦してみることにしました。</p>
 
-<p><code>vagrant up</code>した時に以下のメッセージが出る。</p>
+<h2>どのデスクを使うか</h2>
 
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>Failed to mount folders in Linux guest. This is usually because
-</span><span class='line'>the "vboxsf" file system is not available. Please verify that
-</span><span class='line'>the guest additions are properly installed in the guest and
-</span><span class='line'>can work properly. The command attempted was:
-</span><span class='line'>
-</span><span class='line'>mount -t vboxsf -o uid=`id -u vagrant`,gid=`getent group vagrant | cut -d: -f3` vagrant /vagrant
-</span><span class='line'>mount -t vboxsf -o uid=`id -u vagrant`,gid=`id -g vagrant` vagrant /vagrant
-</span><span class='line'>
-</span><span class='line'>The error output from the last command was:
-</span><span class='line'>
-</span><span class='line'>stdin: is not a tty
-</span><span class='line'>mount: unknown filesystem type 'vboxsf'</span></code></pre></td></tr></table></div></figure>
+<p>残念ながら日本ではスタンディングデスクの選択肢はまだあまり多くはありません。あるのは電動式で高さを変更できる２０万円くらいするやつとかオーダーメイドの机とかです。なんでただの机より少し身長が高くなっただけでそんなに高価になるのか納得いきませんが、大抵の場合は電動式だからです。しかし、自分の用途では座ることはほぼないので高さの調整は重要ではありません。たまに変更するだけなら手動で全然構わないのですが、国内では手動のスタンディングは存在しませんでした。IKEAが <strong>SKARSTA</strong> を発売するまでは!</p>
+
+<h3>IKEA SKARSTA</h3>
+
+<p>今までは棚の上に衣装ケースをおいていましたが、机の天板が小さいのと微妙な高さの変更ができないのがネックでした。そこへIKEAが2016年に<a href="http://www.ikea.com/jp/ja/catalog/products/S79084964/">SKARSTA</a>という手動のスタンディングデスクが発売しました。まさにずっと探し求めていたものでした。</p>
+
+<p>簡単にレビューをします。</p>
+
+<ul>
+<li><p>天板の大きさが２種類あるので注意してください。大きいほう(160x80cm)は日本のオフィスには大きすぎので小さい方(120x70cm)がいいです。</p></li>
+<li><p>小さいほうなら２万円を切るので満足な価格です。</p></li>
+<li><p>高さの調整は結構大変です。座った状態の高さから立った状態にするまでに結構クランクを回さないといけません。</p></li>
+<li><p>なので正直毎日座ったり立ったりを変更するのには向いてないと思います。(電動式普及している理由)</p></li>
+<li><p>力をかけてもグラグラはしません。ただ、上に重い物を置くと若干グラグラするという海外のレビューを読みました。</p></li>
+</ul>
 
 
-<p>以下直す手順。</p>
+<p>購入して２週間くらい使いましたがとても気に入っていて買ってよかったと思っています。</p>
 
-<p>VM側作業</p>
+<p><strong>Before: DIYスタンディングデスク</strong></p>
 
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>cd /tmp/
-</span><span class='line'>wget http://download.virtualbox.org/virtualbox/5.0.10/VBoxGuestAdditions_5.0.10.iso
-</span><span class='line'>sudo mount -t iso9660 /tmp/VBoxGuestAdditions_5.0.10.iso /mnt/
-</span><span class='line'>cd /mnt
-</span><span class='line'>sudo ./VBoxLinuxAdditions.run</span></code></pre></td></tr></table></div></figure>
+<p><img src="http://kimh.github.io/images/standing-desk-before.jpg" height="640" width="360" alt="overview" /></p>
 
+<p><strong>After: IKEA SKARSTA</strong></p>
 
-<p>あとはホスト側で <code>vagrant reload</code> するだけ。</p>
+<p><img src="http://kimh.github.io/images/standing-desk-after.jpg" height="640" width="360" alt="overview" /></p>
+
+<p>椅子とマットについては後述します。</p>
+
+<h2>スタンディングデスクを使ってわかったこと</h2>
+
+<h3>最初はとても疲れるけど慣れる</h3>
+
+<p>他の方も書いていますが始めの１週間くらいはびっくりするくらい疲れます。始めの数日は仕事中ダイレクトに疲れを感じました。その後はなんとかやっていけるけど、１日の終わりに&#8221;なんか今日は疲れたな〜。なんで？&#8221;って思ったら立って仕事をしてたことに気づくような感じでした。だけど、続けているとだんだん慣れてきます。今では３時間くらいは連続で仕事をしても大丈夫です。１日の終わりに感じる疲れもほぼ感じません。考えてみると立って仕事している人は山ほどいます。だから別に立ちながら仕事することは特別じゃないのですが、あまりに体が怠けていたみたいで慣れるまでは少し大変でした。</p>
+
+<h3>大抵の作業はできる</h3>
+
+<p>立ちながら難しい仕事ができるのかと思うかもしれません。プログラマーは深い集中力を要求される仕事なので自分も始めは立ちながら集中できるのか疑問に思っていました。</p>
+
+<p>作業が要する集中力/思考力をレベル1~3で表すとします。</p>
+
+<p><strong>レベル1</strong>
+一番簡単な作業でとても慣れた作業やほとんど頭を使わない作業です。メールチェックとか書類の整理とかです。</p>
+
+<p><strong>レベル2</strong>
+日常的にやっているけど少し頭を使う仕事です。プログラマーでいうとプログラムを書く作業です。</p>
+
+<p><strong>レベル3</strong>
+100%集中したくなるような作業です。今まで考えたこと内容な問題を考えたり、短時間で正しい答えを出さないといけない作業です。</p>
+
+<p>スタンディングデスクで仕事をしばらくして、レベル1~2の仕事はパフォーマンスに影響なくできるようになりました。ただ、レベル3の仕事は今でも座りたくなります。人間の注意力/集中力は限られているので、問題に100％集中するには立つという作業にすらエネルギーを使いたくないのです。今ではすこし辛いくらいなので、レベル3の作業でもほぼ立ってやっています。</p>
+
+<h3>体力はつく</h3>
+
+<p>足腰は座って仕事していた時よりもしっかりしたと思います。腹筋と背筋も前よりは少し筋肉がついて全体的に体は締まりました。以前はかなり猫背だったのですが、立っていると背中が張るので猫背も直りました。健康面ではほとんどいいことづくめだと思います。</p>
+
+<p>ただ、これはスタンディングデスクのせいなのわからないのですが肩がこるようになりました。３０年間肩こりというものを経験したことがなかったのですが最近は普通にこります。もしかしたら自分の子供を抱っこしているのが原因なのかもしれませんが、どうもそれだけではないような感じがしています。</p>
+
+<h3>でも椅子はやっぱり必要</h3>
+
+<p>いくらスタンディングデスクに慣れても、やはり座りたい時もあります。体調が悪いときやあんまり乗り気じゃないときは、立ってやるということは仕事を始めるためのハードルを一段確実に上げます。手動で高さを調整するのはめんどうなのであんまりやりたくありません。</p>
+
+<p>そんな時のためのバーとかで使われる高さを変えることのできる椅子を買いました。机ではなく椅子のほうの高さを変えるという逆の発想です!安いやつで十分なので6000円くらいで買えました。どうしても立ってやりたくないときや疲れたときはとても重宝しています。</p>
+
+<h3>いいマットはあったほうがいい</h3>
+
+<p>床の上に素足でずっと立っていると足にかなりの負担がかかります。なのでいいマットはとても重要です。ネットで <strong><em>立ち仕事マット</em></strong> と検索すればいろいろ出ると思います。マットを使わないのであれば新品のスニーカーを履くのがいいと思います。</p>
+
+<h2>まとめ: スタンディングはオススメ</h2>
+
+<p>スタンディングデスクの導入を考えているならオススメします。座って仕事するよりも立ってやったほうが健康的なのは明らかで、疲れるという問題もじきに慣れるからです。座ったり立ったりしたい人は電動式をおすすめしますが、立ちメインであれば手動のやつを高さを調整できる簡易椅子で補完するのがいいです。今後はスタンディングデスクが日本でも普及してもっとたくさん選択肢が出てくれればなと思います。</p>
 ]]></content>
   </entry>
   
