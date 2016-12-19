@@ -4,7 +4,7 @@
   <title><![CDATA[Program Is Made At Night]]></title>
   <link href="http://kimh.github.io/atom.xml" rel="self"/>
   <link href="http://kimh.github.io/"/>
-  <updated>2016-06-20T22:16:05+09:00</updated>
+  <updated>2016-12-19T17:56:50+09:00</updated>
   <id>http://kimh.github.io/</id>
   <author>
     <name><![CDATA[kim hirokuni]]></name>
@@ -12,6 +12,422 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[カオス入門]]></title>
+    <link href="http://kimh.github.io/blog/chaos/"/>
+    <updated>2016-12-18T22:09:00+09:00</updated>
+    <id>http://kimh.github.io/blog/chaos</id>
+    <content type="html"><![CDATA[<p>この記事ではカオスというアイデアをごく簡単な計算で解説します。</p>
+
+<h2>カオスとはなにか</h2>
+
+<p>日本語でカオスというと混乱したとかめちゃくちゃとかいうイメージを思い浮かべるかもしれませんが、数学でのカオスは予測不可能なシステムのことを意味します。例でいうと、お湯を沸騰させた時に鍋の中にできる乱流、天気の変化、お互いに干渉しあう二つの振り子の軌道、などがありま日常にはカオスなシステムが溢れています。</p>
+
+<p>カオスは予測不能だと書きましたが、決してランダム（非決定的）という意味ではありません。カオスは決定的（インプットが同じであればアウトプットは予測できる）にもかかわらず実際に計算してみるとその動きは全くめちゃくちゃに見えてしまいます。ここがカオスの不思議なところであり魅力でもあります。</p>
+
+<p>もう一つカオスの面白いところは、そうゆうめちゃくちゃに振る舞うシステムをごく簡単な計算で再現できることです。この記事ではそれを実際にやってみてカオスを体験してもらおうと思います。</p>
+
+<h2>カオスの特徴</h2>
+
+<p>後でこの話には戻ってきますが、先にカオスが持つ特徴を書いておきます。主に二つあり、</p>
+
+<ul>
+<li>予測不可能</li>
+<li><code>Xt+1 = F(Xt)</code></li>
+<li>初期値に敏感</li>
+</ul>
+
+
+<p>ということが挙げられます。一つずつ説明してきます。</p>
+
+<h3>予測不可能</h3>
+
+<p>予測不可能は上に書いたので説明不要です。</p>
+
+<h3><code>Xt+1 = F(Xt)</code></h3>
+
+<p><code>Xt+1 = F(Xt)</code> という式があった時</p>
+
+<p><code>Xt</code>: tは時間を意味します。tは0から始まり、1,2,3,4&hellip;とどんどん増えていきます。なので、<code>X0</code> というと一番最初の<code>X</code>の値、<code>X1</code>というと２回目の<code>X</code>の値という意味になります。なので<code>Xt+t</code>というのは次の<code>t</code>の時の<code>X</code>の値という意味になります。F()というのは関数です。</p>
+
+<p>ここから、<code>Xt+1 = F(Xt)</code> というのは、何か<code>F()</code>という関数があって、インプット (<code>Xt</code>)を入れて計算した値がアウトプット(<code>Xt+1</code>)になり、<code>Xt+1</code>が次のインプットになって<code>Xt+2</code>のアウトプットが作ってそれがまた、、、ということをずっと続けていけることを意味します。</p>
+
+<h3>初期値に敏感</h3>
+
+<p>初期値というのは<code>t</code>が0のときの値、つまり<code>X0</code>です。<code>Xt+1 = F(Xt)</code>ではアウトプットが次のインプットになるので最初の値を何にするかによって<code>t</code>が増えるに従って結果が違っていきます。</p>
+
+<p>普通インプットが少し変わればアウトプットも少ししか変わらないと考えます。例えば、時速100kmで１時間走った場合、100km進めます。時速101kmで走ったら101km進めます。このように時速が少し増えたら距離も少ししか変わりません。これは初期値にも同じことが言えます。初期値が1の時と1.1の時では結果はちょっとしか変わらないと予想できます。</p>
+
+<p>カオスなシステムではこれがあてはまりません。例えば、初期値が1の時の結果が153だったのに、初期値を1.001にして計算してみたら結果が303になったりします。初期値は0.001しか変わっていないのに結果は２倍以上になっています。</p>
+
+<p>このように初期値をちょっと変えただけで、結果が全く変わってしまう、という特徴がカオスにはあります。</p>
+
+<h3>ロジスティック写像</h3>
+
+<p>ロジスティック写像というのは生物の個体数の変化を単純な式で表したもので一番有名なカオスの例です。他の人も似たような発見を過去にしていましたが、ロバート・メイという生物学者の研究で有名になりました。以下の簡単な式で表されます。</p>
+
+<p><code>Xt+1 = aXt(1 - Xt); 0 &lt; x &lt; 1</code></p>
+
+<p><code>Xt</code>、<code>Xt+1</code> はさっき説明した通りです。<code>a</code>はパラメータで<code>Xt</code>にかかわらず独立して変更できる値です。この式が生物の個体数に使うと<code>t</code>は世代、<code>Xt</code>はその世代の個体数、それがインプットになり、次の世代の個体数<code>Xt+1</code>を計算するということになります。<code>a</code>はその生物の繁殖力です(一回の出産で１匹産むか、３匹産むかとか)。<code>a</code>はフィードバックとも呼ばれアウトプットがどれだけインプットに影響されるかを示します。</p>
+
+<p>もちろん実際の生物の個体数の増減はこんな簡単な式で表せるものではありません。様々な要素に影響されるからです。この式は主に実験室の中で使われるものであり、完全に環境をコントロールできる場合個体数はこの式で予測することができます。現実では役に立たない式ですが、ロバート・メイは研究中にこの簡単な式が予測不能な動きをすることを発見して後にカオスと呼ばれるようになりました。</p>
+
+<p>それではこのロジスティック写像でどうやってカオスを作れるか実際にやってみます。まずは初期値<code>X0</code>を0.4に固定して<code>a</code>を変えて１５世代計算した時にどのように結果が違ってくるかみてみます。</p>
+
+<p>Clojureで書くとこんな感じになります。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+</pre></td><td class='code'><pre><code class='clj'><span class='line'><span class="p">(</span><span class="k">def </span><span class="nv">max_iteration</span> <span class="mi">14</span><span class="p">)</span>
+</span><span class='line'>
+</span><span class='line'><span class="p">(</span><span class="kd">defn </span><span class="nv">logistic</span> <span class="p">[</span><span class="nv">x_0</span> <span class="nv">feedback</span><span class="p">]</span>
+</span><span class='line'>  <span class="p">(</span><span class="k">loop </span><span class="p">[</span><span class="nv">x_t</span> <span class="nv">x_0</span> <span class="nv">iteration</span> <span class="mi">0</span><span class="p">]</span>
+</span><span class='line'>    <span class="p">(</span><span class="nb">println </span><span class="nv">x_t</span><span class="p">)</span>
+</span><span class='line'>    <span class="p">(</span><span class="k">if </span><span class="p">(</span><span class="nb">= </span><span class="nv">iteration</span> <span class="nv">max_iteration</span><span class="p">)</span>
+</span><span class='line'>      <span class="nv">nil</span>
+</span><span class='line'>      <span class="p">(</span><span class="k">let </span><span class="p">[</span><span class="nv">x_t_1</span>
+</span><span class='line'>            <span class="p">(</span><span class="nf">-&gt;&gt;</span> <span class="nv">x_t</span>
+</span><span class='line'>                 <span class="p">(</span><span class="nb">- </span><span class="mi">1</span><span class="p">)</span>
+</span><span class='line'>                 <span class="p">(</span><span class="nb">* </span><span class="nv">x_t</span><span class="p">)</span>
+</span><span class='line'>                 <span class="p">(</span><span class="nb">* </span><span class="nv">feedback</span><span class="p">))]</span>
+</span><span class='line'>        <span class="p">(</span><span class="nf">recur</span> <span class="nv">x_t_1</span> <span class="p">(</span><span class="nb">+ </span><span class="nv">iteration</span> <span class="mi">1</span><span class="p">))))))</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p><strong>X0=0.4 a=2の時の結果</strong></p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+</pre></td><td class='code'><pre><code class='clj'><span class='line'><span class="mf">0.4</span>
+</span><span class='line'><span class="mf">0.48</span>
+</span><span class='line'><span class="mf">0.4992</span>
+</span><span class='line'><span class="mf">0.49999872</span>
+</span><span class='line'><span class="mf">0.4999999999967232</span>
+</span><span class='line'><span class="mf">0.5</span>
+</span><span class='line'><span class="mf">0.5</span>
+</span><span class='line'><span class="mf">0.5</span>
+</span><span class='line'><span class="mf">0.5</span>
+</span><span class='line'><span class="mf">0.5</span>
+</span><span class='line'><span class="mf">0.5</span>
+</span><span class='line'><span class="mf">0.5</span>
+</span><span class='line'><span class="mf">0.5</span>
+</span><span class='line'><span class="mf">0.5</span>
+</span><span class='line'><span class="mf">0.5</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p><strong>X0=0.4 a=1+√5 (3.23606)の時の結果</strong></p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+</pre></td><td class='code'><pre><code class='clj'><span class='line'><span class="mf">0.4</span>
+</span><span class='line'><span class="mf">0.7766544</span>
+</span><span class='line'><span class="mf">0.5613345495612088</span>
+</span><span class='line'><span class="mf">0.7968411786098619</span>
+</span><span class='line'><span class="mf">0.523870591428241</span>
+</span><span class='line'><span class="mf">0.8071710763943982</span>
+</span><span class='line'><span class="mf">0.5036795676750128</span>
+</span><span class='line'><span class="mf">0.8089711862773091</span>
+</span><span class='line'><span class="mf">0.5000903765874327</span>
+</span><span class='line'><span class="mf">0.8090149735680964</span>
+</span><span class='line'><span class="mf">0.50000280899902</span>
+</span><span class='line'><span class="mf">0.809014999974466</span>
+</span><span class='line'><span class="mf">0.500002756186754</span>
+</span><span class='line'><span class="mf">0.8090149999754171</span>
+</span><span class='line'><span class="mf">0.5000027561848518</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p><strong>X0=0.4 a=4の時の結果</strong></p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+</pre></td><td class='code'><pre><code class='clj'><span class='line'><span class="mf">0.4</span>
+</span><span class='line'><span class="mf">0.96</span>
+</span><span class='line'><span class="mf">0.15360000000000013</span>
+</span><span class='line'><span class="mf">0.5200281600000003</span>
+</span><span class='line'><span class="mf">0.9983954912280576</span>
+</span><span class='line'><span class="mf">0.006407737294172653</span>
+</span><span class='line'><span class="mf">0.02546671278776609</span>
+</span><span class='line'><span class="mf">0.09927263731020608</span>
+</span><span class='line'><span class="mf">0.3576703231667294</span>
+</span><span class='line'><span class="mf">0.918969052370147</span>
+</span><span class='line'><span class="mf">0.297859732624244</span>
+</span><span class='line'><span class="mf">0.8365572492210314</span>
+</span><span class='line'><span class="mf">0.5469168719870904</span>
+</span><span class='line'><span class="mf">0.9911952284917879</span>
+</span><span class='line'><span class="mf">0.034908990027601214</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p><code>a=2</code>の時結果はすぐに0.5に収束します。<code>a=1+√5</code>の時は４世代までは上がったり下がったりしたあと５世代からは0.80と0.50の間を行ったり来たりします。こうゆう繰り返しが起こるとき、振幅するといいます。<code>a=4</code>の時は全くめちゃくちゃで収束したり振幅したりする感じが全然しません。</p>
+
+<p>これはまさに二つ目のカオスの特徴である予測不能、ということを示しています。先ほども書きましたが、<code>Xt+1 = aXt(1 - Xt)</code>の式は決定的な式なので決してランダムではありません。一つ一つ地道に計算していけば将来の値は予測できます。しかし、その見かけは全くの予測不能です。こんなに単純な式なのに、なぜ<code>a</code>を変えただけでこんなに結果が違ってしまうのか？<code>a=2</code>の時は収束したのに<code>a=4</code>の時にはなぜ結果がめちゃくちゃになってしまうのか？この疑問がカオスの魅力の魅力です。</p>
+
+<p>次に<code>X0</code>も少し変えてどうゆう結果になるか見てみます。</p>
+
+<p><strong>X0=0.40001 a=2の時の結果</strong></p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+</pre></td><td class='code'><pre><code class='clj'><span class='line'><span class="mf">0.40001</span>
+</span><span class='line'><span class="mf">0.48000399979999997</span>
+</span><span class='line'><span class="mf">0.4992003199520032</span>
+</span><span class='line'><span class="mf">0.4999987210236417</span>
+</span><span class='line'><span class="mf">0.4999999999967285</span>
+</span><span class='line'><span class="mf">0.5</span>
+</span><span class='line'><span class="mf">0.5</span>
+</span><span class='line'><span class="mf">0.5</span>
+</span><span class='line'><span class="mf">0.5</span>
+</span><span class='line'><span class="mf">0.5</span>
+</span><span class='line'><span class="mf">0.5</span>
+</span><span class='line'><span class="mf">0.5</span>
+</span><span class='line'><span class="mf">0.5</span>
+</span><span class='line'><span class="mf">0.5</span>
+</span><span class='line'><span class="mf">0.5</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p><strong>X0=0.40001 a=1+√5 (3.23606)の時の結果</strong></p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+</pre></td><td class='code'><pre><code class='clj'><span class='line'><span class="mf">0.40001</span>
+</span><span class='line'><span class="mf">0.776660871796394</span>
+</span><span class='line'><span class="mf">0.5613229614122776</span>
+</span><span class='line'><span class="mf">0.7968457782598055</span>
+</span><span class='line'><span class="mf">0.5238617545503489</span>
+</span><span class='line'><span class="mf">0.8071724413804047</span>
+</span><span class='line'><span class="mf">0.5036768540111918</span>
+</span><span class='line'><span class="mf">0.8089712508783068</span>
+</span><span class='line'><span class="mf">0.5000902474048949</span>
+</span><span class='line'><span class="mf">0.8090149736436049</span>
+</span><span class='line'><span class="mf">0.5000028088480044</span>
+</span><span class='line'><span class="mf">0.8090149999744687</span>
+</span><span class='line'><span class="mf">0.5000027561867487</span>
+</span><span class='line'><span class="mf">0.8090149999754171</span>
+</span><span class='line'><span class="mf">0.5000027561848518</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p><strong>X0=0.40001 a=4の時の結果</strong></p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+</pre></td><td class='code'><pre><code class='clj'><span class='line'><span class="mf">0.40001</span>
+</span><span class='line'><span class="mf">0.9600079995999999</span>
+</span><span class='line'><span class="mf">0.15357056121602583</span>
+</span><span class='line'><span class="mf">0.5199465757752828</span>
+</span><span class='line'><span class="mf">0.9984085364593636</span>
+</span><span class='line'><span class="mf">0.006355723137741059</span>
+</span><span class='line'><span class="mf">0.02526131168454977</span>
+</span><span class='line'><span class="mf">0.09849271126610319</span>
+</span><span class='line'><span class="mf">0.3551675883742209</span>
+</span><span class='line'><span class="mf">0.9160942901706436</span>
+</span><span class='line'><span class="mf">0.307462166749553</span>
+</span><span class='line'><span class="mf">0.8517167310688923</span>
+</span><span class='line'><span class="mf">0.5051813643448498</span>
+</span><span class='line'><span class="mf">0.9998926138541037</span>
+</span><span class='line'><span class="mf">4.2949845644802873</span><span class="nv">E-4</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p><code>X0</code>が0.4のときと0.40001の時の結果を見比べてみると<code>a=2</code>と<code>a=1+√5 (3.23606)</code>の時は最初の方の世代の結果が違うだけですぐに同じ値になりますが、<code>a=4</code>の時は世代が増えるにつれて結果の誤差がどんどん大きくなっていきます。たった、0.00001しか初期値を変えていないのにその結果は大きく違っています。これがカオスの３番目の特徴である初期値に敏感といういうことです。</p>
+
+<h2>自己相違/フラクタル</h2>
+
+<p>tが増えるにつれて、<code>a=2</code>の時は0.5に、<code>a=1+√5</code>の時は0.5と0.8へと値が定まっていくことを先ほど見ました。ある値を繰り返すようになることを周期的といい、何回で同じ値に戻ってくるかをN周期といいます。<code>a=2</code>はずっと同じ値を繰り返す、つまり１回で次の値に戻る、ので１周期です。<code>a=1+√5</code>の場合は0.8へ行ったあと0.5へ戻るので２周期です。<code>a</code>の値を変えて行ったときどのように周期が変化するのかを示したのが次のグラフで分岐ダイアグラムとか周期倍分岐といいます。</p>
+
+<p><img src="http://kimh.github.io/images/bunki-diagram1.png" height="500" width="500" alt="bunki-diagram1" /></p>
+
+<p>このグラフにはとても面白い特徴がいくつもあります。まず一つ目に周期の増え方は、1、2、4、8&hellip;と２のベキ上で増えていくことです。二つ目は<code>a</code>の値が3.5699456に達すると分岐がカオスになるということです。三つ目は分岐がカオスになると自己相違という特徴が現れるということです。</p>
+
+<p>自己相違とは一部分が全体と同じ形をしているということです。マトリョーシカは自己相違のいい例です。どんなに人形が小さくなっても基本的に大きい人形と形が同じだからです。</p>
+
+<p>自己相違は自然のたくさんあります。次の写真を見てください。私のお気に入りの本のブラックスワン(下 p162)からお借りしました。レンズのフタが地面に落ちているように見えると思います。</p>
+
+<p><img src="http://kimh.github.io/images/surface_fractal1.jpg" height="500" width="700" alt="surface_fractal1" /></p>
+
+<br>
+
+
+<br>
+
+
+<br>
+
+
+<br>
+
+
+<br>
+
+
+<br>
+
+
+<br>
+
+
+<br>
+
+
+<br>
+
+
+<br>
+
+
+<br>
+
+
+<br>
+
+
+<br>
+
+
+<br>
+
+
+<br>
+
+
+<br>
+
+
+<br>
+
+
+<br>
+
+
+<br>
+
+
+<br>
+
+
+<br>
+
+
+<br>
+
+
+<br>
+
+
+<p>しかし実際にはもっと遠いところから見た地面の写真でした。このように地表はフラクタルの一例です。</p>
+
+<p><img src="http://kimh.github.io/images/surface_fractle2.jpg" height="500" width="700" alt="surface_fractal2" /></p>
+
+<p>さっきの分岐ダイアグラムもフラクタルなっています。カオスになっているところを拡大していくとつねに二股の熊手のような構造が現れます。</p>
+
+<p>以下の写真は <a href="http://brain.cc.kogakuin.ac.jp/~kanamaru/Chaos/BifArea/">http://brain.cc.kogakuin.ac.jp/~kanamaru/Chaos/BifArea/</a> からダウンロードしたプログラムを走らせてスクリーンショットをとりました。プログラムをダウンロードして実際に拡大してみるとよくわかるので是非やってみてください。</p>
+
+<p><img src="http://kimh.github.io/images/bunki-diagram2.png" height="500" width="500" alt="bunki-diagram2" /></p>
+
+<p><img src="http://kimh.github.io/images/bunki-diagram3.png" height="500" width="500" alt="bunki-diagram3" /></p>
+
+<h2>まとめ</h2>
+
+<p>ものすごく駆け足てカオスを紹介しましたが、カオスの魅力を感じてもらえたでしょうか？私の理解もまだまだ不十分ななので間違っているところもあると思いますが、カオスの大まかなアイデアは理解してもらえたと思います。</p>
+
+<p>私がカオスを勉強し始めて学んだ一番重要なことは未来は予測不可能で、そのことは数学的に証明されているということです。ロジスティック写像のような極めて簡単な数式がカオスになりうるなら、様々な要素が複雑に関わりあう世の中の現象は基本的にすべてカオスだからです。将来の景気や、アメリカ大統領選の結果、来年何が流行るかなどをそれっぽい説明をつけて予想する人たちがいますがそれらはすべて当てずっぽうに過ぎません。初期値がほんの少し変わっただけで結果が大きく変わってしまうカオスの性質を思い出してください。これは例えば将来の景気を予想する時に出発地点の現在の景気の計測を0.001%間違っただけでまったく違う結果になってしまうということです。これはつまり、正確な景気の計測が不可能なので、将来の景気の予測もまた不可能ということになります。</p>
+
+<p>カオスの研究はまだまだわかっていないことが多い分野なので今後もどんどん面白い発見があることを願っています。</p>
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[スタンディングデスクを始めようと考えている人へ]]></title>
@@ -6627,223 +7043,6 @@ For example, if you put Dockerfile just under your repo&rsquo;s top directory, y
 
 <p>This one took the most of debugging time for me. Currently, <a href="https://groups.google.com/forum/#!topic/docker-user/ZothnJ46Pps">Trusted Builds does not support git submodule</a>, so builds fails if you have a submodule in your repository.
 For now, you have to remove the submodule to make build succeed.</p>
-]]></content>
-  </entry>
-  
-  <entry>
-    <title type="html"><![CDATA[Dockerを使ってCucumberテストを並列実行する]]></title>
-    <link href="http://kimh.github.io/blog/jp/docker/using-docker-to-run-cucumber-tests-in-parallel-jp/"/>
-    <updated>2013-09-10T22:15:00+09:00</updated>
-    <id>http://kimh.github.io/blog/jp/docker/using-docker-to-run-cucumber-tests-in-parallel-jp</id>
-    <content type="html"><![CDATA[<p><img src="http://kimh.github.io/images/homepage-docker-logo.png" alt="" /></p>
-
-<h2>Dockerってなに？</h2>
-
-<p><a href="https://www.docker.io/">Docker</a> は一言で言えばLXCのラッパーです。Dockerを使うことですこし面倒なLXCをとても簡単に操作することができるようになります。それに加えて、Dockerは&#8221;Union File System&#8221;という機能があり、これのおかげでLXCコンテナのバージョン管理を<em>commit</em>や<em>push</em>など使い慣れたインターフェイスで操作することができます。まるでGitのLXC版のような感覚です。</p>
-
-<p>LXCとは仮想化技術のひとつでホストマシンからは隔離されたコンテナと呼ばれる仮想マシンを実行することができます。ハイパーバイザー型の仮想化の代表であるXen Serverなどとは異なり、LXCは軽量な仮想マシンを作成することができます。とても軽量なので、通常は同じリソースでハイパーバイザー型の仮想マシンよりも多くのマシンを実行することができます。</p>
-
-<p>この軽量とLXCの性質が生きてくるのは、多くのテストを実行することだと思います。</p>
-
-<p>テストを実行する時、できるだけ各テストが他のテストに影響を与えないことに気を配っていると思います。これをするためには、いくつもの仮想マシンを立ち上げて、そこで各テストを実行するというやり方があると思います。ハイパーバイザー型の仮想マシンでもこの方法を実行できますが、ハイパーバイザー型のマシンは開始/停止に時間がかかるため、テスト全体の実行時間が増えてしまうという欠点があります。
-しかし、LXCならこの問題を克服できます。なぜなら、LXCではマシンを実行するのは１つのプロセスを起動するのと同じくらい軽量だからです。</p>
-
-<h2>Dockerをインストールしてみよう</h2>
-
-<p>DockerのインストールはUbuntu12.04を使っていればとても簡単です。</p>
-
-<p>以下は<a href="http://docs.docker.io/en/latest/installation/ubuntulinux/">Dockerのサイトに</a>に記載されていた手順です。</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-</pre></td><td class='code'><pre><code class='bash'><span class='line'>sudo apt-get update
-</span><span class='line'>sudo apt-get install linux-image-generic-lts-raring linux-headers-generic-lts-raring
-</span><span class='line'>sudo reboot
-</span><span class='line'>sudo sh -c <span class="s2">&quot;curl https://get.docker.io/gpg | apt-key add -&quot;</span>
-</span><span class='line'>sudo sh -c <span class="s2">&quot;echo deb https://get.docker.io/ubuntu docker main &gt; /etc/apt/sources.list.d/docker.list&quot;</span>
-</span><span class='line'>sudo apt-get update
-</span><span class='line'>sudo apt-get install lxc-docker
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>これでコンテナをDockerから作成できるようになりました。</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='bash'><span class='line'>sudo docker run -i -t ubuntu /bin/bash
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>もし、Macを使っているならDockerをVagramtのUbuntuマシンで試すことができます。この場合のインストール方法は<a href="http://docs.docker.io/en/latest/installation/vagrant/">ここ</a>にあります。
-しかし、初めはUbuntuにインストールして試してみることをおすすめします。一度Vagrant上で動かしてみましたが、Ubuntuで動かしたよりもコンテナの実行速度が遅く感じられました。もしかしたら、すでに仮想化されているVagrant上で実行しているからかもしれません。</p>
-
-<h2>環境をセットアップする</h2>
-
-<p>上述したようにDockerはGitにとてもよく似たインターフェイスを備えています。Dockerのイメージを<a href="https://index.docker.io/">Dockerのパブリックレポジトリ</a>からPullしてきてそれをベースにして自分の好きな変更を加えてCommitしたら、またそれをPushできます。
-今回はCucumberのテストを実行するのでRubyの実行環境があるコンテナが必要になります。もちろん、自分でコンテナを作成することもできますが今回は私が作成したイメージを使いましょう。</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-</pre></td><td class='code'><pre><code class='bash'><span class='line'><span class="c"># まずrootユーザになります</span>
-</span><span class='line'>sudo -s
-</span><span class='line'>
-</span><span class='line'><span class="c"># イメージをPullします</span>
-</span><span class='line'>docker pull kimh/ruby-base
-</span><span class='line'>
-</span><span class='line'><span class="c"># イメージでechoコマンドを実行してみましょう</span>
-</span><span class='line'>docker run kimh/ruby-base <span class="nb">echo</span> <span class="s2">&quot;Running on Docker&quot;</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>今度はコンテナにログインして、テスト用のアプリケーションをインストールしましょう。</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-</pre></td><td class='code'><pre><code class='bash'><span class='line'><span class="c"># コンテナにログインします</span>
-</span><span class='line'>docker run -i -t kimh/ruby-base /bin/bash
-</span><span class='line'><span class="nb">cd</span> /git
-</span><span class='line'>git clone https://github.com/kimh/docker_demo
-</span><span class='line'><span class="nb">cd </span>docker_demo/ci_app
-</span><span class='line'>bundle install
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>この時点で２つの比較的時間がかかる作業をしたので（イメージのPullとbundle installです）コンテナの変更を保存しましょう。それをするには、変更をCommitしてイメージに保存します。</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-</pre></td><td class='code'><pre><code class='bash'><span class='line'><span class="c"># ここで exit とタイプしてはダメです！タイプするとマシンが終了して一からやり直しになってしまいます。</span>
-</span><span class='line'><span class="c"># 代わりに、Ctrl+p とタイプしてから Ctrl+q とタイプすることで終了せずにコンソールから抜けることができます。</span>
-</span><span class='line'>Ctrl+p
-</span><span class='line'>Ctrl+q
-</span><span class='line'><span class="c"># コンテナのidを調べます</span>
-</span><span class='line'>docker ps <span class="c"># 今回はidは 23fd82dcc088 でした。多分実行環境によって違うかも？</span>
-</span><span class='line'>docker commit 23fd82dcc088 kimh/ruby-base
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>これでCucumberテストを実行する環境が整いました。コンテナを起動してテストを一つ実行してみましょう。</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-</pre></td><td class='code'><pre><code class='bash'><span class='line'>docker run kimh/ruby-base /bin/bash -c <span class="s2">&quot;</span>
-</span><span class='line'><span class="s2">  source /etc/profile</span>
-</span><span class='line'><span class="s2">  cd /git/docker_demo/ci_app</span>
-</span><span class='line'><span class="s2">  export LC_CTYPE=&quot;</span>ja_JP.UTF-8<span class="s2">&quot;</span>
-</span><span class='line'><span class="s2">  export RAILS_ENV=test</span>
-</span><span class='line'><span class="s2">  bundle exec rake cucumber</span>
-</span><span class='line'><span class="s2">&quot;</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>このスクリプトでDockerはCucumberテストをkimh/ruby-baseコンテナ上で実行しました。</p>
-
-<p>いよいよ最後にテストを並列実行してみましょう。考え方としては複数のコンテナを実行して、各コンテナに一つのCucumberテストを実行させます。今回は５つのコンテナを並列で実行してみましょう。</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-</pre></td><td class='code'><pre><code class='bash'><span class='line'><span class="nv">DID</span><span class="o">=</span><span class="s2">&quot;&quot;</span>
-</span><span class='line'><span class="nv">container</span><span class="o">=</span><span class="s2">&quot;kimh/ruby-base:latest&quot;</span>
-</span><span class='line'><span class="nv">dir</span><span class="o">=</span><span class="s2">&quot;/git/docker_demo/ci_app&quot;</span>
-</span><span class='line'>
-</span><span class='line'><span class="k">for </span>feature in <span class="o">{</span>0..4<span class="o">}</span>
-</span><span class='line'><span class="k">do</span>
-</span><span class='line'><span class="k">  </span><span class="nv">DID</span><span class="o">=</span><span class="nv">$DID</span><span class="s2">&quot; &quot;</span><span class="sb">`</span>sudo docker run -d <span class="nv">$container</span> /bin/bash -c <span class="s2">&quot;</span>
-</span><span class='line'><span class="s2">  source /etc/profile</span>
-</span><span class='line'><span class="s2">  cd $dir</span>
-</span><span class='line'><span class="s2">  export LC_CTYPE=&quot;</span>ja_JP.UTF-8<span class="s2">&quot;</span>
-</span><span class='line'><span class="s2">  export RAILS_ENV=test</span>
-</span><span class='line'><span class="s2">  bundle exec rake cucumber</span>
-</span><span class='line'><span class="s2">  &quot;</span><span class="sb">`</span>
-</span><span class='line'><span class="k">done</span>
-</span><span class='line'>docker <span class="nb">wait</span> <span class="nv">$DID</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>このスクリプトのポイントは２つです。</p>
-
-<p>１つめは、実行したコンテナのidをDIDという変数に保存していることです。この変数は各コンテナのステータスコード（テストが成功したか失敗したか）を後で知る必要があるからです。</p>
-
-<p>２つめは、<em>docker wait</em>コマンドにコンテナの実行idを渡していることです。こうすると、シェルはコンテナが終了するまでブロックして、各コンテナのステータスコードを返します。</p>
-
-<p>今回だとすべてのテストはパスするはずなので、五回連続で0が表示されるはずです。（0はCucumberではパスしたという意味です）</p>
-
-<h1>まとめ</h1>
-
-<p>今回はDockerの基本的な使い方とそれを使ってのテストの並列実行をしました。各テストはコンテナ上の独立した環境で実行されます。今回の例では同じテストを５台のコンテナ上で実行したのであまり意味はありませんが、
-異なる複数のテストを並列で実行するのも簡単にできます。今回はこんな感じでやりました。</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-</pre></td><td class='code'><pre><code class='bash'><span class='line'><span class="nv">DID</span><span class="o">=</span><span class="s2">&quot;&quot;</span>
-</span><span class='line'><span class="nv">container</span><span class="o">=</span><span class="s2">&quot;kimh/ruby-base:nice&quot;</span>
-</span><span class='line'><span class="nv">dir</span><span class="o">=</span><span class="s2">&quot;/git/your_repo&quot;</span>
-</span><span class='line'>
-</span><span class='line'><span class="k">for </span>feature in <span class="sb">`</span>find  ./features/<span class="sb">`</span>
-</span><span class='line'><span class="k">do</span>
-</span><span class='line'><span class="k">  </span><span class="nv">DID</span><span class="o">=</span><span class="nv">$DID</span><span class="s2">&quot; &quot;</span><span class="sb">`</span>docker run -d <span class="nv">$container</span> /bin/bash -c <span class="s2">&quot;</span>
-</span><span class='line'><span class="s2">  source /etc/profile</span>
-</span><span class='line'><span class="s2">  cd $dir</span>
-</span><span class='line'><span class="s2">  export LC_CTYPE=&quot;</span>ja_JP.UTF-8<span class="s2">&quot;</span>
-</span><span class='line'><span class="s2">  export RAILS_ENV=test</span>
-</span><span class='line'><span class="s2">  bundle exec cucumber $feature -r features/</span>
-</span><span class='line'><span class="s2">  &quot;</span><span class="sb">`</span>
-</span><span class='line'><span class="k">done</span>
-</span><span class='line'>docker <span class="nb">wait</span> <span class="nv">$DID</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-
 ]]></content>
   </entry>
   
