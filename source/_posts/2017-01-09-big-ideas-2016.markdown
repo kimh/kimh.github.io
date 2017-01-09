@@ -1,0 +1,14 @@
+---
+layout: post
+title: "Big ideas in 2016"
+date: 2017-01-09 10:10
+comments: true
+categories:
+- en
+---
+
+It's already in Jan 2017 and I know it's too late to do retrospective for 2016 but doing late is better than not doing.
+
+* How human perception is distorted and out cognitive ability is limited (from Thinking Fast and Slow)
+* Chaos theory and the impossibility of future prediction
+* Difference between simple and easy (from Rich Hickey's Simple Made Easy)
