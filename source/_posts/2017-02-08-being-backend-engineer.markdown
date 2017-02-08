@@ -10,16 +10,20 @@ categories:
 
 Always remind yourself that security is the most important thing. It's important because the impact of security breach is more severe than anything else.
 
-***Risks have to be measured by the impact when that happens, not how likely it happens.***
+**Risks have to be measured by the impact when that happens, not how likely it happens**
 
 ## Don't break stuff
 
 When backend breaks, everything on top of it will also break. Always pay attention to keep the backward compatibility.
 
+**Backward compatibility for the win**
+
 ## Don't merge PRs at late night
 
 You have much weaker cognitive power than you believe at late night. Merging PRs with the weak cognitive power will likely break the principles noted here.
-Always review once again in the morning before merge.
+This is also important because you can't test the consequence of your changes until next morning.
+
+**Merging PRs at Friday night is a terrible thing to do**
 
 ## Never drink during working
 
