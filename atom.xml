@@ -4,7 +4,7 @@
   <title><![CDATA[Program Is Made At Night]]></title>
   <link href="http://kimh.github.io/atom.xml" rel="self"/>
   <link href="http://kimh.github.io/"/>
-  <updated>2017-02-08T11:58:14+09:00</updated>
+  <updated>2017-02-08T12:02:49+09:00</updated>
   <id>http://kimh.github.io/</id>
   <author>
     <name><![CDATA[kim hirokuni]]></name>
@@ -22,16 +22,20 @@
 
 <p>Always remind yourself that security is the most important thing. It&rsquo;s important because the impact of security breach is more severe than anything else.</p>
 
-<p><strong><em>Risks have to be measured by the impact when that happens, not how likely it happens.</em></strong></p>
+<p><strong>Risks have to be measured by the impact when that happens, not how likely it happens</strong></p>
 
 <h2>Don&rsquo;t break stuff</h2>
 
 <p>When backend breaks, everything on top of it will also break. Always pay attention to keep the backward compatibility.</p>
 
+<p><strong>Backward compatibility for the win</strong></p>
+
 <h2>Don&rsquo;t merge PRs at late night</h2>
 
 <p>You have much weaker cognitive power than you believe at late night. Merging PRs with the weak cognitive power will likely break the principles noted here.
-Always review once again in the morning before merge.</p>
+This is also important because you can&rsquo;t test the consequence of your changes until next morning.</p>
+
+<p><strong>Merging PRs at Friday night is a terrible thing to do</strong></p>
 
 <h2>Never drink during working</h2>
 
