@@ -142,7 +142,7 @@ Let's begin with **n=10**.
 
 It looks like the average is approaching to somewhere around 2.5 but we are not fully sure yet. Let's increase n and see if the average is really 2.5.
 
-Here is the graph when n is 20 and you will probably be disappointed by looking at the graph: the average is approaching to 2.5 and  then suddenly there is a spike around **n=20** which pushes the average a way higher! You will also discover the pattern after n=20: the average is converging to a number but then you will see a spike shortly after the convergence.
+Here is the graph when n is 20 and you will probably be disappointed by looking at the graph: the average is approaching to 2.5 and  then suddenly there is a spike around **n=20** which pushes the average a way higher! You will also discover the pattern after **n=20**: the average is converging to a number but then you will see a spike shortly after the convergence.
 
 ![coin-toss-until-head-100](/images/coin-toss-until-head-100.png)
 
