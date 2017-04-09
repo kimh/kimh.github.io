@@ -4,7 +4,7 @@
   <title><![CDATA[Program Is Made At Night]]></title>
   <link href="http://kimh.github.io/atom.xml" rel="self"/>
   <link href="http://kimh.github.io/"/>
-  <updated>2017-02-08T12:02:49+09:00</updated>
+  <updated>2017-04-09T14:56:16+09:00</updated>
   <id>http://kimh.github.io/</id>
   <author>
     <name><![CDATA[kim hirokuni]]></name>
@@ -12,6 +12,271 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[Average Doesn't Always Exist]]></title>
+    <link href="http://kimh.github.io/blog/en/average-dne/"/>
+    <updated>2017-04-09T11:35:00+09:00</updated>
+    <id>http://kimh.github.io/blog/en/average-dne</id>
+    <content type="html"><![CDATA[<p>Up until now, I thought average always exists. We are dealing with average very often in real life: the average height of Japanese, the average rate of divorcing in US, and the average salary in France, etc. It seemed to me that if I take enough number of sample data, I can get average that reflects the reality very well.</p>
+
+<p>Today I learned that this is not always the case. Average doesn&rsquo;t always exist. Because the idea is very interesting to me, let me share the idea with you.</p>
+
+<h2>Average in Coin Toss Game</h2>
+
+<p>Let&rsquo;s being with the case when average exists. I&rsquo;ll use a very simple coin toss game. You flip a coin and you win $1 if the result is head. You win $0 or nothing if the result is tail. Very simple.</p>
+
+<p>When you toss the coin multiple times, what&rsquo;s the average of dollar you will win? You can get the average very easily by the following formula:</p>
+
+<p><code>avg. = (total number of $ you won) / number of times you toss the coin</code></p>
+
+<p>And you will see that the average is 0.5 because the chance of getting head is &frac12;. But is it really so? Let&rsquo;s confirm this by writing some code to simulate the game.</p>
+
+<p>Here is a small Clojure code to simulate the game.</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+</pre></td><td class='code'><pre><code class='clojure'><span class='line'><span class="p">(</span><span class="kd">defn </span><span class="nv">toss-coin</span> <span class="p">[]</span>
+</span><span class='line'>  <span class="p">(</span><span class="nb">rand-int </span><span class="mi">2</span><span class="p">))</span>
+</span><span class='line'>
+</span><span class='line'><span class="p">(</span><span class="kd">defn </span><span class="nv">do-coin-toss</span> <span class="p">[</span><span class="nv">ite</span><span class="p">]</span>
+</span><span class='line'>  <span class="p">(</span><span class="k">loop </span><span class="p">[</span><span class="nv">n</span> <span class="mi">1</span> <span class="nv">total</span> <span class="mi">0</span> <span class="nv">avg</span> <span class="p">[]]</span>
+</span><span class='line'>    <span class="p">(</span><span class="k">if </span><span class="p">(</span><span class="nb">&gt; </span><span class="nv">n</span> <span class="nv">ite</span><span class="p">)</span>
+</span><span class='line'>      <span class="p">(</span><span class="nb">map float </span><span class="nv">avg</span><span class="p">)</span>
+</span><span class='line'>      <span class="p">(</span><span class="nf">do</span>
+</span><span class='line'>        <span class="p">(</span><span class="k">let </span><span class="p">[</span><span class="nv">outcome</span> <span class="p">(</span><span class="nf">toss-coin</span><span class="p">)]</span>
+</span><span class='line'>          <span class="p">(</span><span class="nf">recur</span> <span class="p">(</span><span class="nb">+ </span><span class="nv">n</span> <span class="mi">1</span><span class="p">)</span> <span class="p">(</span><span class="nb">+ </span><span class="nv">total</span> <span class="nv">outcome</span><span class="p">)</span> <span class="p">(</span><span class="nb">conj </span><span class="nv">avg</span> <span class="p">(</span><span class="nb">/ </span><span class="nv">total</span> <span class="nv">n</span><span class="p">))))))))</span>
+</span><span class='line'>
+</span><span class='line'><span class="p">(</span><span class="kd">defn </span><span class="nv">write-data</span> <span class="p">[</span><span class="nv">col</span><span class="p">]</span>
+</span><span class='line'>  <span class="p">(</span><span class="k">let </span><span class="p">[</span><span class="nv">vec</span> <span class="p">(</span><span class="nf">map-indexed</span> <span class="p">(</span><span class="k">fn </span><span class="p">[</span><span class="nv">idx</span> <span class="nv">item</span><span class="p">]</span>
+</span><span class='line'>                           <span class="p">(</span><span class="nb">str </span><span class="nv">idx</span> <span class="s">&quot; &quot;</span> <span class="nv">item</span><span class="p">))</span> <span class="nv">col</span><span class="p">)</span>
+</span><span class='line'>        <span class="nv">data</span> <span class="p">(</span><span class="nf">clojure.string/join</span> <span class="s">&quot;\n&quot;</span> <span class="nv">vec</span><span class="p">)</span>
+</span><span class='line'>        <span class="nv">header</span> <span class="s">&quot;n avg\n&quot;</span>
+</span><span class='line'>        <span class="nv">file</span> <span class="s">&quot;/tmp/coin-toss-result.txt&quot;</span><span class="p">]</span>
+</span><span class='line'>    <span class="p">(</span><span class="nf">spit</span> <span class="nv">file</span> <span class="nv">header</span><span class="p">)</span>
+</span><span class='line'>    <span class="p">(</span><span class="nf">spit</span> <span class="nv">file</span> <span class="nv">data</span> <span class="ss">:append</span> <span class="nv">true</span><span class="p">)</span>
+</span><span class='line'>    <span class="p">(</span><span class="nf">spit</span> <span class="nv">file</span> <span class="s">&quot;\n&quot;</span> <span class="ss">:append</span> <span class="nv">true</span><span class="p">)))</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Here is R program <code>draw.R</code> to draw a graph.</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+</pre></td><td class='code'><pre><code class='r'><span class='line'>ind <span class="o">=</span> commandArgs<span class="p">(</span>trailingOnly<span class="o">=</span><span class="kc">TRUE</span><span class="p">)[</span><span class="m">1</span><span class="p">]</span>
+</span><span class='line'>file <span class="o">=</span> <span class="s">&quot;coin-toss.png&quot;</span>
+</span><span class='line'>
+</span><span class='line'><span class="p">(</span>x <span class="o">&lt;-</span> read.table<span class="p">(</span><span class="s">&quot;/tmp/coin-toss-result.txt&quot;</span><span class="p">,</span> header<span class="o">=</span><span class="k-Variable">T</span><span class="p">))</span>
+</span><span class='line'>png<span class="p">(</span>file<span class="p">)</span>
+</span><span class='line'>plot<span class="p">(</span>x<span class="o">$</span>avg<span class="p">,</span> type<span class="o">=</span><span class="s">&quot;l&quot;</span><span class="p">)</span>
+</span><span class='line'>dev.off<span class="p">()</span>
+</span><span class='line'>browseURL<span class="p">(</span>file<span class="p">)</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>If you want to toss the coin 10 times and output the result to a text file, you can do <code>(write-data (do-coin-toss 10))</code> from REPL and run</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='r'><span class='line'>Rscript draw.R
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p> from your terminal.</p>
+
+<p>I&rsquo;ll denote n as the number of times you toss the coin for brevity from now on.</p>
+
+<p>Here is the graph of the average when n is <strong>10</strong>.</p>
+
+<p><img src="http://kimh.github.io/images/coin-toss-10.png" alt="coin-toss-10" /></p>
+
+<p>As you can see, the average is very quickly approaching to <strong>0.5</strong>. Let&rsquo;s do the same thing with larger n.</p>
+
+<p>When n is <strong>1000</strong></p>
+
+<p><img src="http://kimh.github.io/images/coin-toss-1000.png" alt="coin-toss-1000" /></p>
+
+<p>When n is <strong>10000</strong></p>
+
+<p><img src="http://kimh.github.io/images/coin-toss-10000.png" alt="coin-toss-10000" /></p>
+
+<p>By looking at these graphs, we can safely say that the average of dollar you win in this coin toss game is $0.5.</p>
+
+<h2>When Average Doesn&rsquo;t Exist.</h2>
+
+<p>Now we are entering an interesting area where the average disappears. To illustrate this, we will make the coin toss game a bit more complicated.</p>
+
+<p>This time, you keep flipping the coin until you get head and you will get <strong>2<sup>number</sup> of times you flip the coin</strong>.</p>
+
+<p>For example, if your result is tail, tail, and then head, then you get <strong>2 ^ 3</strong> (because you flipped three times) which is $8. Let&rsquo;s call this game &ldquo;coin-toss-unti-head&rdquo; game.</p>
+
+<p>Here is a Clojure code to simulate the coin-toss-until-head game.</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+</pre></td><td class='code'><pre><code class='clojure'><span class='line'><span class="p">(</span><span class="kd">defn </span><span class="nv">exp</span> <span class="p">[</span><span class="nv">x</span> <span class="nv">n</span><span class="p">]</span>
+</span><span class='line'>  <span class="p">(</span><span class="k">if </span><span class="p">(</span><span class="nb">zero? </span><span class="nv">n</span><span class="p">)</span> <span class="mi">1</span>
+</span><span class='line'>      <span class="p">(</span><span class="nb">* </span><span class="nv">x</span> <span class="p">(</span><span class="nf">exp</span> <span class="nv">x</span> <span class="p">(</span><span class="nb">dec </span><span class="nv">n</span><span class="p">)))))</span>
+</span><span class='line'>
+</span><span class='line'><span class="p">(</span><span class="kd">defn </span><span class="nv">toss-coin-until-head</span> <span class="p">[]</span>
+</span><span class='line'>  <span class="p">(</span><span class="k">loop </span><span class="p">[</span><span class="nv">n</span> <span class="mi">1</span><span class="p">]</span>
+</span><span class='line'>    <span class="p">(</span><span class="k">let </span><span class="p">[</span><span class="nv">outcome</span> <span class="p">(</span><span class="nf">toss-coin</span><span class="p">)]</span>
+</span><span class='line'>      <span class="p">(</span><span class="k">if </span><span class="p">(</span><span class="nb">= </span><span class="mi">0</span> <span class="p">(</span><span class="nf">toss-coin</span><span class="p">))</span>
+</span><span class='line'>        <span class="p">(</span><span class="nf">exp</span> <span class="mi">2</span> <span class="nv">n</span><span class="p">)</span>
+</span><span class='line'>        <span class="p">(</span><span class="nf">recur</span> <span class="p">(</span><span class="nb">+ </span><span class="nv">n</span> <span class="mi">1</span><span class="p">))))))</span>
+</span><span class='line'>
+</span><span class='line'><span class="p">(</span><span class="kd">defn </span><span class="nv">do-coin-toss</span> <span class="p">[</span><span class="nv">ite</span><span class="p">]</span>
+</span><span class='line'>  <span class="p">(</span><span class="k">loop </span><span class="p">[</span><span class="nv">n</span> <span class="mi">1</span> <span class="nv">total</span> <span class="mi">0</span> <span class="nv">avg</span> <span class="p">[]]</span>
+</span><span class='line'>    <span class="p">(</span><span class="k">if </span><span class="p">(</span><span class="nb">&gt; </span><span class="nv">n</span> <span class="nv">ite</span><span class="p">)</span>
+</span><span class='line'>      <span class="p">(</span><span class="nb">map float </span><span class="nv">avg</span><span class="p">)</span>
+</span><span class='line'>      <span class="p">(</span><span class="nf">do</span>
+</span><span class='line'>        <span class="p">(</span><span class="k">let </span><span class="p">[</span><span class="nv">outcome</span> <span class="p">(</span><span class="nf">toss-coin</span><span class="p">)]</span>
+</span><span class='line'>          <span class="p">(</span><span class="nf">recur</span> <span class="p">(</span><span class="nb">+ </span><span class="nv">n</span> <span class="mi">1</span><span class="p">)</span> <span class="p">(</span><span class="nb">+ </span><span class="nv">total</span> <span class="nv">outcome</span><span class="p">)</span> <span class="p">(</span><span class="nb">conj </span><span class="nv">avg</span> <span class="p">(</span><span class="nb">/ </span><span class="nv">total</span> <span class="nv">n</span><span class="p">))))))))</span>
+</span><span class='line'>
+</span><span class='line'><span class="p">(</span><span class="kd">defn </span><span class="nv">write-data</span> <span class="p">[</span><span class="nv">col</span><span class="p">]</span>
+</span><span class='line'>  <span class="p">(</span><span class="k">let </span><span class="p">[</span><span class="nv">vec</span> <span class="p">(</span><span class="nf">map-indexed</span> <span class="p">(</span><span class="k">fn </span><span class="p">[</span><span class="nv">idx</span> <span class="nv">item</span><span class="p">]</span>
+</span><span class='line'>                           <span class="p">(</span><span class="nb">str </span><span class="nv">idx</span> <span class="s">&quot; &quot;</span> <span class="nv">item</span><span class="p">))</span> <span class="nv">col</span><span class="p">)</span>
+</span><span class='line'>        <span class="nv">data</span> <span class="p">(</span><span class="nf">clojure.string/join</span> <span class="s">&quot;\n&quot;</span> <span class="nv">vec</span><span class="p">)</span>
+</span><span class='line'>        <span class="nv">header</span> <span class="s">&quot;n avg\n&quot;</span>
+</span><span class='line'>        <span class="nv">file</span> <span class="s">&quot;/tmp/coin-toss-result.txt&quot;</span><span class="p">]</span>
+</span><span class='line'>    <span class="p">(</span><span class="nf">spit</span> <span class="nv">file</span> <span class="nv">header</span><span class="p">)</span>
+</span><span class='line'>    <span class="p">(</span><span class="nf">spit</span> <span class="nv">file</span> <span class="nv">data</span> <span class="ss">:append</span> <span class="nv">true</span><span class="p">)</span>
+</span><span class='line'>    <span class="p">(</span><span class="nf">spit</span> <span class="nv">file</span> <span class="s">&quot;\n&quot;</span> <span class="ss">:append</span> <span class="nv">true</span><span class="p">)))</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>You can again run the code from REPL</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='clojure'><span class='line'><span class="p">(</span><span class="nf">write-data</span> <span class="p">(</span><span class="nf">do-coin-toss</span> <span class="mi">10</span> <span class="nv">toss-coin-until-head</span><span class="p">))</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>and plot graphs with</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='clojure'><span class='line'><span class="nv">Rscript</span> <span class="nv">draw.R</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Let&rsquo;s begin with <strong>n=10</strong>.</p>
+
+<p><img src="http://kimh.github.io/images/coin-toss-until-head-10.png" alt="coin-toss-until-head-10" /></p>
+
+<p>It looks like the average is approaching to somewhere around 2.5 but we are not fully sure yet. Let&rsquo;s increase n and see if the average is really 2.5.</p>
+
+<p>Here is the graph when n is 20 and you will probably be disappointed by looking at the graph: the average is approaching to 2.5 and  then suddenly there is a spike around <strong>n=20</strong> which pushes the average a way higher! You will also discover the pattern after n=20: the average is converging to a number but then you will see a spike shortly after the convergence.</p>
+
+<p><img src="http://kimh.github.io/images/coin-toss-until-head-100.png" alt="coin-toss-until-head-100" /></p>
+
+<p>Maybe we just haven&rsquo;t tossed the coin enough times. Let&rsquo;s keep going a bit further.</p>
+
+<p>Here is the graph when n is 10000. It looks like this time the average is approaching to somewhere around 12. Did we finally discover the average?</p>
+
+<p><img src="http://kimh.github.io/images/coin-toss-until-head-10000.png" alt="coin-toss-until-head-10000" /></p>
+
+<p>It turns out we didn&rsquo;t! This is very clear when you increase n to 50000.</p>
+
+<p><img src="http://kimh.github.io/images/coin-toss-until-head-50000.png" alt="coin-toss-until-head-50000" /></p>
+
+<p>Again, there is a spike around 30000 and we lost the average again. You can increase n as much as you want and you will never find a good average in this game.</p>
+
+<h2>Why Average Doesn&rsquo;t Exist?</h2>
+
+<p>We can see why the average doesn&rsquo;t exist with simple math.</p>
+
+<p>You can calculate the average of normal coin-toss game with the following formula.</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='clojure'><span class='line'><span class="nv">ave.</span> <span class="nb">= </span><span class="p">(</span><span class="nf">probability</span> <span class="nv">of</span> <span class="nv">H</span><span class="p">)</span> <span class="nv">x</span> <span class="nv">$1</span> <span class="nb">+ </span><span class="p">(</span><span class="nf">probably</span> <span class="nv">of</span> <span class="nv">T</span><span class="p">)</span> <span class="nv">x</span> <span class="nv">$0</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Because both the probability of getting head (H) and tail (T) is 0.5, the average of dollar you will win becomes $0.5 which is what we&rsquo;ve seen in the previous simulations.</p>
+
+<p>Let&rsquo;s compute the average for the coin-toss-until-head game. One big difference from the normal coin toss game is that
+there are infinite numbers of different results of coin in this game. The result could be <strong>T H</strong> or <strong>T T H</strong> or <strong>T T T T T T H</strong> or whatever.</p>
+
+<p>So we need to calculate all the possibilities. You can express this with the following formula.</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='clojure'><span class='line'><span class="nv">ave.</span> <span class="nb">= </span><span class="p">(</span><span class="nf">probability</span> <span class="nv">of</span> <span class="nv">H</span><span class="p">)</span> <span class="nv">x</span> <span class="mi">2</span><span class="o">^</span><span class="mi">1</span> <span class="nb">+ </span><span class="p">(</span><span class="nf">probability</span> <span class="nv">of</span> <span class="nv">TH</span><span class="p">)</span> <span class="nv">x</span> <span class="mi">2</span><span class="o">^</span><span class="mi">2</span> <span class="nb">+ </span><span class="p">(</span><span class="nf">probably</span> <span class="nv">of</span> <span class="nv">TTH</span><span class="p">)</span> <span class="nv">x</span> <span class="mi">2</span><span class="o">^</span><span class="mi">3</span> <span class="nv">......</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>When you plugin the actual probability to the formula above, this will become the following.</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='clojure'><span class='line'><span class="nv">ave.</span> <span class="nb">= </span><span class="p">(</span><span class="mi">1</span><span class="nv">/2</span><span class="p">)</span> <span class="nv">x</span> <span class="mi">2</span><span class="o">^</span><span class="mi">1</span> <span class="nb">+ </span><span class="p">(</span><span class="mi">1</span><span class="nv">/2</span> <span class="nv">x</span> <span class="mi">1</span><span class="nv">/2</span><span class="p">)</span> <span class="nv">x</span> <span class="mi">2</span><span class="o">^</span><span class="mi">2</span> <span class="nb">+ </span><span class="p">(</span><span class="mi">1</span><span class="nv">/2</span> <span class="nv">x</span> <span class="mi">1</span><span class="nv">/2</span> <span class="nv">x</span> <span class="mi">1</span><span class="nv">/2</span><span class="p">)</span> <span class="nv">x</span> <span class="mi">2</span><span class="o">^</span><span class="mi">3</span> <span class="nv">......</span>
+</span><span class='line'><span class="nv">ave.</span> <span class="nb">= </span><span class="mi">1</span> <span class="nb">+ </span><span class="mi">1</span> <span class="nb">+ </span><span class="mi">1</span> <span class="nv">......</span>
+</span><span class='line'><span class="nv">ave.</span> <span class="nb">= </span><span class="err">∞</span> <span class="p">(</span><span class="nf">infinity</span><span class="p">)</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>The average that you got is ∞ (infinity). In other words, average doesn&rsquo;t exist.</p>
+
+<p>What&rsquo;s the implication of the idea that average doesn&rsquo;t always exist in real life?</p>
+
+<p>Another way of interpreting these graphs without average is that sometimes a super extreme event could happen. Because the impact of the event is astronomical, it skews the average and make it useless. So, if the model that you are studying is similar to the coin-toss-until-head game, you will see the same pattern. In fact, this model is often used to study extreme events such as a sudden collapse in a stock market.</p>
+
+<h2>Summary</h2>
+
+<p>Hopefully, you will find this interesting. Time is running out, so I&rsquo;ll stop here, but if you want to learn more, you can search &ldquo;St. Petersburg paradox&rdquo; or &ldquo;Power Laws&rdquo; to dive into the area deeper.</p>
+
+<p>You can find code I used here at <a href="https://github.com/kimh/coin-toss">https://github.com/kimh/coin-toss</a></p>
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[(Backend) Engineer Principles]]></title>
@@ -159,6 +424,7 @@ This is also important because you can&rsquo;t test the consequence of your chan
 
 <ul>
 <li>Time does not exist</li>
+<li>Average doesn&rsquo;t always exist</li>
 </ul>
 
 ]]></content>
@@ -5712,536 +5978,6 @@ FizzBuzzウィジェットは一定間隔で数字をインクリメントして
 <p><code>GIST_ID</code>は作成したGistのIDです。また必須ではありませんが、自分のウィジェットの使い方をGistにREADMEとして書いておくのが定番のようです。</p>
 
 <p>正しく動けば、<a href="https://github.com/Shopify/dashing/wiki/Additional-Widgets">Additional Widgets</a>のWikiを修正して登録するのを忘れずに。</p>
-]]></content>
-  </entry>
-  
-  <entry>
-    <title type="html"><![CDATA[Dockerfileを書く時の注意とかコツとかハックとか]]></title>
-    <link href="http://kimh.github.io/blog/jp/docker/gothas-in-writing-dockerfile-jp/"/>
-    <updated>2014-01-20T22:20:00+09:00</updated>
-    <id>http://kimh.github.io/blog/jp/docker/gothas-in-writing-dockerfile-jp</id>
-    <content type="html"><![CDATA[<h2>目次</h2>
-
-<h4><a href="#why_do_we_need_to_use_dockerfile">なぜDockerfileを使うのか？</a></h4>
-
-<h4><a href="#add_and_understanding_context_in_dockerfile">ADDとDockerfileにおいてのコンテキストを理解する</a></h4>
-
-<h4><a href="#treat_your_container_like_a_binary_with_cmd">CMDでコンテナをバイナリのように扱う</a></h4>
-
-<h4><a href="#difference_between_cmd_and_entrypoint">CMDとENTRYPOINTの違い</a></h4>
-
-<ul>
-<li><a href="#exec_format_error">exec format error</a></li>
-</ul>
-
-
-<h4><a href="#build_caching_what_invalids_cache_and_not">ビルド時のキャッシュについて: キャッシュが有効なときと無効なとき</a></h4>
-
-<ul>
-<li><a href="#cache_invalidation_at_one_instruction_invalids_cache_of_all_subsequent_instructions">ある一行でキャッシュが使われなかったらそれ以降のすべての行でキャッシュは使われない</a></li>
-<li><a href="#cache_is_invalid_even_when_adding_commands_that_dont_do_anything">何もしないコマンドを追加してもキャッシュは無効になる</a></li>
-<li><a href="#cache_is_invalid_when_you_add_spaces_between_command_and_arguments_inside_instruction">コマンドと引数の間に意味のないスペースの入れてもキャッシュは無効となる</a></li>
-<li><a href="#cache_is_used_when_you_add_spaces_around_commands_inside_instruction">Dockerfileの行に意味のないスペースを入れてもキャッシュは有効</a></li>
-<li><a href="#cache_is_used_for_non_idempotent_instructions">冪等ではない命令でもキャッシュは効いてしまう</a></li>
-<li><a href="#instructions_after_add_never_cached_only_versions_prior_to_0.7.3">ADD以降にある命令はキャッシュされない (ただし、0.7.3以前のバージョンを使っている場合のみ)</a></li>
-</ul>
-
-
-<h4><a href="#hack_to_run_container_in_the_background"> コンテナをバックグラウンドで動かすハック</a></h4>
-
-<p><a id="why_do_we_need_to_use_dockerfile"></a></p>
-
-<h2>なぜDockerfileを使うのか？</h2>
-
-<p>DockerfileはYet Anotherシェルではありません。Dockerfileは特別なミッションを持っています。それは、<em>Dockerイメージ作成の自動化</em>です。</p>
-
-<p>一度Dockerfileにイメージ作成の手順を記述すれば、それ以降は<code>docker build</code>コマンド一つで同じイメージを作ることができます。</p>
-
-<p>Dockerfileはコンテナが何をしているかを別の人の伝える手段でもあります。Dockerfileにはイメージを作って動かすまでのすべてが書かれているので、Dockerfileを読むだけでそのコンテナのやるべき仕事がすぐにわかります。こうすれば、コンテナが何をしているかを調べるためにわざわざログインしてpsコマンドを駆使しなくてもいいというわけです。</p>
-
-<p>簡単に述べましたが、これらの理由で、Dockerイメージを作るなら<strong>必ず</strong>Dockerfileを使ってください。しかし、Dockerfileを書くのは時々嫌になってしまうことがあるのも事実です。このポストではDockerfileを書く時に注意することわかりにくいことを解説します。この記事を読んでDockerfileに慣れてもらえればと思います。</p>
-
-<p><a id="add_and_understanding_context_in_dockerfile"></a></p>
-
-<h2>ADDとDockerfileにおいてのコンテキストを理解する</h2>
-
-<p><strong><em>ADD</em></strong> is the instruction to add local files to Docker image.  The basic usage is very simple. Suppose you want to add a local file called <em>myfile.txt</em> to /myfile.txt of image.
-<strong><em>ADD</em></strong>はローカルファイルシステムのファイルやディレクトリをDockerイメージにコピーするために使います。使い方は至って簡単。もし、ローカルにある<em>myfile.txt</em>をイメージの<em>/myfile.txt</em>にコピーしたい場合を説明します。</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-</pre></td><td class='code'><pre><code class='bash'><span class='line'><span class="nv">$ </span>ls
-</span><span class='line'>Dockerfile  mydir  myfile.txt
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>上記のようなディレクトリ構成の場合、Dockerfileは次のようになります。</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='bash'><span class='line'>ADD myfile.txt /
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>簡単ですね。しかし、<em>/home/vagrant/myfile.txt</em>を追加しようとすると失敗します。</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-</pre></td><td class='code'><pre><code class='bash'><span class='line'><span class="c"># 以下の行がDockerfileにあるとします</span>
-</span><span class='line'><span class="c"># ADD /home/vagrant/myfile.txt /</span>
-</span><span class='line'>
-</span><span class='line'><span class="nv">$ </span>docker build -t blog .
-</span><span class='line'>Uploading context 10240 bytes
-</span><span class='line'>Step 1 : FROM ubuntu
-</span><span class='line'> ---&gt; 8dbd9e392a96
-</span><span class='line'>Step 2 : ADD /home/vagrant/myfile.txt /
-</span><span class='line'>Error build: /home/vagrant/myfile.txt: no such file or directory
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p><code>no such file or directory</code> と言われてしまいました。確かにファイルは存在するのになぜでしょうか？理由は <em>/home/vagrant/myfile.txt</em> がDockerfileのコンテキスト外だからです。DockerfileでのコンテキストとはDockerfile内の命令からアクセス可能なファイルやディレクトリの範囲のことです。そして、コンテキスト内のファイルとディレクトリしかイメージに追加することはできません。
-カレントディレクトリ配下のファイルとディレクトリは自動的にコンテキストに追加されます。これは <code>build</code> コマンドを実行した時に確認できます。</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-</pre></td><td class='code'><pre><code class='bash'><span class='line'><span class="nv">$ </span>docker build -t blog .
-</span><span class='line'>Uploading context 10240 bytes
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>ここで <code>build</code> コマンドが何をしているかというと、Dockerクライアントがカレントディレクトリ配下のファイルとディレクトリをtarballにまとめてDockerデーモンへ送信しています。なぜわざわざ送信する必要があるかというと、DockerクライアントとDockerデーモンは違うホストで動いている可能性があるからです。これが上記のコマンドを実行した時に <em>Uploading</em> と表示されている理由です。</p>
-
-<p>ひとつ落とし穴があります。Dockerは自動的にカレントディレクトリ配下のファイルとディレクトリをコンテキストに追加するので、もし巨大なファイルやディレクトリを間違っておいておくと使う必要もないのにそれらのtarballを作ろうとします。</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-</pre></td><td class='code'><pre><code class='bash'><span class='line'><span class="nv">$ </span>ls
-</span><span class='line'>Dockerfile  very_huge_file
-</span><span class='line'>
-</span><span class='line'><span class="nv">$ </span>docker build -t blog .
-</span><span class='line'>Uploading context xxxxxx bytes
-</span><span class='line'>..... <span class="c"># すごく時間がかかる、、、</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>ベストプラクティスとしては、イメージに追加したいファイルとディレクトリのみをbuildを実行するディレクトリに置くべきです。</p>
-
-<p><a id="treat_your_container_like_a_binary_with_cmd"></a></p>
-
-<h2>CMDでコンテナをバイナリのように扱う</h2>
-
-<p>CMDをDockerfileで使うことで、コンテナを一つのバイナリのように扱うことができます。以下のようなDockerfileがあるとします。</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-</pre></td><td class='code'><pre><code class='bash'><span class='line'><span class="c"># run.shがDockerfileと同じディレクトリにあるとします</span>
-</span><span class='line'>ADD run.sh /usr/local/bin/run.sh
-</span><span class='line'>CMD <span class="o">[</span><span class="s2">&quot;/usr/local/bin/run.sh&quot;</span><span class="o">]</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>このDockerfileからコンテナを作って、<code>docker run -i run_image</code>で起動すると<code>/usr/local/bin/run.sh</code>スクリプトを実行してコンテナは終了します。</p>
-
-<p>もし、<code>CMD</code>を使わなかった場合、毎回起動する度に、<code>docker run -i run_image /usr/local/bin/run.sh</code>とコマンドラインで指定しないといけません。</p>
-
-<p>これは、面倒なだけではなく、コンテナの運用の観点からもバッドプラクティスです。</p>
-
-<p>もし、<code>CMD</code>がDockerfileにあればそのコンテナが何をするのか明確になります。
-しかし、もしなかった場合コンテナを作った人以外の人がこのコンテナを正しく起動するためには外部のドキュメントに頼らなければいけません。</p>
-
-<p>なので一般的には常に<code>CMD</code>はDockerfileに指定すべきです。</p>
-
-<p><a id="difference_between_cmd_and_entrypoint"></a></p>
-
-<h2>CMDとENTRYPOINTの違い</h2>
-
-<p>  <code>CMD</code>と<code>ENTRYPOINT</code>はとても紛らわしいです。</p>
-
-<p>コマンドラインから引数として渡されたものでも<code>CMD</code>から指定されたものでも、すべてのコマンドは<code>ENTRYPOINT</code>で指定されたバイナリの引数として渡されます。</p>
-
-<p>  <code>/bin/sh -c</code> はデフォルトのエントリーポイントです。もし、エントリーポイントなしで<code>CMD date</code>と書いた場合、Dockerはこれを<code>/bin/sh -c date</code>として実行します。</p>
-
-<p>エントリーポイントを使うことによってコンテナの挙動を実行時に変えることができるので、運用を柔軟にすることができます。</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='bash'><span class='line'>ENTRYPOINT <span class="o">[</span><span class="s2">&quot;/bin/date&quot;</span><span class="o">]</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>上記のようなエントリーポイントがあった場合、このコンテナは現在時刻を違うフォーマットで出力することができます。</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-</pre></td><td class='code'><pre><code class='bash'><span class='line'><span class="nv">$ </span>docker run -i clock_container +<span class="s2">&quot;%s&quot;</span>
-</span><span class='line'>1404214000
-</span><span class='line'>
-</span><span class='line'><span class="nv">$ </span>docker run -i clock_container +<span class="s2">&quot;%F&quot;</span>
-</span><span class='line'>2014-07-01
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p><a id="exec_format_error"></a></p>
-
-<h3>exec format error</h3>
-
-<p>デフォルトにエントリーポイントに関して、一つ注意することがあります。例えば以下のようなシェルスクリプトを実行したいとします。</p>
-
-<p><strong><em>/usr/local/bin/run.sh</em></strong></p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='bash'><span class='line'><span class="nb">echo</span> <span class="s2">&quot;hello, world&quot;</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p><strong><em>Dockerfile</em></strong></p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-</pre></td><td class='code'><pre><code class='bash'><span class='line'>ADD run.sh /usr/local/bin/run.sh
-</span><span class='line'>RUN chmod +x /usr/local/bin/run.sh
-</span><span class='line'>CMD <span class="o">[</span><span class="s2">&quot;/usr/local/bin/run.sh&quot;</span><span class="o">]</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>このコンテナを起動すると、<code>hello, world</code>と出力することをあなたは期待すると思いますが、実際は意味のわからないエラーになります。</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-</pre></td><td class='code'><pre><code class='bash'><span class='line'><span class="nv">$ </span>docker run -i hello_world_image
-</span><span class='line'>2014/07/01 10:53:57 <span class="nb">exec </span>format error
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>これは、シェルスクリプトにシェバングを忘れたため、デフォルトのエントリーポイントである<code>/bin/sh -c</code>がどのようにしてスクリプトを実行したらいいわからないためエラーになりました。</p>
-
-<p>これを修正するには、単にシェバングを足すか、</p>
-
-<p><strong><em>/usr/local/bin/run.sh</em></strong></p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-</pre></td><td class='code'><pre><code class='bash'><span class='line'><span class="c">#!/bin/bash</span>
-</span><span class='line'><span class="nb">echo</span> <span class="s2">&quot;hello, world&quot;</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>またはコマンドラインから指定することができます。</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='bash'><span class='line'><span class="nv">$ </span>docker run -entrypoint<span class="o">=</span><span class="s2">&quot;/bin/bash&quot;</span> -i hello_world_image
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p><a id="build_caching_what_invalids_cache_and_not"></a></p>
-
-<h2>ビルド時のキャッシュについて: キャッシュが有効なときと無効なとき</h2>
-
-<p>DockerはDockerfileの各一行毎にコミットを作成していきます。行の記述を変更しない限り、Dockerは新しいイメージを作る必要がないと判断してキャッシュを使って次の行の元になるイメージを作成します。
-これが初めて <code>docker build</code> を実行した時には時間がかかるのに、２回目からは一瞬でビルドが完了する理由です。</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-<span class='line-number'>20</span>
-<span class='line-number'>21</span>
-<span class='line-number'>22</span>
-<span class='line-number'>23</span>
-<span class='line-number'>24</span>
-<span class='line-number'>25</span>
-<span class='line-number'>26</span>
-<span class='line-number'>27</span>
-<span class='line-number'>28</span>
-<span class='line-number'>29</span>
-<span class='line-number'>30</span>
-<span class='line-number'>31</span>
-<span class='line-number'>32</span>
-<span class='line-number'>33</span>
-<span class='line-number'>34</span>
-</pre></td><td class='code'><pre><code class='bash'><span class='line'><span class="nv">$ </span><span class="nb">time </span>docker build -t blog .
-</span><span class='line'>Uploading context 10.24 kB
-</span><span class='line'>Step 1 : FROM ubuntu
-</span><span class='line'> ---&gt; 8dbd9e392a96
-</span><span class='line'>Step 2 : RUN apt-get update
-</span><span class='line'> ---&gt; Running in 15705b182387
-</span><span class='line'>Ign http://archive.ubuntu.com precise InRelease
-</span><span class='line'>Hit http://archive.ubuntu.com precise Release.gpg
-</span><span class='line'>Hit http://archive.ubuntu.com precise Release
-</span><span class='line'>Hit http://archive.ubuntu.com precise/main amd64 Packages
-</span><span class='line'>Get:1 http://archive.ubuntu.com precise/main i386 Packages <span class="o">[</span>1641 kB<span class="o">]</span>
-</span><span class='line'>Get:2 http://archive.ubuntu.com precise/main TranslationIndex <span class="o">[</span>3706 B<span class="o">]</span>
-</span><span class='line'>Get:3 http://archive.ubuntu.com precise/main Translation-en <span class="o">[</span>893 kB<span class="o">]</span>
-</span><span class='line'>Fetched 2537 kB in 7s <span class="o">(</span>351 kB/s<span class="o">)</span>
-</span><span class='line'>
-</span><span class='line'> ---&gt; a8e9f7328cc4
-</span><span class='line'>Successfully built a8e9f7328cc4
-</span><span class='line'>
-</span><span class='line'>real  0m8.589s
-</span><span class='line'>user  0m0.008s
-</span><span class='line'>sys   0m0.012s
-</span><span class='line'>
-</span><span class='line'><span class="nv">$ </span><span class="nb">time </span>docker build -t blog .
-</span><span class='line'>Uploading context 10.24 kB
-</span><span class='line'>Step 1 : FROM ubuntu
-</span><span class='line'> ---&gt; 8dbd9e392a96
-</span><span class='line'>Step 2 : RUN apt-get update
-</span><span class='line'> ---&gt; Using cache
-</span><span class='line'> ---&gt; a8e9f7328cc4
-</span><span class='line'>Successfully built a8e9f7328cc4
-</span><span class='line'>
-</span><span class='line'>real  0m0.067s
-</span><span class='line'>user  0m0.012s
-</span><span class='line'>sys   0m0.000s
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>しかし、いつキャッシュが使われていつキャッシュが使われないのかはあまり明確ではありません。ここでは、いくつかのケースを紹介します。</p>
-
-<p><a id="cache_invalidation_at_one_instruction_invalids_cache_of_all_subsequent_instructions"></a></p>
-
-<h4>ある一行でキャッシュが使われなかったらそれ以降のすべての行でキャッシュは使われない</h4>
-
-<p>これは一番基本のルールです。もし、Dockerfile内のある一行でキャッシュが使われない書き方をしていまうと、それ以降の行でキャッシュは全く使われなくなってしまいます。</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-</pre></td><td class='code'><pre><code class='bash'><span class='line'><span class="c"># Before</span>
-</span><span class='line'>From ubuntu
-</span><span class='line'>Run apt-get install ruby
-</span><span class='line'>Run <span class="nb">echo </span><span class="k">done</span>!
-</span><span class='line'>
-</span><span class='line'><span class="c"># After</span>
-</span><span class='line'>From ubuntu
-</span><span class='line'>Run apt-get update
-</span><span class='line'>Run apt-get install ruby
-</span><span class='line'>Run <span class="nb">echo </span><span class="k">done</span>!
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p><em>Run apt-get update</em> という行を追加したことでベースのイメージを変更してしまったので、 それ以降の <strong>すべての</strong> 行で使うイメージも初めから作り直されないといけません。
-Dockerfileはひとつ前の行で作られたイメージをベースにして行に書かれている命令を実行するので、これは当然の挙動だと言えます。</p>
-
-<p><a id="cache_invalidation_at_one_instruction_invalids_cache_of_all_subsequent_instructions"></a></p>
-
-<h4>何もしないコマンドを追加してもキャッシュは無効になる</h4>
-
-<p><em>以下の例ではキャッシュは効きません。</em></p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-</pre></td><td class='code'><pre><code class='bash'><span class='line'><span class="c"># Before</span>
-</span><span class='line'>Run apt-get update
-</span><span class='line'>
-</span><span class='line'><span class="c"># After</span>
-</span><span class='line'>Run apt-get update <span class="o">&amp;&amp;</span> <span class="nb">true</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p><code>true</code> コマンドは実際には何もしないコマンドですが、Dockerはキャッシュを使ってはくれません。</p>
-
-<p><a id="cache_is_invalid_when_you_add_spaces_between_command_and_arguments_inside_instruction"></a></p>
-
-<h4>コマンドと引数の間に意味のないスペースの入れてもキャッシュは無効となる</h4>
-
-<p><em>以下の例ではキャッシュは効きません。</em></p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-</pre></td><td class='code'><pre><code class='bash'><span class='line'><span class="c"># Before</span>
-</span><span class='line'>Run apt-get update
-</span><span class='line'>
-</span><span class='line'><span class="c"># After</span>
-</span><span class='line'>Run apt-get               update
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p><a id="cache_is_used_when_you_add_spaces_around_commands_inside_instruction"></a></p>
-
-<h4>Dockerfileの行に意味のないスペースを入れてもキャッシュは有効</h4>
-
-<p><em>以下の例ではキャッシュは有効になります。</em></p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-</pre></td><td class='code'><pre><code class='bash'><span class='line'><span class="c"># Before</span>
-</span><span class='line'>Run apt-get update
-</span><span class='line'>
-</span><span class='line'><span class="c"># After</span>
-</span><span class='line'>Run                apt-get update
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p><a id="cache_is_used_for_non_idempotent_instructions"></a></p>
-
-<h4>冪等ではない命令でもキャッシュは効いてしまう</h4>
-
-<p>これはどちらかというとキャッシュの落とし穴についてです。 <em>冪等ではない命令</em> とは実行する度に結果が変わる可能性のあるコマンドを実行する行のことです。
-例えば、 <code>apt-get update</code> は実行する度にアップデートされる内容が変わる可能性があるので冪等ではありません。</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-</pre></td><td class='code'><pre><code class='bash'><span class='line'>From ubuntu
-</span><span class='line'>Run apt-get update
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>上記のDockerfileを作ってイメージを作成したとします。３ヶ月後、Ubutnuがセキュリティアップデートをあるリポジトリにリリースしたので、同じDockerfileを使ってイメージの再作成をしたとします。(apt-get update がセキュリティアップデートを拾ってくれると思って)
-しかし、この方法でイメージを再作成してもセキュリティアップデートはインストールされません。Dockerfileの記述自体は全く変更されていないので、たとえ <code>apt-get update</code> の実行結果が変わっていたとしてもDockerはキャッシュを使うからです。</p>
-
-<p>もし、これ避けたければ、<code>-no-cache</code> オプションを使えます。</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='bash'><span class='line'><span class="nv">$ </span>docker build -no-cache .
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p><a id="instructions_after_add_never_cached_only_versions_prior_to_0.7.3"></a></p>
-
-<h4>ADD以降にある命令はキャッシュされない (ただし、0.7.3以前のバージョンを使っている場合のみ)</h4>
-
-<p>もし、0.7.3以前のバージョンを使っている場合、注意してください！</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-</pre></td><td class='code'><pre><code class='bash'><span class='line'>From ubuntu
-</span><span class='line'>Add myfile /
-</span><span class='line'>Run apt-get update
-</span><span class='line'>Run apt-get install openssh-server
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>もしこのようなDockerfileだと、<strong><em>Run apt-get update</em></strong> と <strong><em>Run apt-get install openssh-server</em></strong> は絶対にキャッシュされません。</p>
-
-<p>この挙動は0.7.3で改善されました。ADD以降の行でも、ADDの書き方自身やADDする対象が変更されない限りキャッシュが使われます。</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-</pre></td><td class='code'><pre><code class='bash'><span class='line'><span class="nv">$ </span><span class="nb">echo</span> <span class="s2">&quot;Jeff Beck&quot;</span> &gt; rock.you
-</span><span class='line'>
-</span><span class='line'>From ubuntu
-</span><span class='line'>Add rock.you /
-</span><span class='line'>Run add rock.you
-</span><span class='line'>
-</span><span class='line'><span class="nv">$ </span><span class="nb">echo</span> <span class="s2">&quot;Eric Clapton&quot;</span> &gt; rock.you
-</span><span class='line'>
-</span><span class='line'>From ubuntu
-</span><span class='line'>Add rock.you /
-</span><span class='line'>Run add rock.you
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>ここでは、<em>rock.you</em> ファイルの内容を変更したので、ADD以降の行ではキャッシュは使われません。</p>
-
-<p><a id="hack_to_run_container_in_the_background"></a></p>
-
-<h2>コンテナをバックグラウンドで動かすハック</h2>
-
-<p>もし、コンテナの起動方法をシンプルにしたければ、<code>docker run -d image your-command</code> を使ってコンテナをバックグラウンドで起動するべきです。
-<code>docker run -i -t image your-command</code> の代わりに <code>-d</code> を使うことを勧める理由はコンテナの起動をたった一つのコマンドで行うことができ、かつ <code>Ctrl + P + Q</code> を入力してコンテナをターミナルから切り離す作業をしなくていいからです。</p>
-
-<p>しかし、<code>-d</code> オプションには問題があります。コマンドがフォアグラウンドで実行されていないとコンテナはすぐに終了してしまいます。</p>
-
-<p>apacheをサービスとして起動するコンテナを例に説明しましょう。直感的に次のようにやりたくなるでしょう。</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='bash'><span class='line'><span class="nv">$ </span>docker run -d apache-server apachectl start
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>しかし、これだとコンテナは起動した瞬間に終了します。これは、 <code>apachectl</code> がapacheをデーモン化した瞬間に自身は終了してしまうからです。</p>
-
-<p>Dockerはこのようなコマンドが嫌いです。Dockerはコマンドがフォアグラウンドで起動し続けることを期待しているからです。
-もしそうでなければ、Dockerはアプリケーションは終了したと考えてコンテナを終了してしまいます。</p>
-
-<p>この問題はapacheの実行バイナリを直接フォアグラウンドで動かすことで解決できます。</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-</pre></td><td class='code'><pre><code class='bash'><span class='line'><span class="nv">$ </span>docker run -e <span class="nv">APACHE_RUN_USER</span><span class="o">=</span>www-data <span class="se">\</span>
-</span><span class='line'>                    -e <span class="nv">APACHE_RUN_GROUP</span><span class="o">=</span>www-data <span class="se">\</span>
-</span><span class='line'>                    -e <span class="nv">APACHE_PID_FILE</span><span class="o">=</span>/var/run/apache2.pid <span class="se">\</span>
-</span><span class='line'>                    -e <span class="nv">APACHE_RUN_DIR</span><span class="o">=</span>/var/run/apache2 <span class="se">\</span>
-</span><span class='line'>                    -e <span class="nv">APACHE_LOCK_DIR</span><span class="o">=</span>/var/lock/apache2 <span class="se">\</span>
-</span><span class='line'>                    -e <span class="nv">APACHE_LOG_DIR</span><span class="o">=</span>/var/log/apache2 <span class="se">\</span>
-</span><span class='line'>                    -d apache-server /usr/sbin/apache2 -D NO_DETACH -D FOREGROUND
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>ここでしていることは、<code>apachectl</code> がやっていることを手動で行ってapacheを起動しています。このやり方だとapacheはフォアグラウンドで動き続けることができます。</p>
-
-<p>問題はアプリケーションによってはフォアグラウンドで起動する方法がない場合があることです。また、<code>apachectl</code> の例のようにヘルパープログラムがやってくれることを分解して手動でやらないといけないのは大変です。どうすればいいでしょう？</p>
-
-<p>このような場合、<code>tail -f /dev/null</code> を実行したいコマンドに追加すればコンテナはメインのコマンドがバックグラウンドで実行されても <code>tail</code> がフォアグラウンドで起動し続けてくれるので終了しません。このテクニックをさっきのapacheの例で使ってみましょう。</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='bash'><span class='line'><span class="nv">$ </span>docker run -d apache-server apachectl start <span class="o">&amp;&amp;</span> tail -f /dev/null
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>ずっと良くなりました。 <code>tail -f /dev/null</code> は無害なコマンドなのでこのテクニックはどんな場合にも使うことができるのでおすすめです。</p>
 ]]></content>
   </entry>
   

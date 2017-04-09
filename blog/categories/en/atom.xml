@@ -4,7 +4,7 @@
   <title><![CDATA[Category: en | Program Is Made At Night]]></title>
   <link href="http://kimh.github.io/blog/categories/en/atom.xml" rel="self"/>
   <link href="http://kimh.github.io/"/>
-  <updated>2017-02-08T12:02:49+09:00</updated>
+  <updated>2017-04-09T14:56:16+09:00</updated>
   <id>http://kimh.github.io/</id>
   <author>
     <name><![CDATA[kim hirokuni]]></name>
@@ -12,6 +12,219 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[Average Doesn't Always Exist]]></title>
+    <link href="http://kimh.github.io/blog/en/average-dne/"/>
+    <updated>2017-04-09T11:35:00+09:00</updated>
+    <id>http://kimh.github.io/blog/en/average-dne</id>
+    <content type="html"><![CDATA[<p>Up until now, I thought average always exists. We are dealing with average very often in real life: the average height of Japanese, the average rate of divorcing in US, and the average salary in France, etc. It seemed to me that if I take enough number of sample data, I can get average that reflects the reality very well.</p>
+
+<p>Today I learned that this is not always the case. Average doesn&rsquo;t always exist. Because the idea is very interesting to me, let me share the idea with you.</p>
+
+<h2>Average in Coin Toss Game</h2>
+
+<p>Let&rsquo;s being with the case when average exists. I&rsquo;ll use a very simple coin toss game. You flip a coin and you win $1 if the result is head. You win $0 or nothing if the result is tail. Very simple.</p>
+
+<p>When you toss the coin multiple times, what&rsquo;s the average of dollar you will win? You can get the average very easily by the following formula:</p>
+
+<p><code>avg. = (total number of $ you won) / number of times you toss the coin</code></p>
+
+<p>And you will see that the average is 0.5 because the chance of getting head is &frac12;. But is it really so? Let&rsquo;s confirm this by writing some code to simulate the game.</p>
+
+<p>Here is a small Clojure code to simulate the game.</p>
+
+<p>```clojure
+(defn toss-coin []
+  (rand-int 2))</p>
+
+<p>(defn do-coin-toss [ite]
+  (loop [n 1 total 0 avg []]</p>
+
+<pre><code>(if (&gt; n ite)
+  (map float avg)
+  (do
+    (let [outcome (toss-coin)]
+      (recur (+ n 1) (+ total outcome) (conj avg (/ total n))))))))
+</code></pre>
+
+<p>(defn write-data [col]
+  (let [vec (map-indexed (fn [idx item]</p>
+
+<pre><code>                       (str idx " " item)) col)
+    data (clojure.string/join "\n" vec)
+    header "n avg\n"
+    file "/tmp/coin-toss-result.txt"]
+(spit file header)
+(spit file data :append true)
+(spit file "\n" :append true)))
+</code></pre>
+
+<p>```</p>
+
+<p>Here is R program <code>draw.R</code> to draw a graph.</p>
+
+<p>```r
+ind = commandArgs(trailingOnly=TRUE)[1]
+file = &ldquo;coin-toss.png&rdquo;</p>
+
+<p>(x &lt;&ndash; read.table(&ldquo;/tmp/coin-toss-result.txt&rdquo;, header=T))
+png(file)
+plot(x$avg, type=&ldquo;l&rdquo;)
+dev.off()
+browseURL(file)
+```</p>
+
+<p>If you want to toss the coin 10 times and output the result to a text file, you can do <code>(write-data (do-coin-toss 10))</code> from REPL and run</p>
+
+<p><code>
+Rscript draw.R
+</code> from your terminal.</p>
+
+<p>I&rsquo;ll denote n as the number of times you toss the coin for brevity from now on.</p>
+
+<p>Here is the graph of the average when n is <strong>10</strong>.</p>
+
+<p><img src="/images/coin-toss-10.png" alt="coin-toss-10" /></p>
+
+<p>As you can see, the average is very quickly approaching to <strong>0.5</strong>. Let&rsquo;s do the same thing with larger n.</p>
+
+<p>When n is <strong>1000</strong></p>
+
+<p><img src="/images/coin-toss-1000.png" alt="coin-toss-1000" /></p>
+
+<p>When n is <strong>10000</strong></p>
+
+<p><img src="/images/coin-toss-10000.png" alt="coin-toss-10000" /></p>
+
+<p>By looking at these graphs, we can safely say that the average of dollar you win in this coin toss game is $0.5.</p>
+
+<h2>When Average Doesn&rsquo;t Exist.</h2>
+
+<p>Now we are entering an interesting area where the average disappears. To illustrate this, we will make the coin toss game a bit more complicated.</p>
+
+<p>This time, you keep flipping the coin until you get head and you will get <strong>2<sup>number</sup> of times you flip the coin</strong>.</p>
+
+<p>For example, if your result is tail, tail, and then head, then you get <strong>2 ^ 3</strong> (because you flipped three times) which is $8. Let&rsquo;s call this game &ldquo;coin-toss-unti-head&rdquo; game.</p>
+
+<p>Here is a Clojure code to simulate the coin-toss-until-head game.</p>
+
+<p>```clojure
+(defn exp [x n]
+  (if (zero? n) 1</p>
+
+<pre><code>  (* x (exp x (dec n)))))
+</code></pre>
+
+<p>(defn toss-coin-until-head []
+  (loop [n 1]</p>
+
+<pre><code>(let [outcome (toss-coin)]
+  (if (= 0 (toss-coin))
+    (exp 2 n)
+    (recur (+ n 1))))))
+</code></pre>
+
+<p>(defn do-coin-toss [ite]
+  (loop [n 1 total 0 avg []]</p>
+
+<pre><code>(if (&gt; n ite)
+  (map float avg)
+  (do
+    (let [outcome (toss-coin)]
+      (recur (+ n 1) (+ total outcome) (conj avg (/ total n))))))))
+</code></pre>
+
+<p>(defn write-data [col]
+  (let [vec (map-indexed (fn [idx item]</p>
+
+<pre><code>                       (str idx " " item)) col)
+    data (clojure.string/join "\n" vec)
+    header "n avg\n"
+    file "/tmp/coin-toss-result.txt"]
+(spit file header)
+(spit file data :append true)
+(spit file "\n" :append true)))
+</code></pre>
+
+<p>```</p>
+
+<p>You can again run the code from REPL</p>
+
+<p><code>clojure
+(write-data (do-coin-toss 10 toss-coin-until-head))
+</code></p>
+
+<p>and plot graphs with</p>
+
+<p><code>
+Rscript draw.R
+</code></p>
+
+<p>Let&rsquo;s begin with <strong>n=10</strong>.</p>
+
+<p><img src="/images/coin-toss-until-head-10.png" alt="coin-toss-until-head-10" /></p>
+
+<p>It looks like the average is approaching to somewhere around 2.5 but we are not fully sure yet. Let&rsquo;s increase n and see if the average is really 2.5.</p>
+
+<p>Here is the graph when n is 20 and you will probably be disappointed by looking at the graph: the average is approaching to 2.5 and  then suddenly there is a spike around <strong>n=20</strong> which pushes the average a way higher! You will also discover the pattern after n=20: the average is converging to a number but then you will see a spike shortly after the convergence.</p>
+
+<p><img src="/images/coin-toss-until-head-100.png" alt="coin-toss-until-head-100" /></p>
+
+<p>Maybe we just haven&rsquo;t tossed the coin enough times. Let&rsquo;s keep going a bit further.</p>
+
+<p>Here is the graph when n is 10000. It looks like this time the average is approaching to somewhere around 12. Did we finally discover the average?</p>
+
+<p><img src="/images/coin-toss-until-head-10000.png" alt="coin-toss-until-head-10000" /></p>
+
+<p>It turns out we didn&rsquo;t! This is very clear when you increase n to 50000.</p>
+
+<p><img src="/images/coin-toss-until-head-50000.png" alt="coin-toss-until-head-50000" /></p>
+
+<p>Again, there is a spike around 30000 and we lost the average again. You can increase n as much as you want and you will never find a good average in this game.</p>
+
+<h2>Why Average Doesn&rsquo;t Exist?</h2>
+
+<p>We can see why the average doesn&rsquo;t exist with simple math.</p>
+
+<p>You can calculate the average of normal coin-toss game with the following formula.</p>
+
+<p><code>
+ave. = (probability of H) x $1 + (probably of T) x $0
+</code></p>
+
+<p>Because both the probability of getting head (H) and tail (T) is 0.5, the average of dollar you will win becomes $0.5 which is what we&rsquo;ve seen in the previous simulations.</p>
+
+<p>Let&rsquo;s compute the average for the coin-toss-until-head game. One big difference from the normal coin toss game is that
+there are infinite numbers of different results of coin in this game. The result could be <strong>T H</strong> or <strong>T T H</strong> or <strong>T T T T T T H</strong> or whatever.</p>
+
+<p>So we need to calculate all the possibilities. You can express this with the following formula.</p>
+
+<p><code>
+ave. = (probability of H) x 2^1 + (probability of TH) x 2^2 + (probably of TTH) x 2^3 ......
+</code></p>
+
+<p>When you plugin the actual probability to the formula above, this will become the following.</p>
+
+<p><code>
+ave. = (1/2) x 2^1 + (1/2 x 1/2) x 2^2 + (1/2 x 1/2 x 1/2) x 2^3 ......
+ave. = 1 + 1 + 1 ......
+ave. = ∞ (infinity)
+</code></p>
+
+<p>The average that you got is ∞ (infinity). In other words, average doesn&rsquo;t exist.</p>
+
+<p>What&rsquo;s the implication of the idea that average doesn&rsquo;t always exist in real life?</p>
+
+<p>Another way of interpreting these graphs without average is that sometimes a super extreme event could happen. Because the impact of the event is astronomical, it skews the average and make it useless. So, if the model that you are studying is similar to the coin-toss-until-head game, you will see the same pattern. In fact, this model is often used to study extreme events such as a sudden collapse in a stock market.</p>
+
+<h2>Summary</h2>
+
+<p>Hopefully, you will find this interesting. Time is running out, so I&rsquo;ll stop here, but if you want to learn more, you can search &ldquo;St. Petersburg paradox&rdquo; or &ldquo;Power Laws&rdquo; to dive into the area deeper.</p>
+
+<p>You can find code I used here at <a href="https://github.com/kimh/coin-toss">https://github.com/kimh/coin-toss</a></p>
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[(WIP) Big ideas in 2017]]></title>
@@ -22,6 +235,7 @@
 
 <ul>
 <li>Time does not exist</li>
+<li>Average doesn&rsquo;t always exist</li>
 </ul>
 
 ]]></content>
@@ -1176,243 +1390,6 @@ Now, restart your Rack process and access from your browser. Now you should see 
 <p>Yes, let me do that in the next post. I thought I can do that in the same post, but writing this takes more time than I thought&hellip;</p>
 
 <p>Next post will be something like this: <strong><em>Creating Full Stack Web Application with Lotus</em></strong></p>
-]]></content>
-  </entry>
-  
-  <entry>
-    <title type="html"><![CDATA[Experiment To Suspend/Resume Docker Container With CRIU]]></title>
-    <link href="http://kimh.github.io/blog/en/criu/experiment-to-suspend-and-resume-docker-container-with-criu/"/>
-    <updated>2014-06-22T01:08:00+09:00</updated>
-    <id>http://kimh.github.io/blog/en/criu/experiment-to-suspend-and-resume-docker-container-with-criu</id>
-    <content type="html"><![CDATA[<p><img src="/images/criu.jpeg" alt="" /></p>
-
-<h3>TL;DR: You CANNOT suspend/resume Docker container as of Jun 2014 and this article ends with a bit disappointed result, but you can still find CRIU is cool thing.</h3>
-
-<p>With the rapid emergence of Docker, everybody knows many advantages of using LXC over virtual machines like VMWare or Xen.</p>
-
-<p>However, there is one thing that LXC is missing: suspend/resume containers.</p>
-
-<p>This is where <a href="http://criu.org/Main_Page">CRIU</a> comes in.</p>
-
-<p>CRIU is so called CR (checkpoint/restart) tool. It suspends a running process and save the memory state into files which can be resumed at anytime.</p>
-
-<p>And since LXC container is a process, we should be able to suspend/resume containers. But does it really work?</p>
-
-<p>In this article, we will install CRIU and see whether we can suspend/resume a Docker container.</p>
-
-<p><strong>Note:</strong>
-You may say that LXC already has <a href="http://lxc.sourceforge.net/man/lxc-checkpoint.html">C/R feature</a>. My impression with the tool is not good from the past experience. So, I really didn&rsquo;t try this time.</p>
-
-<h2>Installing CRIU</h2>
-
-<h3>Building Kernel</h3>
-
-<p>To get the fully functional CRIU, you need to have a kernel with certain options are enabled. We use Vagrant box as LXC host machine, but I couldn&rsquo;t find a box with kernel that meets the requirement of CRIU.</p>
-
-<p>So, we need to rebeild kernel. Don&rsquo;t worry, building kernel is not difficult as it sounds.</p>
-
-<p>We will use <a href="https://cloud-images.ubuntu.com/vagrant/trusty/current/trusty-server-cloudimg-amd64-vagrant-disk1.box">official Ubuntu14.04 cloud image</a>.</p>
-
-<p>First you need to add the box.</p>
-
-<p><code>sh
-$ vagrant box add ubuntu14.04 https://cloud-images.ubuntu.com/vagrant/trusty/current/trusty-server-cloudimg-amd64-vagrant-disk1.box
-$ vagrant init ubuntu14.04
-</code></p>
-
-<p>Before hit <code>vagrant up</code> command, let&rsquo;s increase CPU cores and memory of the box. Otherwise, it takes a few hours to build kernel. It really depends, but 2 cores with 2048M RAM would be enough.</p>
-
-<p>Open <code>Vagrantfile</code> and add the following lines.</p>
-
-<p><code>
-config.vm.provider :virtualbox do |vb|
-  vb.customize ["modifyvm", :id, "--memory", "2048"]
-  vb.customize ["modifyvm", :id, "--cpus", 2]
-end
-</code></p>
-
-<p>Once you increase cpu and memory, do <code>vagrant up &amp;&amp; vagrant ssh</code> and ssh into the box. Become root user and install necessary packages to rebuild kernel.</p>
-
-<p><code>sh
-$ apt-get -y update
-$ apt-get -y install libncurses-dev build-essential libncurses-dev build-essential fakeroot kernel-package linux-source bc
-</code></p>
-
-<p>After installing these, you should have <code>/usr/src/linux-source-&lt;kernel version&gt;</code> directory. Go into the directory and untar the source files.</p>
-
-<p><code>sh
-$ cd /usr/src/linux-source-&lt;kernel version&gt;
-$ tar xvjf linux-source-&lt;kernel version&gt;.tar.bz2
-$ cd ./linux-source-&lt;kernel version&gt;
-</code></p>
-
-<p>Now you need to prepare a kernel configuration <em>.config</em> file which enables certain options for CRIU.</p>
-
-<p>I uploaded the one to save your time into gist. Just run this command. (Make sure to change current directory to kernel source directory where you just untared.)</p>
-
-<p><code>sh
-$ curl https://gist.githubusercontent.com/kimh/c93f42981d14a33c63c0/raw/a73af0f7f745c2538253ef153a62a8ba1a2d97be/.config -o .config
-</code></p>
-
-<p>If you want to know which kernel options should be enabled, the list is <a href="http://criu.org/Installation#Kernel_configuration">here</a>.</p>
-
-<p>Once you put <code>.config</code> file, you are ready to build kernel.</p>
-
-<p><strong>Once again, make sure you increased cpu and memory in the previous seteps before start building kernel.</strong></p>
-
-<p><code>sh
-$ export LC_CTYPE=C
-$ make-kpkg clean
-$ CONCURRENCY_LEVEL=4 make-kpkg --rootcmd fakeroot --initrd --revision=`date +%Y%m%d` kernel_image kernel_headers
-</code></p>
-
-<p>Once the kernel build is done, you should have <code>linux-headers-&lt;kernel version&gt;_amd64.deb</code> and <code>linux-image-&lt;kernel version&gt;_amd64.deb</code> under <code>/usr/src/</code> directory.</p>
-
-<p>Now, let&rsquo;s install them.</p>
-
-<p><code>sh
-$ dpkg -i linux-headers-&lt;kernel version&gt;_amd64.deb
-$ dpkg -i linux-image-&lt;kernel version&gt;_amd64.deb
-$ reboot
-</code></p>
-
-<p>Done! Now You are running the kernel that works well with CRIU.</p>
-
-<h3>Compile CRIU from source</h3>
-
-<p>Let&rsquo;s install CRIU now. Ubuntu doesn&rsquo;t provide up-to-date debian package of CRIU, so we need to build from source.</p>
-
-<p><code>sh
-$ apt-get install git bsdmainutils build-essential libprotobuf-dev libprotobuf-c0-dev protobuf-c-compiler protobuf-compiler python-protobuf xmlto asciidoc
-$ git clone https://github.com/xemul/criu
-$ cd criu/
-$ make
-$ sudo make install
-</code></p>
-
-<p>Now CRIU is installed. Let&rsquo;s try if it works. CRIU provides a command for this.</p>
-
-<p><code>sh
-$ criu check --ms
-Warn  (tun.c:55): Skipping tun support check
-Warn  (cr-check.c:259): Skipping mnt_id support check
-Looks good.
-</code></p>
-
-<p>Did you get <code>Looks good.</code> message? You may get some warnings, but you can ignore them.
-Before doing our experiment with containers, let&rsquo;s checkpoint and restore normal Linux process with CRIU. The example comes from <a href="http://criu.org/Simple_loop">one of CRIU HOWTO pages</a>.</p>
-
-<p>First, we need to create a simple loop script.</p>
-
-<p>```
-$ cat > test.sh &lt;&lt;-EOF</p>
-
-<h1>!/bin/sh</h1>
-
-<p>while true; do
- date
- sleep 1
-done
-EOF</p>
-
-<p>$ chmod +x test.sh
-$ ./test.sh
-```</p>
-
-<p>We can suspend with <code>criu dump</code> command.</p>
-
-<p>```sh</p>
-
-<h1>Need to be root to run criu</h1>
-
-<p>$ sudo -s
-$ export PID=<code>pgrep -f test.sh</code>
-$ mkdir /tmp/test
-$ criu dump -t $PID &mdash;images-dir /tmp/test &mdash;shell-job
-```</p>
-
-<p>If the dump succeeds, you should have many files under <code>/tmp/test</code> directory.</p>
-
-<p><code>sh
-$ ls /tmp/test
-cgroup.img         fanotify-mark.img   fs-4898.img     netlinksk.img     pstree.img         signalfd.img
-core-4521.img      fanotify.img        ids-4521.img    ns-files.img      reg-files.img      sk-queues.img
-core-4898.img      fdinfo-2.img        ids-4898.img    packetsk.img      remap-fpath.img    stats-dump
-creds-4521.img     fdinfo-3.img        inetsk.img      pagemap-4521.img  sigacts-4521.img   tty-info.img
-creds-4898.img     fifo-data.img       inotify-wd.img  pagemap-4898.img  sigacts-4898.img   tty.img
-eventfd.img        fifo.img            inotify.img     pages-1.img       signal-p-4521.img  tunfile.img
-eventpoll-tfd.img  filelocks-4521.img  inventory.img   pages-2.img       signal-p-4898.img  unixsk.img
-eventpoll.img      filelocks-4898.img  mm-4521.img     pipes-data.img    signal-s-4521.img
-ext-files.img      fs-4521.img         mm-4898.img     pipes.img         signal-s-4898.img
-</code></p>
-
-<p>Let&rsquo;s resume the process with <code>criu restore</code> command.</p>
-
-<p><code>sh
-$ criu restore -t $PID --images-dir /tmp/test  --shell-job
-</code></p>
-
-<p>If the process is successfully resumed, <code>test.sh</code> starts printing the output of <code>date</code> command to your terminal.</p>
-
-<h2>Trying CRIU with containers</h2>
-
-<p>So far so good? Now, we will try to suspend and resume Docker containers. Docker is not installed on your vagrant box, so let&rsquo;s install.</p>
-
-<p><code>sh
-$ apt-get install docker.io jq
-$ ln -sf /usr/bin/docker.io /usr/local/bin/docker
-$ sed -i '$acomplete -F _docker docker' /etc/bash_completion.d/docker.io
-</code></p>
-
-<p>And run a Ubuntu container executing a simple command.</p>
-
-<p><code>sh
-$ docker run -t -i ubuntu /bin/bash
-</code></p>
-
-<p>To suspend the container, we need to know the pid of the container.</p>
-
-<p><code>sh
-$ ID=`docker ps -l -q`
-$ PID=`docker inspect $ID | jq '.[0].State.Pid'`
-</code></p>
-
-<p>Ok, our long journey is almost done. Let&rsquo;s suspend the container!!</p>
-
-<p><code>sh
-$ criu dump -t $PID --images-dir /tmp/docker
-Error (mount.c:449): 102:./dev/console doesn't have a proper root mount
-Error (cr-dump.c:1882): Dumping FAILED.
-</code></p>
-
-<p>CRIU said dumping failed. After googling the error message, I found this discussion.</p>
-
-<p><a href="https://lists.linuxcontainers.org/pipermail/lxc-devel/2013-November/006326.html">[lxc-devel] [CRIU] LXC live migrate</a></p>
-
-<blockquote><p>That&rsquo;s container&rsquo;s console which is a bind mounted tty from
-the host. And since this is an external connection, CRIU doesn&rsquo;t dump one.</p></blockquote>
-
-<p>What?! But, <a href="http://criu.org/LXC">this page</a> says CRIU supports LXC checkpoint/restart. Docker uses LXC under the hood, so how come it doesn&rsquo;t work?</p>
-
-<p>In the same thread of the discussion, I also found this.</p>
-
-<p><a href="https://lists.linuxcontainers.org/pipermail/lxc-devel/2013-November/006326.html">[lxc-devel] [CRIU] LXC live migrate</a></p>
-
-<blockquote><p>AFAIK cgroups are used <em>inside</em> containers only with recent guest templates.
-In OpenVZ we use more old ones (and more stable) so haven&rsquo;t meet this yet.
-And yes, cgroups are in plans for the nearest future :)</p></blockquote>
-
-<p>So, it seems CRIU does not support cgroup at the time of writing this (Jun 2014). However Docker uses LXC template that uses cgroups. Therefore, CRIU doesn&rsquo;t work with Docker containers.</p>
-
-<p>Sigh&hellip;</p>
-
-<h2>Conclusion</h2>
-
-<p>With this experiment, I found that we cannot checkpoint/resume Docker container with CRIU v1.3 because it does not support cgroups.</p>
-
-<p>The result turned out to be a bit disappointed. However, I&rsquo;m sure now you know that CRIU is extremely exciting project.</p>
-
-<p>In contrast to its potential impact to LXC ecosystem, I believe the project is not receiving enough attention, so give a star and start watching their <a href="https://github.com/xemul/criu">Github repo</a> now!! I will definitely cover more things about CRIU on this blog, too.</p>
 ]]></content>
   </entry>
   
