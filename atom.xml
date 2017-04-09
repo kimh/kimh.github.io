@@ -4,7 +4,7 @@
   <title><![CDATA[Program Is Made At Night]]></title>
   <link href="http://kimh.github.io/atom.xml" rel="self"/>
   <link href="http://kimh.github.io/"/>
-  <updated>2017-04-09T14:56:16+09:00</updated>
+  <updated>2017-04-09T14:59:47+09:00</updated>
   <id>http://kimh.github.io/</id>
   <author>
     <name><![CDATA[kim hirokuni]]></name>
@@ -129,7 +129,7 @@
 
 <p>Now we are entering an interesting area where the average disappears. To illustrate this, we will make the coin toss game a bit more complicated.</p>
 
-<p>This time, you keep flipping the coin until you get head and you will get <strong>2<sup>number</sup> of times you flip the coin</strong>.</p>
+<p>This time, you keep flipping the coin until you get head and you will get <strong>2 ^ (number of times you flip the coin)</strong>.</p>
 
 <p>For example, if your result is tail, tail, and then head, then you get <strong>2 ^ 3</strong> (because you flipped three times) which is $8. Let&rsquo;s call this game &ldquo;coin-toss-unti-head&rdquo; game.</p>
 
