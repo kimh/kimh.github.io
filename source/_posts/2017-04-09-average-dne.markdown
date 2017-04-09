@@ -86,7 +86,7 @@ By looking at these graphs, we can safely say that the average of dollar you win
 
 Now we are entering an interesting area where the average disappears. To illustrate this, we will make the coin toss game a bit more complicated.
 
-This time, you keep flipping the coin until you get head and you will get **2^number of times you flip the coin**.
+This time, you keep flipping the coin until you get head and you will get **2 ^ (number of times you flip the coin)**.
 
 For example, if your result is tail, tail, and then head, then you get **2 ^ 3** (because you flipped three times) which is $8. Let's call this game "coin-toss-unti-head" game.
 
