@@ -1,0 +1,317 @@
+<!doctype html>
+<!-- paulirish.com/2008/conditional-stylesheets-vs-css-hacks-answer-neither/ -->
+<!--[if lt IE 7]> <html class="no-js ie6 oldie" lang="en"> <![endif]-->
+<!--[if IE 7]>    <html class="no-js ie7 oldie" lang="en"> <![endif]-->
+<!--[if IE 8]>    <html class="no-js ie8 oldie" lang="en"> <![endif]-->
+<!-- Consider adding an manifest.appcache: h5bp.com/d/Offline -->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en"> <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+
+  <!-- Use the .htaccess and remove these lines to avoid edge case issues.
+       More info: h5bp.com/b/378 -->
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+
+  <title>Using Trusted Builds to generate Docker image automatically |  kim hirokuni</title>
+  <meta name="author" content="kim hirokuni">
+  
+
+  
+  <!-- Mobile viewport optimized: j.mp/bplateviewport -->
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+
+  <!-- Place favicon.ico and apple-touch-icon.png in the root directory: mathiasbynens.be/notes/touch-icons -->
+  <link href="/favicon.png" rel="icon">
+
+  <!-- CSS: implied media=all -->
+  <!-- CSS concatenated and minified via ant build script-->
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <link href='https://fonts.googleapis.com/css?family=Inconsolata' rel='stylesheet' type='text/css'>
+  <!-- end CSS-->
+
+  <!-- More ideas for your <head> here: h5bp.com/d/head-Tips -->
+
+  <!-- All JavaScript at the bottom, except for Modernizr / Respond.
+       Modernizr enables HTML5 elements & feature detects; Respond is a polyfill for min/max-width CSS3 Media Queries
+       For optimal performance, use a custom Modernizr build: www.modernizr.com/download/ -->
+  <script src="/javascripts/libs/modernizr-2.0.6.min.js"></script>
+</head>
+
+<body id="post">
+
+  <div id="container">
+    <nav role="navigation" ><ul class="main-navigation">
+  <li style='float:left;margin-right:5px'><a class='nav' href="/">Home</a></li>
+</ul><br><br>
+</nav>
+    <article>
+
+
+  <h1 class="article-title">Using Trusted Builds to Generate Docker Image Automatically</h1>
+  <div class="article-content"><p><img src="/images/construction.png" alt="" /></p>
+
+<h2>Trusted Builds</h2>
+
+<p>Recently, <a href="http://index.docker.io/" title="index.docker.io">index.docker.io</a> released a new feature called &ldquo;Trusted Builds&rdquo;.
+Trusted Builds allows you to automatically builds a Docker container according to Dockerfile when you push to your Github repository.
+In this post, I will share how to use it and one pitfall that I experienced.</p>
+
+<h3>Place a Dockerfile in your repo</h3>
+
+<p>Trusted Builds knows how to make a new image by reading Dockerfile in your repository and uses repository as a context for the Dockerfile.
+So, you first need to add a Dockerfile to your repository. Let&rsquo;s put a very simple Dockerfile.</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='bash'><span class='line'>from ubuntu
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>This Dockerfile tells Trusted Builds to create a new image based on ubuntu image. Add the file and push to Github.</p>
+
+<h3>Link Github and register repository</h3>
+
+<p>To use Trusted Builds, you need to link your Github account. Login to <a href="http://index.docker.io/" title="index.docker.io">index.docker.io</a> and go to <a href="https://index.docker.io/builds/github/select/">setting page</a>.
+Once you link Github accountm, you should see the list of your public repositories. Select the repository that you want to build and enter information used by Trusted Builds.</p>
+
+<h5>Default Branch</h5>
+
+<p>Branch name that Trusted Builds uses</p>
+
+<h5>Repo Name</h5>
+
+<p>This is used as a name of new image. Probably, Repo here means Docker&rsquo;s repository, not Github repository. <strong>You should pick up the name carefully because you can&rsquo;t change the name later.</strong></p>
+
+<h5>Docker Tag Name</h5>
+
+<p>The name of tag that you want put to a image</p>
+
+<h5>Dockerfile Location</h5>
+
+<p>Specify the location of Dockerfile in your repo. As I mentioned earlier, Trusted Builds uses your repo as a build context. Therefore, the top directory of your repo becomes the root of file path.
+For example, if you put Dockerfile just under your repo&rsquo;s top directory, you should specify <strong>/</strong> as Dockerfile location. Note that you only need to specify the directory name, not the path of Dockerfile.</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+</pre></td><td class='code'><pre><code class='bash'><span class='line'><span class="c"># Good</span>
+</span><span class='line'>/
+</span><span class='line'>/build
+</span><span class='line'>
+</span><span class='line'><span class="c"># Bad</span>
+</span><span class='line'>/Dockerfile
+</span><span class='line'>/build/Dockerfile
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Also note the file name should be Dockerfile. If you put other name, Trusted Builds can&rsquo;t find the file.</p>
+
+<p>You should be ready now! Press Submit button and a new build will start. Once builds finish, you will see a new image in the list of your repository.</p>
+
+<h2>A few common mistakes</h2>
+
+<p>Did your build succeed? In my case, I made try &amp; error several times until it succeeds. Let me share them so you can save your time.</p>
+
+<h5>Is the file name of Dockerfile correct?</h5>
+
+<p>The file name of your Dockerfile should be <em>Dockerfile</em>.</p>
+
+<h5>Did you specify correct path to your Dockerfile?</h5>
+
+<p>Dockerfile Location should be the path of directory where you have Dockerfile, not the whole path name of Dockerfile. Check the examples above.</p>
+
+<h5>Is your Dockerfile correct?</h5>
+
+<p>Maybe you put wrong instruction in Dockerfile. You can test this by manually building a image by using docker command.</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='bash'><span class='line'>docker build -t kimh/test_dockerfile github.com/kimh/baleen
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>The above command assumes that you have Dockerfile at the top directory of your repo. If the command fails, make sure your instructions are correct.</p>
+
+<h5>Do you have submodule in your repository?</h5>
+
+<p>This one took the most of debugging time for me. Currently, <a href="https://groups.google.com/forum/#!topic/docker-user/ZothnJ46Pps">Trusted Builds does not support git submodule</a>, so builds fails if you have a submodule in your repository.
+For now, you have to remove the submodule to make build succeed.</p>
+</div>
+  
+    <section>
+      <h1>Comments</h1>
+      <div id="disqus_thread"><div id="disqus_thread"></div>
+<script type="text/javascript">
+  var disqus_shortname = 'kimstechblog';
+  var disqus_identifier = 'http://kimh.github.io/blog/en/docker/using-trusted-builds-to-generate-docker-image-automatically/';
+  var disqus_url = 'http://kimh.github.io/blog/en/docker/using-trusted-builds-to-generate-docker-image-automatically/';
+  //var disqus_developer = 1;
+  (function() {
+    var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+    dsq.src = 'http://' + disqus_shortname + '.disqus.com/embed.js';
+    (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+  })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+</div>
+    </section>
+  
+
+</article>
+
+
+      <p class="meta">
+      
+        <a class="basic-alignment left nav" href="/blog/jp/docker/using-docker-to-run-cucumber-tests-in-parallel-jp/" title="Previous Post: Dockerを使ってCucumberテストを並列実行する">&laquo; Dockerを使ってCucumberテストを並列実行する</a>
+      
+      
+        <a class="basic-alignment right nav" href="/blog/jp/security/understanding-pfs-jp/" title="Next Post: PFS（Perfect Forward Secrecy）">PFS（Perfect Forward Secrecy） &raquo;</a>
+      
+    </p>
+  </div>
+    <script>
+      var name = document.getElementById('name-helper').innerHTML;
+
+      var canvas = document.getElementById('myCanvas');
+
+      //The name (up to 28 characters long, including white space)
+      var length = name.length;
+      if (length>28){//Exceed character length limit, remove canvas
+          canvas.remove();
+      }
+      else{
+            
+
+        var context = canvas.getContext('2d');
+
+        //calculate width and length
+        var width=700/1.25/length;
+        var start;
+        if (width>40){
+          width=40;
+        }
+
+        var height= width/2;
+
+        //the start postion of the link list
+        var start = (700-width*length*1.25)/2;
+        var horizon = 5;
+
+        //DO NOT CHANGE THOSE
+        var mid_horizon = horizon+height/2;
+        var name_counter =0;
+
+        var x = height/5;
+        var y = height/5;
+        var interval=width/4;
+        
+        var radius = 0.75*width;
+        
+        var text_pos=width*1.1;
+
+
+        canvas.height=mid_horizon+width/2+width/2.1+5;
+        
+        for (var i=1;i<name.length+1;i++){
+
+          context.beginPath();
+          context.strokeStyle='#F9BF3B';
+          
+          //the rectangle
+          context.rect(start, horizon, width, height);
+
+          //the middle line
+          context.moveTo(start+width/2,horizon);
+          context.lineTo(start+width/2,horizon+height);
+
+          //if this is the last element
+          if (i==name.length){
+            context.moveTo(start+width/2,horizon+height);
+            context.lineTo(start+width,horizon);
+
+          }
+          else{
+            //the arrow
+            context.moveTo(start+0.75*width,mid_horizon);
+            context.lineTo(start+width+interval,mid_horizon);
+
+            context.moveTo(start+width+interval,mid_horizon);
+            context.lineTo(start+width+interval-x,mid_horizon+y);
+          
+            context.moveTo(start+width+interval,mid_horizon);
+            context.lineTo(start+width+interval-x,mid_horizon-y); 
+          }
+          
+       
+        
+          var startAngle = 1.2 * Math.PI;
+          var endAngle = 1 * Math.PI;
+          var counterClockwise = true;
+      
+          context.stroke();
+            
+          context.beginPath();
+          context.arc(start+width/4+radius*0.81, mid_horizon+width/2, radius, startAngle, endAngle, counterClockwise);
+
+          context.moveTo(start+width/4+radius*0.81-radius,mid_horizon+width/2);
+          context.lineTo(start+width/4+radius*0.81-radius-x,mid_horizon-y+width/2);
+
+          context.moveTo(start+width/4+radius*0.81-radius,mid_horizon+width/2);
+          context.lineTo(start+width/4+radius*0.81-radius+x,mid_horizon-y+width/2); 
+
+          context.font = ' 15pt Calibri';
+          context.fillStyle = '#859900';
+          context.fillText(name.charAt(name_counter), start+width/4+radius*0.81-radius-width/14, mid_horizon+width/2+width/2.1);
+
+          context.lineWidth=1;
+          context.strokeStyle='#F9BF3B';
+          context.stroke();
+          start+=width/2*2+interval;      
+          name_counter+=1;
+        }
+      }
+
+    </script>
+
+  <!-- JavaScript at the bottom for fast page loading -->
+
+  <!-- Grab Google CDN's jQuery, with a protocol relative URL; fall back to local if offline -->
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.6.2/jquery.min.js"></script>
+  <script>window.jQuery || document.write('<script src="js/libs/jquery-1.6.2.min.js"><\/script>')</script>
+
+
+  <!-- scripts concatenated and minified via ant build script-->
+  <script defer src="/javascripts/app.js"></script>
+  <!-- end scripts-->
+
+	
+
+  <!-- Prompt IE 6 users to install Chrome Frame. Remove this if you want to support IE 6.
+       chromium.org/developers/how-tos/chrome-frame-getting-started -->
+  <!--[if lt IE 7 ]>
+    <script src="//ajax.googleapis.com/ajax/libs/chrome-frame/1.0.3/CFInstall.min.js"></script>
+    <script>window.attachEvent('onload',function(){CFInstall.check({mode:'overlay'})})</script>
+  <![endif]-->
+ 
+
+  <script type="text/javascript">
+    (function(){
+      var twitterWidgets = document.createElement('script');
+      twitterWidgets.type = 'text/javascript';
+      twitterWidgets.async = true;
+      twitterWidgets.src = 'http://platform.twitter.com/widgets.js';
+      document.getElementsByTagName('head')[0].appendChild(twitterWidgets);
+    })();
+  </script>
+
+
+
+
+
+
+
+</body>
+</html>
+

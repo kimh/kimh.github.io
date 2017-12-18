@@ -1,0 +1,1352 @@
+<!doctype html>
+<!-- paulirish.com/2008/conditional-stylesheets-vs-css-hacks-answer-neither/ -->
+<!--[if lt IE 7]> <html class="no-js ie6 oldie" lang="en"> <![endif]-->
+<!--[if IE 7]>    <html class="no-js ie7 oldie" lang="en"> <![endif]-->
+<!--[if IE 8]>    <html class="no-js ie8 oldie" lang="en"> <![endif]-->
+<!-- Consider adding an manifest.appcache: h5bp.com/d/Offline -->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en"> <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+
+  <!-- Use the .htaccess and remove these lines to avoid edge case issues.
+       More info: h5bp.com/b/378 -->
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+
+  <title>The Practices of Backbone.Marionette That I believe The Best |  kim hirokuni</title>
+  <meta name="author" content="kim hirokuni">
+  
+
+  
+  <!-- Mobile viewport optimized: j.mp/bplateviewport -->
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+
+  <!-- Place favicon.ico and apple-touch-icon.png in the root directory: mathiasbynens.be/notes/touch-icons -->
+  <link href="/favicon.png" rel="icon">
+
+  <!-- CSS: implied media=all -->
+  <!-- CSS concatenated and minified via ant build script-->
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <link href='https://fonts.googleapis.com/css?family=Inconsolata' rel='stylesheet' type='text/css'>
+  <!-- end CSS-->
+
+  <!-- More ideas for your <head> here: h5bp.com/d/head-Tips -->
+
+  <!-- All JavaScript at the bottom, except for Modernizr / Respond.
+       Modernizr enables HTML5 elements & feature detects; Respond is a polyfill for min/max-width CSS3 Media Queries
+       For optimal performance, use a custom Modernizr build: www.modernizr.com/download/ -->
+  <script src="/javascripts/libs/modernizr-2.0.6.min.js"></script>
+</head>
+
+<body id="post">
+
+  <div id="container">
+    <nav role="navigation" ><ul class="main-navigation">
+  <li style='float:left;margin-right:5px'><a class='nav' href="/">Home</a></li>
+</ul><br><br>
+</nav>
+    <article>
+
+
+  <h1 class="article-title">The Practices of Backbone.Marionette That I Believe the Best</h1>
+  <div class="article-content"><h1>On Marionette.Module</h1>
+
+<h2>Dividing app into sub-modules</h2>
+
+<p>You can create sub-modules as many as you want inside one Marionette app. I higly enoucurage to take the advantage of sub-modules.</p>
+
+<p>You can also say that sub-module is sub-application. The easiest way to imagine is Gmail. Gmail has many features: email, chat, contacts list, etc. You can construct each component as sub-modules in Marionette.</p>
+
+<p>Let&rsquo;s look at how we define sub-modules.</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='js'><span class='line'><span class="kd">var</span> <span class="nx">MyApp</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">Backbone</span><span class="p">.</span><span class="nx">Marionette</span><span class="p">.</span><span class="nx">Application</span><span class="p">();</span>
+</span><span class='line'><span class="nx">MyApp</span><span class="p">.</span><span class="nx">module</span><span class="p">(</span><span class="s2">&quot;ModuleA&quot;</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">ModuleA</span><span class="p">,</span> <span class="nx">MyApp</span><span class="p">,</span> <span class="nx">Backbone</span><span class="p">,</span> <span class="nx">Marionette</span><span class="p">,</span> <span class="nx">$</span><span class="p">,</span> <span class="nx">_</span><span class="p">){</span>
+</span><span class='line'>  <span class="c1">// your module code goes here //</span>
+</span><span class='line'><span class="p">})</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>You may wonder about parameters in callback function. This is automatically passed in this order:</p>
+
+<ul>
+<li>The module itself</li>
+<li>The Application object</li>
+<li>Backbone</li>
+<li>Backbone.Marionette</li>
+<li>jQuery</li>
+<li>Underscore</li>
+</ul>
+
+
+<p>They are defined in local scope and only accessbile from the callback function.</p>
+
+<p>One of the benefits of using sub-modules is you can write codes of a module into separate files with ease.</p>
+
+<p>Let&rsquo;s say you define a <code>ShoppingCart</code> module.</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='js'><span class='line'><span class="kd">var</span> <span class="nx">MyApp</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">Backbone</span><span class="p">.</span><span class="nx">Marionette</span><span class="p">.</span><span class="nx">Application</span><span class="p">();</span>
+</span><span class='line'><span class="nx">MyApp</span><span class="p">.</span><span class="nx">module</span><span class="p">(</span><span class="s2">&quot;ShoppingCart&quot;</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">ModuleA</span><span class="p">,</span> <span class="nx">MyApp</span><span class="p">,</span> <span class="nx">Backbone</span><span class="p">,</span> <span class="nx">Marionette</span><span class="p">,</span> <span class="nx">$</span><span class="p">,</span> <span class="nx">_</span><span class="p">){</span>
+</span><span class='line'>    <span class="c1">// your module code goes here //</span>
+</span><span class='line'><span class="p">})</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>You can easily guess what the module does: it takes care everything about shopping cart feature in your app.</p>
+
+<p>One single <code>ShoppingCart</code> module is still too big to be written in a file. So, let&rsquo;s divide them into separate files based on functionality: <code>Controller</code> and <code>View</code>.</p>
+
+<p><strong><em>shopping_cart_controller.js</em></strong></p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class='js'><span class='line'><span class="nx">MyApp</span><span class="p">.</span><span class="nx">module</span><span class="p">(</span><span class="s2">&quot;ShoppingCart&quot;</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">ShoppingCart</span><span class="p">,</span> <span class="nx">MyApp</span><span class="p">,</span> <span class="nx">Backbone</span><span class="p">,</span> <span class="nx">Marionette</span><span class="p">,</span> <span class="nx">$</span><span class="p">,</span> <span class="nx">_</span><span class="p">){</span>
+</span><span class='line'>    <span class="nx">ShoppingCart</span><span class="p">.</span><span class="nx">Controller</span> <span class="o">=</span> <span class="nx">Marionette</span><span class="p">.</span><span class="nx">Controller</span><span class="p">.</span><span class="nx">extend</span><span class="p">({</span>
+</span><span class='line'>        <span class="c1">// controller implementation goes here</span>
+</span><span class='line'>    <span class="p">});</span>
+</span><span class='line'><span class="p">})</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p><strong><em>shopping_cart_view.js</em></strong></p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class='js'><span class='line'><span class="nx">MyApp</span><span class="p">.</span><span class="nx">module</span><span class="p">(</span><span class="s2">&quot;ShoppingCart&quot;</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">ShoppingCart</span><span class="p">,</span> <span class="nx">MyApp</span><span class="p">,</span> <span class="nx">Backbone</span><span class="p">,</span> <span class="nx">Marionette</span><span class="p">,</span> <span class="nx">$</span><span class="p">,</span> <span class="nx">_</span><span class="p">){</span>
+</span><span class='line'>    <span class="nx">ShoppingCart</span><span class="p">.</span><span class="nx">View</span> <span class="o">=</span> <span class="nx">Marionette</span><span class="p">.</span><span class="nx">ItemView</span><span class="p">.</span><span class="nx">extend</span><span class="p">({</span>
+</span><span class='line'>        <span class="c1">// view implementation goes here</span>
+</span><span class='line'>    <span class="p">});</span>
+</span><span class='line'><span class="p">})</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>When you create modules, you don&rsquo;t have to worry whether your module is already defined or not. If not defined, Marionette defines for you. So, in the previous case, <code>ShoppingCart</code> module is defined in <strong><em>shopping_cart_controller.js</em></strong> and <strong><em>shopping_cart_view.js</em></strong> just adds things to the module.</p>
+
+<p>Maybe <code>ShoppingCart.View</code> still contains too many views to be in a single file such as <code>show_view</code> or <code>new_view</code>. You can further divide your <code>ShoppingCart</code> sub-module like this.</p>
+
+<p><strong><em>show/shopping_cart_view.js</em></strong></p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class='js'><span class='line'><span class="nx">MyApp</span><span class="p">.</span><span class="nx">module</span><span class="p">(</span><span class="s2">&quot;ShoppingCart.View&quot;</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">View</span><span class="p">,</span> <span class="nx">MyApp</span><span class="p">,</span> <span class="nx">Backbone</span><span class="p">,</span> <span class="nx">Marionette</span><span class="p">,</span> <span class="nx">$</span><span class="p">,</span> <span class="nx">_</span><span class="p">){</span>
+</span><span class='line'>    <span class="nx">View</span><span class="p">.</span><span class="nx">ShowView</span> <span class="o">=</span> <span class="nx">Marionette</span><span class="p">.</span><span class="nx">ItemView</span><span class="p">.</span><span class="nx">extend</span><span class="p">({</span>
+</span><span class='line'>        <span class="c1">// show view implementation goes here</span>
+</span><span class='line'>    <span class="p">});</span>
+</span><span class='line'><span class="p">})</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p><strong><em>new/shopping_cart_view.js</em></strong></p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class='js'><span class='line'><span class="nx">MyApp</span><span class="p">.</span><span class="nx">module</span><span class="p">(</span><span class="s2">&quot;ShoppingCart.View&quot;</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">View</span><span class="p">,</span> <span class="nx">MyApp</span><span class="p">,</span> <span class="nx">Backbone</span><span class="p">,</span> <span class="nx">Marionette</span><span class="p">,</span> <span class="nx">$</span><span class="p">,</span> <span class="nx">_</span><span class="p">){</span>
+</span><span class='line'>    <span class="nx">View</span><span class="p">.</span><span class="nx">NewView</span> <span class="o">=</span> <span class="nx">Marionette</span><span class="p">.</span><span class="nx">ItemView</span><span class="p">.</span><span class="nx">extend</span><span class="p">({</span>
+</span><span class='line'>        <span class="c1">// new view implementation goes here</span>
+</span><span class='line'>    <span class="p">});</span>
+</span><span class='line'><span class="p">})</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>I create separate directories for <code>show</code> and <code>new</code> and put each file there. You can continue this process until you are satisfied.</p>
+
+<p>Probalby enough words are spoken to introduce sub-modules.</p>
+
+<p>So here is the pattern statement. <strong>Use sub-modules to seperate codes</strong></p>
+
+<!--
+Now, let's see the benifits of using sub-modules.
+
+### Encapsulation
+
+You can define public and private methods easily inside a module.
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+</pre></td><td class='code'><pre><code class='js'><span class='line'><span class="kd">var</span> <span class="nx">MyApp</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">Backbone</span><span class="p">.</span><span class="nx">Marionette</span><span class="p">.</span><span class="nx">Application</span><span class="p">();</span>
+</span><span class='line'>
+</span><span class='line'><span class="nx">MyApp</span><span class="p">.</span><span class="nx">module</span><span class="p">(</span><span class="s2">&quot;ModuleA&quot;</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">ModuleA</span><span class="p">,</span> <span class="nx">MyApp</span><span class="p">,</span> <span class="nx">Backbone</span><span class="p">,</span> <span class="nx">Marionette</span><span class="p">,</span> <span class="nx">$</span><span class="p">,</span> <span class="nx">_</span><span class="p">){</span>
+</span><span class='line'>  <span class="c1">// Defining public method</span>
+</span><span class='line'>  <span class="nx">ModuleA</span><span class="p">.</span><span class="nx">publicMethod</span> <span class="o">=</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+</span><span class='line'>    <span class="k">return</span> <span class="nx">privateMethod</span><span class="p">();</span>
+</span><span class='line'>  <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="c1">// Defining private method</span>
+</span><span class='line'>  <span class="kd">var</span> <span class="nx">privateMethod</span> <span class="o">=</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+</span><span class='line'>    <span class="k">return</span> <span class="s2">&quot;some value&quot;</span>
+</span><span class='line'>  <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="p">})</span>
+</span></code></pre></td></tr></table></div></figure>
+
+Now other sub-modules can access public method but not private one.
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='js'><span class='line'><span class="nx">MyApp</span><span class="p">.</span><span class="nx">ModuleA</span><span class="p">.</span><span class="nx">publicMethod</span><span class="p">()</span> <span class="c1">// =&gt; &quot;some value&quot;</span>
+</span><span class='line'><span class="nx">MyApp</span><span class="p">.</span><span class="nx">ModuleA</span><span class="p">.</span><span class="nx">privateMethod</span><span class="p">()</span> <span class="c1">// =&gt; &quot;Uncaught TypeError: undefined is not a function&quot;</span>
+</span></code></pre></td></tr></table></div></figure>
+&#8211;>
+
+
+<h2>Starting and stopping sub-modules</h2>
+
+<p>You can start and stop your sub-modules individually. By default, sub-modules is automatically started when Marionette parent app is started. You can change this behavior by <code>startWithParent</code> option.</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+</pre></td><td class='code'><pre><code class='js'><span class='line'><span class="nx">MyApp</span><span class="p">.</span><span class="nx">module</span><span class="p">(</span><span class="s2">&quot;ModuleA&quot;</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">ModuleA</span><span class="p">,</span> <span class="nx">MyApp</span><span class="p">,</span> <span class="nx">Backbone</span><span class="p">,</span> <span class="nx">Marionette</span><span class="p">,</span> <span class="nx">$</span><span class="p">,</span> <span class="nx">_</span><span class="p">){</span>
+</span><span class='line'>    <span class="k">this</span><span class="p">.</span><span class="nx">startWithParent</span> <span class="o">=</span> <span class="kc">false</span><span class="p">;</span>
+</span><span class='line'><span class="p">})</span>
+</span><span class='line'>
+</span><span class='line'><span class="nx">MyApp</span><span class="p">.</span><span class="nx">start</span><span class="p">()</span> <span class="c1">// this doesn&#39;t start ModuleA</span>
+</span><span class='line'><span class="nx">MyApp</span><span class="p">.</span><span class="nx">ModuleA</span><span class="p">.</span><span class="nx">start</span><span class="p">()</span> <span class="c1">// you have to start by yourself</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Why is this important? Because sometimes you want to execute some codes before starting other modules. Let&rsquo;s say you need to load some resources from a remote server when user enters your app and other modules are dependent on that resources.</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+</pre></td><td class='code'><pre><code class='js'><span class='line'><span class="nx">MyApp</span><span class="p">.</span><span class="nx">on</span><span class="p">(</span><span class="s2">&quot;start&quot;</span><span class="p">,</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+</span><span class='line'>    <span class="c1">// Let&#39;s say deferredFetchihg grubs some data from remote server</span>
+</span><span class='line'>    <span class="nx">$</span><span class="p">.</span><span class="nx">when</span><span class="p">(</span><span class="nx">deferredFetching</span><span class="p">()).</span><span class="nx">done</span><span class="p">(</span><span class="kd">function</span><span class="p">(</span><span class="nx">data</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="c1">// Set data to Module1</span>
+</span><span class='line'>        <span class="nx">MyApp</span><span class="p">.</span><span class="nx">Module1</span><span class="p">.</span><span class="nx">setData</span><span class="p">(</span><span class="nx">data</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="c1">// Now Module1 is ready to start</span>
+</span><span class='line'>        <span class="nx">MyApp</span><span class="p">.</span><span class="nx">Module1</span><span class="p">.</span><span class="nx">start</span><span class="p">()</span>
+</span><span class='line'>    <span class="p">});</span>
+</span><span class='line'><span class="p">})</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>How about <code>stop()</code>? I don&rsquo;t think you need to use <code>stop()</code> unless your app is huge so that you need to pay careful attention to memory usage.</p>
+
+<p>However, <code>stop()</code> is very useful when it comes to testing. I will cover this in the following post.</p>
+
+<h2>Organize your files by module base</h2>
+
+<p>There is no canonical way to organize your files in Backbone.Marionette. However, it is good to agree on a convetion for how to name and organize files in project if you are working in a team. This is the pattern that works for me.</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+<span class='line-number'>42</span>
+</pre></td><td class='code'><pre><code class='js'><span class='line'><span class="nx">project_root</span><span class="o">/</span>
+</span><span class='line'>    <span class="o">|</span>
+</span><span class='line'>    <span class="o">|---</span><span class="nx">application</span><span class="p">.</span><span class="nx">js</span>
+</span><span class='line'>    <span class="o">|</span>
+</span><span class='line'>    <span class="o">|---</span><span class="nx">small_module</span><span class="o">/</span>
+</span><span class='line'>    <span class="o">|</span>      <span class="o">|</span>
+</span><span class='line'>    <span class="o">|</span>      <span class="o">|---</span><span class="nx">small_module</span><span class="p">.</span><span class="nx">js</span>
+</span><span class='line'>    <span class="o">|</span>      <span class="o">|</span>
+</span><span class='line'>    <span class="o">|</span>      <span class="o">|---</span><span class="nx">small_module_controller</span><span class="p">.</span><span class="nx">js</span>
+</span><span class='line'>    <span class="o">|</span>      <span class="o">|</span>
+</span><span class='line'>    <span class="o">|</span>      <span class="o">|---</span><span class="nx">small_module_model</span><span class="p">.</span><span class="nx">js</span>
+</span><span class='line'>    <span class="o">|</span>      <span class="o">|</span>
+</span><span class='line'>    <span class="o">|</span>      <span class="o">|---</span><span class="nx">small_module_view</span><span class="p">.</span><span class="nx">js</span>
+</span><span class='line'>    <span class="o">|</span>      <span class="o">|</span>
+</span><span class='line'>    <span class="o">|</span>      <span class="o">|---</span><span class="nx">templates</span><span class="o">/</span>
+</span><span class='line'>    <span class="o">|</span>              <span class="o">|</span>
+</span><span class='line'>    <span class="o">|</span>              <span class="o">|---</span><span class="nx">template1</span><span class="p">.</span><span class="nx">hbs</span>
+</span><span class='line'>    <span class="o">|</span>
+</span><span class='line'>    <span class="o">|---</span><span class="nx">big_module</span><span class="o">/</span>
+</span><span class='line'>           <span class="o">|</span>
+</span><span class='line'>           <span class="o">|---</span><span class="nx">big_module</span><span class="p">.</span><span class="nx">js</span>
+</span><span class='line'>           <span class="o">|</span>
+</span><span class='line'>           <span class="o">|---</span><span class="nx">big_module_controller</span><span class="p">.</span><span class="nx">js</span>
+</span><span class='line'>           <span class="o">|</span>
+</span><span class='line'>           <span class="o">|---</span><span class="nx">big_module_model</span><span class="p">.</span><span class="nx">js</span>
+</span><span class='line'>           <span class="o">|</span>
+</span><span class='line'>           <span class="o">|---</span><span class="k">new</span>
+</span><span class='line'>           <span class="o">|</span>    <span class="o">|</span>
+</span><span class='line'>           <span class="o">|</span>    <span class="o">|---</span><span class="nx">big_module_new_view</span><span class="p">.</span><span class="nx">js</span>
+</span><span class='line'>           <span class="o">|</span>    <span class="o">|</span>
+</span><span class='line'>           <span class="o">|</span>    <span class="o">|---</span><span class="nx">templates</span><span class="o">/</span>
+</span><span class='line'>           <span class="o">|</span>            <span class="o">|</span>
+</span><span class='line'>           <span class="o">|</span>            <span class="o">|---</span><span class="nx">template1</span><span class="p">.</span><span class="nx">hbs</span>
+</span><span class='line'>           <span class="o">|</span>            <span class="o">|---</span><span class="nx">template2</span><span class="p">.</span><span class="nx">hbs</span>
+</span><span class='line'>           <span class="o">|---</span><span class="nx">edit</span>
+</span><span class='line'>           <span class="o">|</span>    <span class="o">|</span>
+</span><span class='line'>           <span class="o">|</span>    <span class="o">|---</span><span class="nx">big_module_edit_view</span><span class="p">.</span><span class="nx">js</span>
+</span><span class='line'>           <span class="o">|</span>    <span class="o">|</span>
+</span><span class='line'>           <span class="o">|</span>    <span class="o">|---</span><span class="nx">templates</span><span class="o">/</span>
+</span><span class='line'>           <span class="o">|</span>            <span class="o">|</span>
+</span><span class='line'>           <span class="o">|</span>            <span class="o">|---</span><span class="nx">template1</span><span class="p">.</span><span class="nx">hbs</span>
+</span><span class='line'>           <span class="o">|</span>            <span class="o">|---</span><span class="nx">template2</span><span class="p">.</span><span class="nx">hbs</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p><code>application.js</code> is where you want to decalre global things of your app. This includes</p>
+
+<ul>
+<li>App initialization code</li>
+<li>App starting code (Ex: <code>App.start()</code>)</li>
+<li>Route definition and initilalization</li>
+<li>Useful global helper (Ex: <code>App.currentUser()</code>, <code>App.showSuccessNotification()</code>)</li>
+</ul>
+
+
+<p>I like module-based file hierarchy.</p>
+
+<p>In module based organization, files other than application.js goes under each module directory. If the module is big one, they are further broken down into seperate directories by action.</p>
+
+<p>The role of each file under module direclty is self-explanatory except <code>&lt;module_name&gt;.js</code>.</p>
+
+<p><code>&lt;module_name&gt;.js</code> is used to define basic things for the entier module. These includes:</p>
+
+<ul>
+<li>module option (Ex. <code>this.startWithParent = false</code>)</li>
+<li>module initilaization (Ex. <code>addInitializer({})</code> )</li>
+<li>event listener (Ex. <code>Module1.on("event", function({}))</code>)</li>
+</ul>
+
+
+<p>Maybe it is fair to explain <code>&lt;module_name&gt;_controller.js</code> since it does not exist in Backbone as well.</p>
+
+<p><code>&lt;module_name&gt;_controller.js</code> holds methods that redpond to user entry to your app. One example of such method is something like <code>showItem()</code>. What <code>showItem()</code> does is that instantiate a view, fetch model, pass it to view, and call <code>render()</code> of view to display html. It is similar to what Rails ActionController does.</p>
+
+<p>At last, you may think it is redudant to prefix every files with module name, but this makes it easy to search files by module name. Not must to have, but it is useful once your project becomes bigger where you have many <code>controller.js</code> or <code>view.js</code>.</p>
+
+<h1>About View</h1>
+
+<h2>Organizing DOM with ui</h2>
+
+<p>This pattern is inspired by <a href="http://lxyuma.hatenablog.com/entry/2014/01/23/002644">the blog post</a>.</p>
+
+<p><a href="https://github.com/marionettejs/backbone.marionette/blob/master/docs/marionette.itemview.md#organizing-ui-elements">ui</a> is simple yet very powerful feature of Marionette. You can organize view&rsquo;s DOM by using <code>ui</code>. Here is simple example. Say your have a template.</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class='html'><span class='line'><span class="nt">&lt;div</span> <span class="na">id=</span><span class="s">&quot;edit_form&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;input</span> <span class="na">class=</span><span class="s">&quot;name_input&quot;</span><span class="nt">&gt;</span>Name
+</span><span class='line'>  <span class="nt">&lt;input</span> <span class="na">class=</span><span class="s">&quot;email_input&quot;</span><span class="nt">&gt;</span>Name
+</span><span class='line'>  <span class="nt">&lt;button</span> <span class="na">type=</span><span class="s">&quot;submit&quot;</span> <span class="na">class=</span><span class="s">&quot;js-submit&quot;</span><span class="nt">&gt;</span>Submit<span class="nt">&lt;/button&gt;</span>
+</span><span class='line'><span class="nt">&lt;/div&gt;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>And your view code looks like this.</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+</pre></td><td class='code'><pre><code class='js'><span class='line'><span class="nx">MyView</span> <span class="o">=</span> <span class="nx">Marionette</span><span class="p">.</span><span class="nx">ItemView</span><span class="p">.</span><span class="nx">extend</span><span class="p">({</span>
+</span><span class='line'>    <span class="nx">template</span><span class="o">:</span> <span class="s2">&quot;#edit_form&quot;</span><span class="p">,</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nx">ui</span><span class="o">:</span> <span class="p">{</span>
+</span><span class='line'>        <span class="nx">nameInput</span><span class="o">:</span> <span class="s2">&quot;input.name_input&quot;</span><span class="p">,</span>
+</span><span class='line'>        <span class="nx">emailInput</span><span class="o">:</span> <span class="s2">&quot;input.email_input&quot;</span><span class="p">,</span>
+</span><span class='line'>        <span class="nx">submitButton</span><span class="o">:</span> <span class="s2">&quot;button.js-submit&quot;</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'><span class="p">});</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>If you don&rsquo;t have ui, you can access name input by using jQuery like this.</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='js'><span class='line'><span class="kd">var</span> <span class="nx">myView</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">MyView</span><span class="p">()</span>
+</span><span class='line'><span class="kd">var</span> <span class="nx">input</span> <span class="o">=</span> <span class="nx">myView</span><span class="p">.</span><span class="nx">$el</span><span class="p">.</span><span class="nx">find</span><span class="p">(</span><span class="s2">&quot;input.name_input&quot;</span><span class="p">);</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>By using <code>ui</code>, you can access this way.</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='js'><span class='line'><span class="kd">var</span> <span class="nx">myView</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">MyView</span><span class="p">()</span>
+</span><span class='line'><span class="kd">var</span> <span class="nx">input</span> <span class="o">=</span> <span class="nx">myView</span><span class="p">.</span><span class="nx">ui</span><span class="p">.</span><span class="nx">nameInput</span><span class="p">;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>The difference is subtle, but later one is more maintainable. Here is why.</p>
+
+<p>Html markups are the subject of frequent changes. This is not an issue if the DOM is referenced from a single place. However, when multiple places look at a single DOM, it becomes difficult to maintain.</p>
+
+<p>Suppose one person changes the class name of a input field from <code>name_input</code> to <code>name_field</code>. Also suppose that many codes refer the DOM by using jQuery: <code>myView.$el.find("input.name_input")</code>. Now, you have to change every codes that uses jQuery to  access the DOM. If the DOM is referenced from tests codes, these tests all suddenly break  and updating every places is the nightmare.</p>
+
+<p><code>ui</code> solves the issue. If your codes refer the DOM by using <code>myView.ui.nameInput</code>, then the person who changes the html only needs to change <code>ui</code> object.</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='js'><span class='line'><span class="nx">ui</span><span class="o">:</span> <span class="p">{</span>
+</span><span class='line'>    <span class="nx">nameInput</span><span class="o">:</span> <span class="s2">&quot;input.name_field&quot;</span><span class="p">,</span>
+</span><span class='line'>    <span class="c1">// edited for brevity //</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>And the rest of codes stay the same. Huge improvement.</p>
+
+<p>So here is the pattern statement. <strong>Avoid jQuery and always use ui to access view&rsquo;s DOM</strong></p>
+
+<h2>Using LayoutView to create nested sub-views</h2>
+
+<p>This pattern is inspired by <a href="http://lostechies.com/derickbailey/2012/03/22/managing-layouts-and-nested-views-with-backbone-marionette/">the blog post</a>.</p>
+
+<p>I saw different people use different ways to create nested views in vanilla Backbone app. Marionette however provides us a nice pattern to archive this.</p>
+
+<p>We will use Marionette <a href="https://github.com/marionettejs/backbone.marionette/blob/master/docs/marionette.layoutview.md#marionettelayoutview">LayoutView</a> and <a href="https://github.com/marionettejs/backbone.marionette/blob/master/docs/marionette.region.md#marionetteregion">Region</a>.</p>
+
+<p>Let&rsquo;s take a example of creating shopping car page. The page contains two sub-views: item list view and pricing view.</p>
+
+<p><img src="/images/shopping_cart1.png" alt="" /></p>
+
+<p>Here is our code that creates this shopping cart page. First we create a layout html and layout view.</p>
+
+<p><strong>shopping_cart_layout.html</strong></p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='html'><span class='line'><span class="nt">&lt;div</span> <span class="na">id=</span><span class="s">&quot;shopping_cart_layout&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;div</span> <span class="na">id=</span><span class="s">&quot;itemlist_region&quot;</span><span class="nt">&gt;&lt;/div&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;div</span> <span class="na">id=</span><span class="s">&quot;price_region&quot;</span><span class="nt">&gt;&lt;/div&gt;</span>
+</span><span class='line'><span class="nt">&lt;/div&gt;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p><strong>shopping_cart_layout_view.js</strong></p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+</pre></td><td class='code'><pre><code class='js'><span class='line'><span class="nx">ShoppingCartLayoutView</span> <span class="o">=</span> <span class="nx">Marionette</span><span class="p">.</span><span class="nx">LayoutView</span><span class="p">.</span><span class="nx">extend</span><span class="p">({</span>
+</span><span class='line'>    <span class="nx">template</span><span class="o">:</span> <span class="s2">&quot;#shopping_cart_layout&quot;</span><span class="p">,</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nx">regions</span><span class="o">:</span> <span class="p">{</span>
+</span><span class='line'>        <span class="nx">itemListRegion</span><span class="o">:</span> <span class="s2">&quot;#itemlist_region&quot;</span><span class="p">,</span>
+</span><span class='line'>        <span class="nx">priceListRegion</span><span class="o">:</span> <span class="s2">&quot;#price_region&quot;</span><span class="p">,</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'><span class="p">});</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Let&rsquo;s talk briefly about what <code>LayoutView</code> is. According to <a href="https://github.com/marionettejs/backbone.marionette/blob/master/docs/marionette.layoutview.md#marionettelayoutview">official doc</a>,</p>
+
+<blockquote><p>A LayoutView is a hybrid of an ItemView and a collection of Region objects.</p></blockquote>
+
+<p>So, it is simply extended from <code>ItemView</code> and add <code>Region</code> objects. Since it is extended from <code>ItemView</code>, you can attach template where you can speficy region container DOM. Layout can hold as many region objects as you want so they are suitable to create a parent view.</p>
+
+<p>Now, let&rsquo;s quickly create our sub-views. The template for these views are not important at this subject so let&rsquo;s imagine we have templates for them.</p>
+
+<p><strong>item_list_view.js</strong></p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+</pre></td><td class='code'><pre><code class='js'><span class='line'><span class="nx">ItemView</span> <span class="o">=</span> <span class="nx">Marionette</span><span class="p">.</span><span class="nx">ItemView</span><span class="p">.</span><span class="nx">extend</span><span class="p">({</span>
+</span><span class='line'>    <span class="nx">template</span><span class="o">:</span> <span class="nx">ItemTpl</span><span class="p">,</span>
+</span><span class='line'><span class="p">});</span>
+</span><span class='line'>
+</span><span class='line'><span class="nx">ItemListView</span> <span class="o">=</span> <span class="nx">Marionette</span><span class="p">.</span><span class="nx">CollectionView</span><span class="p">.</span><span class="nx">extend</span><span class="p">({</span>
+</span><span class='line'>    <span class="nx">childView</span><span class="o">:</span> <span class="nx">ItemView</span>
+</span><span class='line'><span class="p">});</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p><strong>price_view.js</strong></p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='js'><span class='line'><span class="nx">PriceListView</span> <span class="o">=</span> <span class="nx">Marionette</span><span class="p">.</span><span class="nx">ItemView</span><span class="p">.</span><span class="nx">extend</span><span class="p">({</span>
+</span><span class='line'>    <span class="nx">template</span><span class="o">:</span> <span class="nx">PriceTpl</span><span class="p">,</span>
+</span><span class='line'><span class="p">});</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Now we are ready to put all things together. Here is the code that renders the shopping cart page. Again, model and collection are not important at this subject, so let&rsquo;s assume we have <code>items</code> collections already.</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+</pre></td><td class='code'><pre><code class='js'><span class='line'><span class="c1">// Instantiate views</span>
+</span><span class='line'><span class="nx">layoutView</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">ShoppingCartLayoutView</span><span class="p">()</span>
+</span><span class='line'><span class="nx">itemListView</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">ItemListView</span><span class="p">({</span><span class="nx">collections</span><span class="o">:</span> <span class="nx">items</span><span class="p">})</span> <span class="c1">// We assume that items is the collection</span>
+</span><span class='line'><span class="nx">priceListView</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">PriceListView</span><span class="p">()</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">// Put them into layout regions</span>
+</span><span class='line'><span class="nx">layoutView</span><span class="p">.</span><span class="nx">itemListRegion</span><span class="p">.</span><span class="nx">show</span><span class="p">(</span><span class="nx">itemListView</span><span class="p">);</span>
+</span><span class='line'><span class="nx">layoutView</span><span class="p">.</span><span class="nx">priceListRegion</span><span class="p">.</span><span class="nx">show</span><span class="p">(</span><span class="nx">priceview</span><span class="p">);</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>That&rsquo;s it. Marionette region provides a convenient method called <code>show()</code> where you can pass any views to be rendered. <code>el</code> property of passed views are automatically provided by region. This is the reason why you don&rsquo;t see <code>el</code> object often when using Marionette.</p>
+
+<p>Creating further nested sub-view is easy. Let&rsquo;s say you want to divide <code>PriceListView</code> into <code>TotalPriceListView</code> and <code>SubTotalPriceListView</code>.</p>
+
+<p><img src="/images/shopping_cart2.png" alt="" /></p>
+
+<p>What you have to do is extending <code>PriceListView</code> from <code>LayoutView</code> instead of <code>ItemView</code> and add region objects.</p>
+
+<p><strong>price_view.js</strong></p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+</pre></td><td class='code'><pre><code class='js'><span class='line'><span class="nx">PriceListView</span> <span class="o">=</span> <span class="nx">Marionette</span><span class="p">.</span><span class="nx">Layout</span><span class="p">.</span><span class="nx">extend</span><span class="p">({</span>
+</span><span class='line'>    <span class="c1">// Let&#39;s assume the template has #total_price_region and #sub_total_price_region</span>
+</span><span class='line'>    <span class="nx">template</span><span class="o">:</span> <span class="nx">PriceTpl</span><span class="p">,</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nx">regions</span><span class="o">:</span> <span class="p">{</span>
+</span><span class='line'>        <span class="nx">totalRegion</span><span class="o">:</span> <span class="s2">&quot;#total_price_region&quot;</span><span class="p">,</span>
+</span><span class='line'>        <span class="nx">subTotalRegion</span><span class="o">:</span> <span class="s2">&quot;#sub_total_price_region&quot;</span><span class="p">,</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'><span class="p">});</span>
+</span><span class='line'>
+</span><span class='line'><span class="nx">totalPriceListView</span> <span class="o">=</span> <span class="nx">Marionette</span><span class="p">.</span><span class="nx">ItemView</span><span class="p">.</span><span class="nx">extend</span><span class="p">({</span>
+</span><span class='line'>    <span class="nx">template</span><span class="o">:</span> <span class="nx">totalPriceTpl</span><span class="p">,</span>
+</span><span class='line'><span class="p">});</span>
+</span><span class='line'>
+</span><span class='line'><span class="nx">subTotalPriceListView</span> <span class="o">=</span> <span class="nx">Marionette</span><span class="p">.</span><span class="nx">ItemView</span><span class="p">.</span><span class="nx">extend</span><span class="p">({</span>
+</span><span class='line'>    <span class="nx">template</span><span class="o">:</span> <span class="nx">subTotalPriceTpl</span><span class="p">,</span>
+</span><span class='line'><span class="p">});</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>And put them together.</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+</pre></td><td class='code'><pre><code class='js'><span class='line'><span class="nx">priceListView</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">PriceListView</span><span class="p">()</span>
+</span><span class='line'><span class="nx">totalPriceListView</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">TotalPriceListView</span><span class="p">()</span>
+</span><span class='line'><span class="nx">subTotalPriceListView</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">SubTotalPriceListView</span><span class="p">()</span>
+</span><span class='line'>
+</span><span class='line'><span class="nx">priceListView</span><span class="p">.</span><span class="nx">totalRegion</span><span class="p">.</span><span class="nx">show</span><span class="p">(</span><span class="nx">totalPriceListView</span><span class="p">)</span>
+</span><span class='line'><span class="nx">priceListView</span><span class="p">.</span><span class="nx">subTotalRegion</span><span class="p">.</span><span class="nx">show</span><span class="p">(</span><span class="nx">subTotalPriceListView</span><span class="p">)</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>It&rsquo;s a piece of cake.</p>
+
+<p>Before closing this section, let me introduce how to access views rendered inside region because you will often use it.</p>
+
+<p>Let&rsquo;s say you want to access <code>&lt;div id="total_price"&gt;$10000&lt;/div&gt;</code> DOM to get the total price of the shopping cart from your code. In this case, you will use <code>currentView()</code> API. The code looks like this:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='js'><span class='line'><span class="nx">layoutView</span><span class="p">.</span><span class="nx">priceListRegion</span><span class="p">.</span><span class="nx">currentView</span><span class="p">.</span><span class="nx">totalRegion</span><span class="p">.</span><span class="nx">currentView</span><span class="p">.</span><span class="nx">ui</span><span class="p">.</span><span class="nx">totalPrice</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>As you can see, it&rsquo;s easy to access the value of nested sub-views.</p>
+
+<p>So here is the pattern statement. <strong>Use LayoutView to create sub-views over simple ItemView.</strong></p>
+
+<h1>About Controller</h1>
+
+<p>If you come from vanilla Backbone, you are not sure what the role of Controller in Marionette. Unforunately, official doc doesn&rsquo;t help you either.</p>
+
+<p>Quoted from <a href="https://github.com/marionettejs/backbone.marionette/blob/master/docs/marionette.controller.md">here</a></p>
+
+<blockquote><p>Its name can be a cause for confusion, as it actually has nothing to do with the popular MVC architectural pattern. Instead, it&rsquo;s better to think of the Controller as a base object from which you can build.</p>
+
+<p>Controllers should be used when you have a task that you would like an object to be responsible for, but none of the other Marionette Classes quite make sense to do it. It&rsquo;s a base object for you to use to create a new Class altogether.</p></blockquote>
+
+<p>This makes you further puzzled. How should I use Controller?</p>
+
+<p>Here is how I use Controller.</p>
+
+<h2>Use Controller as integrator</h2>
+
+<p>This pattern is inspired by <a href="https://leanpub.com/marionette-gentle-introduction">the book</a>.</p>
+
+<p>The role of Controller is to instantiate objects, access backend, and build complex vies: performs everything required to render a complete page in a browser.</p>
+
+<p>Let&rsquo;s imagine that we want to render previous shopping cart page.</p>
+
+<p><img src="/images/shopping_cart1.png" alt="" /></p>
+
+<p>To render the page, several things has to be done.</p>
+
+<ul>
+<li>Instantiate views (layout views, item list views, etc)</li>
+<li>Retrieve items and prices (ajax call to backend server)</li>
+<li>Render views (call show() method of views)</li>
+<li>Error handling (when ajax call fail )</li>
+</ul>
+
+
+<p>I will perform these things in a single method <code>showShoppingCart()</code> and this method goes to our imaginary ShoppingCart module.</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+</pre></td><td class='code'><pre><code class='js'><span class='line'><span class="nx">MyApp</span><span class="p">.</span><span class="nx">module</span><span class="p">(</span><span class="s2">&quot;ShoppingCart&quot;</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">ShoppingCart</span><span class="p">,</span> <span class="nx">MyApp</span><span class="p">,</span> <span class="nx">Backbone</span><span class="p">,</span> <span class="nx">Marionette</span><span class="p">,</span> <span class="nx">$</span><span class="p">,</span> <span class="nx">_</span><span class="p">){</span>
+</span><span class='line'>    <span class="nx">ShoppingCart</span><span class="p">.</span><span class="nx">Controller</span> <span class="o">=</span> <span class="p">{</span>
+</span><span class='line'>        <span class="nx">showShoppingCart</span><span class="o">:</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+</span><span class='line'>            <span class="c1">// implementation of this methods</span>
+</span><span class='line'>        <span class="p">}</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'><span class="p">})</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Inside the method, you write codes that perform things that I mentioned above.</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+</pre></td><td class='code'><pre><code class='js'><span class='line'><span class="nx">MyApp</span><span class="p">.</span><span class="nx">module</span><span class="p">(</span><span class="s2">&quot;ShoppingCart&quot;</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">ShoppingCart</span><span class="p">,</span> <span class="nx">MyApp</span><span class="p">,</span> <span class="nx">Backbone</span><span class="p">,</span> <span class="nx">Marionette</span><span class="p">,</span> <span class="nx">$</span><span class="p">,</span> <span class="nx">_</span><span class="p">){</span>
+</span><span class='line'>    <span class="nx">ShoppingCart</span><span class="p">.</span><span class="nx">Controller</span> <span class="o">=</span> <span class="nx">Marionette</span><span class="p">.</span><span class="nx">Controller</span><span class="p">.</span><span class="nx">extend</span><span class="p">({</span>
+</span><span class='line'>        <span class="nx">showShoppingCart</span><span class="o">:</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+</span><span class='line'>            <span class="c1">// Let&#39;s suppose that items and its prices are saved in backend.</span>
+</span><span class='line'>            <span class="c1">// So, we need to retrive them from backend server asynchronously.</span>
+</span><span class='line'>            <span class="c1">// Imaginary MyApp.request(&quot;items&quot;) and MyApp.request(&quot;price&quot;)</span>
+</span><span class='line'>            <span class="c1">// returns promise object that fetches items and prices respectively.</span>
+</span><span class='line'>            <span class="kd">var</span> <span class="nx">fetchingItems</span> <span class="o">=</span> <span class="nx">MyApp</span><span class="p">.</span><span class="nx">request</span><span class="p">(</span><span class="s2">&quot;items&quot;</span><span class="p">);</span>
+</span><span class='line'>            <span class="kd">var</span> <span class="nx">fetchingPrice</span> <span class="o">=</span> <span class="nx">MyApp</span><span class="p">.</span><span class="nx">request</span><span class="p">(</span><span class="s2">&quot;prices&quot;</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'>            <span class="c1">// Instantiate a layout view that provides regions</span>
+</span><span class='line'>            <span class="kd">var</span> <span class="nx">layoutView</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">ShoppingCartLayoutView</span><span class="p">();</span>
+</span><span class='line'>
+</span><span class='line'>            <span class="nx">$</span><span class="p">.</span><span class="nx">when</span><span class="p">(</span><span class="nx">fetchingItems</span><span class="p">,</span> <span class="nx">fetchingPrice</span><span class="p">).</span><span class="nx">done</span><span class="p">(</span><span class="kd">function</span><span class="p">(</span><span class="nx">items</span><span class="p">,</span> <span class="nx">prices</span><span class="p">){</span>
+</span><span class='line'>                <span class="c1">// Add callback method when ajax call is successfully done.</span>
+</span><span class='line'>                <span class="c1">// First, we will build collections</span>
+</span><span class='line'>                <span class="kd">var</span> <span class="nx">itemList</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">ItemList</span><span class="p">([</span><span class="nx">items</span><span class="p">]);</span>
+</span><span class='line'>                <span class="kd">var</span> <span class="nx">priceList</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">PriceList</span><span class="p">([</span><span class="nx">prices</span><span class="p">]);</span>
+</span><span class='line'>
+</span><span class='line'>                <span class="c1">// Now we can instantiate views and pass colletion to them</span>
+</span><span class='line'>                <span class="kd">var</span> <span class="nx">itemListView</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">ItemListView</span><span class="p">({</span><span class="nx">collection</span><span class="o">:</span> <span class="nx">itemList</span><span class="p">});</span>
+</span><span class='line'>                <span class="kd">var</span> <span class="nx">priceListView</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">PriceListView</span><span class="p">({</span><span class="nx">collection</span><span class="o">:</span> <span class="nx">priceList</span><span class="p">});</span>
+</span><span class='line'>
+</span><span class='line'>                <span class="c1">// At this point we are ready to render a complete paga for user</span>
+</span><span class='line'>                <span class="nx">layoutView</span><span class="p">.</span><span class="nx">itemListRegion</span><span class="p">.</span><span class="nx">show</span><span class="p">(</span><span class="nx">itemListView</span><span class="p">);</span>
+</span><span class='line'>                <span class="nx">layoutView</span><span class="p">.</span><span class="nx">priceListRegion</span><span class="p">.</span><span class="nx">show</span><span class="p">(</span><span class="nx">priceListView</span><span class="p">);</span>
+</span><span class='line'>            <span class="p">});</span>
+</span><span class='line'>
+</span><span class='line'>            <span class="c1">// We don&#39;t want user to see nasty error, so let&#39;s add error handling</span>
+</span><span class='line'>            <span class="nx">$</span><span class="p">.</span><span class="nx">when</span><span class="p">(</span><span class="nx">fetchingItems</span><span class="p">,</span> <span class="nx">fetchingPrice</span><span class="p">).</span><span class="nx">fail</span><span class="p">(</span><span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+</span><span class='line'>                <span class="c1">// OopsView will show error message to user</span>
+</span><span class='line'>                <span class="kd">var</span> <span class="nx">oopsView</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">OopsView</span><span class="p">({</span><span class="nx">error</span><span class="o">:</span> <span class="s2">&quot;oops, something went wrong&quot;</span><span class="p">});</span>
+</span><span class='line'>                <span class="nx">layoutView</span><span class="p">.</span><span class="nx">render</span><span class="p">(</span><span class="nx">oopsView</span><span class="p">);</span>
+</span><span class='line'>            <span class="p">});</span>
+</span><span class='line'>        <span class="p">}</span>
+</span><span class='line'>    <span class="p">});</span>
+</span><span class='line'><span class="p">})</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>The example above is pseudo code so it doesn&rsquo;t work, but should be easy enough to demonstrate my idea.</p>
+
+<p>As you can see, my <code>showShoppingCart()</code> method does everthing including error handling required to show a shopping cart page to user. Now, somebody must call the method. Who will it be?</p>
+
+<p>It is the responsibility of <code>Marionette.AppRouter</code>. Router is the first one that responds when user enters your app. It&rsquo;s job is to look at url and call Controller&rsquo;s methods. Here is how you can pass your <code>ShoppingCart.Controller</code> to router.</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+</pre></td><td class='code'><pre><code class='js'><span class='line'><span class="c1">// First we need to define router</span>
+</span><span class='line'><span class="nx">MyApp</span><span class="p">.</span><span class="nx">Router</span> <span class="o">=</span> <span class="nx">Marionette</span><span class="p">.</span><span class="nx">AppRouter</span><span class="p">.</span><span class="nx">extend</span><span class="p">({</span>
+</span><span class='line'>    <span class="nx">appRoutes</span><span class="o">:</span> <span class="p">{</span>
+</span><span class='line'>        <span class="s2">&quot;shopping_cart&quot;</span><span class="o">:</span> <span class="s2">&quot;showShoppingCart&quot;</span><span class="p">,</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'><span class="p">});</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">// Instantiate controller object</span>
+</span><span class='line'><span class="kd">var</span> <span class="nx">shoppingCartController</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">ShoppingCat</span><span class="p">.</span><span class="nx">Controller</span><span class="p">();</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">// Register controller</span>
+</span><span class='line'><span class="k">new</span> <span class="nx">MyApp</span><span class="p">.</span><span class="nx">Router</span><span class="p">({</span>
+</span><span class='line'>    <span class="nx">controller</span><span class="o">:</span> <span class="nx">shoppingCartController</span>
+</span><span class='line'><span class="p">});</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Now, if user accesses <code>/shopping_cart</code> page, router will call <code>showShoppingCart()</code> method of <code>ShoppingCat.Controller</code>.</p>
+
+<p>There is one implicit thing involved here. The object you pass to <code>controller</code> property of router must implement the method that you define in <code>appRoutes</code> objects.</p>
+
+<p>In this case, since you define <code>"shopping_cart": "showShoppingCart"</code> in routing, <code>shoppingCartController</code> object must implement <code>showShoppingCart()</code> method, which is exactly how we implemented our controller earlier.</p>
+
+<p>If you have experiences with server side MVC frameworks, like RoR, then you may notice that I am using the Marionette Controller like the way I use ActionController of Rails: called by router and does everything needed to render a view. Isn&rsquo;t this contradictory to what <a href="[here](https://github.com/marionettejs/backbone.marionette/blob/master/docs/marionette.controller.md">official doc</a> says?</p>
+
+<p><strong><em>Yes and no</em></strong>. Yes, because it is used by router and both performs similar tasks. No, because the role of server side Controller is providing HTTP terminal point whereas client side Controller does not do this.</p>
+
+<p>Anyway, I am currently satisfied with the way I use Controller.</p>
+
+<p>So here is the pattern statement. <strong>Use Controller to provide public methods to router that integrates different componetns</strong></p>
+
+<h2>Add event listener on view inside Controller</h2>
+
+<p>I often ask this question myself: <em>Is it ok that my View does ajax call?</em> Can you imagine what I am talking about? The View that makes ajax call looks like this.</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+</pre></td><td class='code'><pre><code class='js'><span class='line'><span class="nx">FormView</span> <span class="o">=</span> <span class="nx">Marionette</span><span class="p">.</span><span class="nx">ItemView</span><span class="p">.</span><span class="nx">extend</span><span class="p">({</span>
+</span><span class='line'>    <span class="nx">events</span><span class="o">:</span> <span class="p">{</span>
+</span><span class='line'>        <span class="s1">&#39;click button.submit&#39;</span><span class="o">:</span> <span class="s1">&#39;submitForm&#39;</span>
+</span><span class='line'>    <span class="p">},</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nx">submitForm</span><span class="o">:</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+</span><span class='line'>        <span class="c1">// Get form data somehow//</span>
+</span><span class='line'>        <span class="kd">var</span> <span class="nx">data</span> <span class="o">=</span> <span class="nx">getFormData</span><span class="p">();</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="c1">// Model.save fires ajax call to remote server</span>
+</span><span class='line'>        <span class="k">this</span><span class="p">.</span><span class="nx">model</span><span class="p">.</span><span class="nx">save</span><span class="p">(</span><span class="nx">data</span><span class="p">,</span> <span class="p">{</span>
+</span><span class='line'>            <span class="nx">success</span><span class="o">:</span> <span class="kd">function</span><span class="p">(){</span>
+</span><span class='line'>                <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s2">&quot;form is submitted&quot;</span><span class="p">);</span>
+</span><span class='line'>            <span class="p">},</span>
+</span><span class='line'>            <span class="nx">error</span><span class="o">:</span> <span class="kd">function</span><span class="p">(){</span>
+</span><span class='line'>                <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s2">&quot;error&quot;</span><span class="p">);</span>
+</span><span class='line'>            <span class="p">}</span>
+</span><span class='line'>        <span class="p">});</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'><span class="p">})</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>So, the code above does:</p>
+
+<ul>
+<li>Listens on <code>click</code> event and call <code>submitForm</code> method</li>
+<li>Makes ajax call to save form data to backend server</li>
+<li>Execute callbacks for ajax call</li>
+</ul>
+
+
+<p>This is perfectly valid code in Backbone. However, having Controller in Marionette now, I&rsquo;d rather want to push this task to Controller and let View simply listening and triggering event.</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+</pre></td><td class='code'><pre><code class='js'><span class='line'><span class="nx">FormView</span> <span class="o">=</span> <span class="nx">Marionette</span><span class="p">.</span><span class="nx">ItemView</span><span class="p">.</span><span class="nx">extend</span><span class="p">({</span>
+</span><span class='line'>    <span class="nx">events</span><span class="o">:</span> <span class="p">{</span>
+</span><span class='line'>        <span class="s1">&#39;click button.submit&#39;</span><span class="o">:</span> <span class="s1">&#39;submitForm&#39;</span>
+</span><span class='line'>    <span class="p">},</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nx">submitForm</span><span class="o">:</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+</span><span class='line'>        <span class="k">this</span><span class="p">.</span><span class="nx">trigger</span><span class="p">(</span><span class="s2">&quot;form:submit&quot;</span><span class="p">);</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'><span class="p">});</span>
+</span><span class='line'>
+</span><span class='line'><span class="nx">FormController</span> <span class="o">=</span> <span class="nx">Marionette</span><span class="p">.</span><span class="nx">Controller</span><span class="p">.</span><span class="nx">extend</span><span class="p">({</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nx">showForm</span><span class="o">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">options</span><span class="p">){</span>
+</span><span class='line'>        <span class="kd">var</span> <span class="nx">formView</span> <span class="o">=</span> <span class="nx">FormView</span><span class="p">.</span><span class="k">new</span><span class="p">();</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="nx">formView</span><span class="p">.</span><span class="nx">on</span><span class="p">(</span><span class="s2">&quot;form:submit&quot;</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">data</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>            <span class="nx">model</span><span class="p">.</span><span class="nx">save</span><span class="p">(</span><span class="nx">data</span><span class="p">,</span> <span class="p">{</span>
+</span><span class='line'>                <span class="nx">success</span><span class="o">:</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+</span><span class='line'>                    <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s2">&quot;form is submitted&quot;</span><span class="p">);</span>
+</span><span class='line'>                <span class="p">},</span>
+</span><span class='line'>
+</span><span class='line'>                <span class="nx">error</span><span class="o">:</span> <span class="kd">function</span><span class="p">(){</span>
+</span><span class='line'>                    <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s2">&quot;error&quot;</span><span class="p">);</span>
+</span><span class='line'>                <span class="p">}</span>
+</span><span class='line'>            <span class="p">})</span>
+</span><span class='line'>        <span class="p">})</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="nx">MyApp</span><span class="p">.</span><span class="nx">region</span><span class="p">.</span><span class="nx">show</span><span class="p">(</span><span class="nx">formView</span><span class="p">);</span>
+</span><span class='line'>    <span class="p">},</span>
+</span><span class='line'><span class="p">});</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>So, I simply move codes from View to Controller. What&rsquo;s the benefits of doing this? One thing is that View code gets slimed and it can focus on the mapping of DOM and event.</p>
+
+<p>Our Controller instead gets messy but that&rsquo;s the tradeoff. After all, that&rsquo;s how Controller is designed to be used: <strong><em>put things that fit nowhere else</em></strong>.</p>
+
+<p>It also makes sense to put codes to Controller because Controller has more accesses to other components than a view. Imagine a case where you have to access other views inside the event listener.
+You can&rsquo;t access other views directly from a view. Instead, you need to use App level event publishing to archive this.</p>
+
+<p>On the other hand, Controller has an access to everything needed to render the page so it can easily talk to other views.</p>
+
+<p>Before, finishing this section, let me slightly imporve the code above. We will use <a href="https://github.com/marionettejs/backbone.marionette/blob/master/docs/marionette.view.md#viewtriggers">View.triggers</a>.</p>
+
+<p>Here is the new version of View:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class='js'><span class='line'><span class="nx">FormView</span> <span class="o">=</span> <span class="nx">Marionette</span><span class="p">.</span><span class="nx">ItemView</span><span class="p">.</span><span class="nx">extend</span><span class="p">({</span>
+</span><span class='line'>    <span class="nx">triggers</span><span class="o">:</span> <span class="p">{</span>
+</span><span class='line'>        <span class="s1">&#39;click button.submit&#39;</span><span class="o">:</span> <span class="s1">&#39;form:submit&#39;</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'><span class="p">});</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>We removed <code>submitForm</code> method and <code>event</code> objects. Instead, we use <code>trigger</code> object that does the two thing at the same time: <em>listen on events</em> and <em>trigger events</em>. Now, our view is much cleaner than before!!</p>
+
+<p>So here is the pattern statement. <strong>Add event listener on Views inside Controller</strong></p>
+
+<!--
+## Responsibility of MVC Components
+
+Marionette brings consistency to your Backbone app. However, this is not enough if you are working in a team. Marionette still allows developrs to write codes whatever they want which rapidly makes your project spaghetti. It's important to understand your codes must go where. To understand this, let's clarify the role of MVC components in Marionette.
+
+### M
+The responsibility of model is clearer than other components, so I will go quickly.
+
+#### Business logic
+Just like model of server side, this is the place where you write code for business logic.
+
+**Ex.** Calculate and return total price by adding tax to sub-total.
+
+#### Ajax ####
+When modle is mapped to external resource, it fetches resource from external servers.
+
+#### Validation ####
+Before modle is saved into exteranl database, it needs to validate data. When validation fails, it must notifies by using event. View must respond to validation event and notifies user.
+
+### V
+This is the place which easily becomes chaotic because vanilla Backbone puts much burden to View.
+
+#### Render html
+When you define View, you will speficy which template to use. Template value is fetched by a model that View holds and rendered as html document.
+
+#### Define mapping of DOM and event
+You can define what action of user for DOM elements do what in View. This is done by `events` propety. I don't want to go detail about this since implementation is not the the subject of post, but just briefly showing an example.
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+</pre></td><td class='code'><pre><code class='js'><span class='line'><span class="kd">var</span> <span class="nx">MyView</span> <span class="o">=</span> <span class="nx">Marionette</span><span class="p">.</span><span class="nx">ItemView</span><span class="p">.</span><span class="nx">extend</span><span class="p">({</span>
+</span><span class='line'>    <span class="nx">ui</span><span class="o">:</span> <span class="p">{</span>
+</span><span class='line'>        <span class="nx">paragraph</span><span class="o">:</span> <span class="s1">&#39;p&#39;</span><span class="p">,</span>
+</span><span class='line'>        <span class="nx">button</span><span class="o">:</span> <span class="s1">&#39;.my-button&#39;</span>
+</span><span class='line'>    <span class="p">},</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nx">events</span><span class="o">:</span> <span class="p">{</span>
+</span><span class='line'>        <span class="s1">&#39;click ui.button&#39;</span><span class="o">:</span> <span class="s1">&#39;clickedButton&#39;</span>
+</span><span class='line'>    <span class="p">},</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nx">clickedButton</span><span class="o">:</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+</span><span class='line'>        <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s1">&#39;I clicked the button!&#39;</span><span class="p">);</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'><span class="p">});</span>
+</span></code></pre></td></tr></table></div></figure>
+
+View listens on click event of `ui.button` and trigger clickedButton() event. Notice `ui` propety. This does not exist in Backbone. You can pass a object that mappes properties and jQuery DOM. You can access the DOM like this.
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='js'><span class='line'> <span class="nx">MyView</span><span class="p">.</span><span class="nx">ui</span><span class="p">.</span><span class="nx">paragraph</span>
+</span></code></pre></td></tr></table></div></figure>
+
+This is simple yet very powerful feature. I will write more about this in subsequent post.
+
+#### Listens on Model/Collection change event
+Most of Views are passed model or collection. Whenever there are changes to model/collection (Ex. setting new value to the field of model / model is removed from collection ), View responds to the event, changes its $el, and modifies its own html.
+
+### C
+Controller is loosely defined even in official doc.
+
+Quoted from [here](https://github.com/marionettejs/backbone.marionette/blob/master/docs/marionette.controller.md)
+> Its name can be a cause for confusion, as it actually has nothing to do with the popular MVC architectural pattern. Instead, it&#8217;s better to think of the Controller as a base object from which you can build.
+>
+> Controllers should be used when you have a task that you would like an object to be responsible for, but none of the other Marionette Classes quite make sense to do it. It&#8217;s a base object for you to use to create a new Class altogether.
+
+So, as the doc says, Controller is the place where you can put things that fit nowhere else.
+
+But, what exactly are they?
+
+#### Executing action for router
+When user enters your app, router will invoke controller actions. Let&#8217;s assume you have controller like so:
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+</pre></td><td class='code'><pre><code class='js'><span class='line'><span class="nx">MyApp</span><span class="p">.</span><span class="nx">module</span><span class="p">(</span><span class="s2">&quot;ModuleA&quot;</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">ModuleA</span><span class="p">,</span> <span class="nx">MyApp</span><span class="p">,</span> <span class="nx">Backbone</span><span class="p">,</span> <span class="nx">Marionette</span><span class="p">,</span> <span class="nx">$</span><span class="p">,</span> <span class="nx">_</span><span class="p">){</span>
+</span><span class='line'>    <span class="nx">ModuleA</span><span class="p">.</span><span class="nx">Controller</span> <span class="o">=</span> <span class="nx">Marionette</span><span class="p">.</span><span class="nx">Controller</span><span class="p">.</span><span class="nx">extend</span><span class="p">({</span>
+</span><span class='line'>        <span class="nx">listItem</span><span class="o">:</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+</span><span class='line'>            <span class="c1">// Some codes to show item here</span>
+</span><span class='line'>        <span class="p">}</span>
+</span><span class='line'>    <span class="p">})</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">return</span> <span class="nx">ModuleA</span>
+</span><span class='line'><span class="p">})</span>
+</span></code></pre></td></tr></table></div></figure>
+
+Now you can pass your controller to `controller` property of router.
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+</pre></td><td class='code'><pre><code class='js'><span class='line'><span class="nx">MyApp</span><span class="p">.</span><span class="nx">module</span><span class="p">(</span><span class="s2">&quot;ModuleA&quot;</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">ModuleA</span><span class="p">,</span> <span class="nx">MyApp</span><span class="p">,</span> <span class="nx">Backbone</span><span class="p">,</span> <span class="nx">Marionette</span><span class="p">,</span> <span class="nx">$</span><span class="p">,</span> <span class="nx">_</span><span class="p">){</span>
+</span><span class='line'>    <span class="kd">var</span> <span class="nx">controller</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">ModuleA</span><span class="p">.</span><span class="nx">Controller</span><span class="p">();</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nx">ModuleA</span><span class="p">.</span><span class="nx">Router</span> <span class="o">=</span> <span class="nx">Marionette</span><span class="p">.</span><span class="nx">AppRouter</span><span class="p">.</span><span class="nx">extend</span><span class="p">({</span>
+</span><span class='line'>        <span class="nx">controller</span><span class="o">:</span> <span class="nx">controller</span><span class="p">,</span>
+</span><span class='line'>        <span class="nx">appRoutes</span><span class="o">:</span> <span class="p">{</span>
+</span><span class='line'>            <span class="s2">&quot;items&quot;</span><span class="o">:</span> <span class="s2">&quot;listItem&quot;</span>
+</span><span class='line'>        <span class="p">},</span>
+</span><span class='line'>    <span class="p">});</span>
+</span><span class='line'><span class="p">})</span>
+</span></code></pre></td></tr></table></div></figure>
+Then when user enters your app from `/items`, router will execute `controller.listItem()` method which is defined at `ModuleA.Controller`.
+
+So, as you can see, I am using Controller pretty much like the way I use Rails ActionController. I don&#8217;t see no reason why this is wrong even if doc says it is nothing to do with server side MVC.
+
+#### Assemble things together
+You saw how router invokes Controller methods. Now, let&#8217;s look at `listItem()` method. The method looks something like this:
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+</pre></td><td class='code'><pre><code class='js'><span class='line'><span class="nx">listItem</span><span class="o">:</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+</span><span class='line'>    <span class="kd">var</span> <span class="nx">deferredFetch</span> <span class="o">=</span> <span class="nx">MyApp</span><span class="p">.</span><span class="nx">request</span><span class="p">(</span><span class="s2">&quot;items&quot;</span><span class="p">)</span>
+</span><span class='line'>    <span class="kd">var</span> <span class="nx">collectionView</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">ItemCollectionView</span><span class="p">()</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="c1">// Let&#39;s assume you have Spinner class.</span>
+</span><span class='line'>    <span class="c1">// This will show loading spinner until items are fetched from server.</span>
+</span><span class='line'>    <span class="nx">MyApp</span><span class="p">.</span><span class="nx">mainRegion</span><span class="p">.</span><span class="nx">show</span><span class="p">(</span><span class="k">new</span> <span class="nx">Spinner</span><span class="p">())</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nx">$</span><span class="p">.</span><span class="nx">when</span><span class="p">(</span><span class="nx">deferredFetch</span><span class="p">).</span><span class="nx">done</span><span class="p">(</span><span class="kd">function</span><span class="p">(</span><span class="nx">items</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="kd">var</span> <span class="nx">collectionView</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">ItemCollectionView</span><span class="p">({</span><span class="nx">collection</span><span class="o">:</span> <span class="nx">items</span><span class="p">});</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="c1">// Once fetching is done, show items</span>
+</span><span class='line'>        <span class="nx">MyApp</span><span class="p">.</span><span class="nx">mainRegion</span><span class="p">.</span><span class="nx">show</span><span class="p">(</span><span class="nx">collectionView</span><span class="p">)</span>
+</span><span class='line'>    <span class="p">})</span><span class="o">/</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nx">$</span><span class="p">.</span><span class="nx">when</span><span class="p">(</span><span class="nx">deferredFetch</span><span class="p">).</span><span class="nx">fail</span><span class="p">(</span><span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+</span><span class='line'>        <span class="c1">// Let&#39;s assume you have OopsView.</span>
+</span><span class='line'>        <span class="c1">// This will show &quot;oops, something went wrong&quot; when fethcing fails</span>
+</span><span class='line'>        <span class="kd">var</span> <span class="nx">oopsView</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">OopsView</span><span class="p">()</span>
+</span><span class='line'>    <span class="p">});</span>
+</span></code></pre></td></tr></table></div></figure>
+
+As you can see, `listItem()` method interacts many things. It also takes care of showing loading spinner as well as error handling. This is the main responsibility of Controller. It assemble many parts defined in different modules and control the flow of action.
+
+&#8211;>
+
+</div>
+  
+    <section>
+      <h1>Comments</h1>
+      <div id="disqus_thread"><div id="disqus_thread"></div>
+<script type="text/javascript">
+  var disqus_shortname = 'kimstechblog';
+  var disqus_identifier = 'http://kimh.github.io/blog/en/javascript/the-practices-of-backbone-marionette-that-i-believe-the-best-en/';
+  var disqus_url = 'http://kimh.github.io/blog/en/javascript/the-practices-of-backbone-marionette-that-i-believe-the-best-en/';
+  //var disqus_developer = 1;
+  (function() {
+    var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+    dsq.src = 'http://' + disqus_shortname + '.disqus.com/embed.js';
+    (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+  })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+</div>
+    </section>
+  
+
+</article>
+
+
+      <p class="meta">
+      
+        <a class="basic-alignment left nav" href="/blog/jp/lotus/creating-web-application-with-ruby-lotus-ja/" title="Previous Post: Ruby LotusでWeb Appを作ってみる">&laquo; Ruby LotusでWeb Appを作ってみる</a>
+      
+      
+        <a class="basic-alignment right nav" href="/blog/octopress-memo-to-self/" title="Next Post: Octopressメモ">Octopressメモ &raquo;</a>
+      
+    </p>
+  </div>
+    <script>
+      var name = document.getElementById('name-helper').innerHTML;
+
+      var canvas = document.getElementById('myCanvas');
+
+      //The name (up to 28 characters long, including white space)
+      var length = name.length;
+      if (length>28){//Exceed character length limit, remove canvas
+          canvas.remove();
+      }
+      else{
+            
+
+        var context = canvas.getContext('2d');
+
+        //calculate width and length
+        var width=700/1.25/length;
+        var start;
+        if (width>40){
+          width=40;
+        }
+
+        var height= width/2;
+
+        //the start postion of the link list
+        var start = (700-width*length*1.25)/2;
+        var horizon = 5;
+
+        //DO NOT CHANGE THOSE
+        var mid_horizon = horizon+height/2;
+        var name_counter =0;
+
+        var x = height/5;
+        var y = height/5;
+        var interval=width/4;
+        
+        var radius = 0.75*width;
+        
+        var text_pos=width*1.1;
+
+
+        canvas.height=mid_horizon+width/2+width/2.1+5;
+        
+        for (var i=1;i<name.length+1;i++){
+
+          context.beginPath();
+          context.strokeStyle='#F9BF3B';
+          
+          //the rectangle
+          context.rect(start, horizon, width, height);
+
+          //the middle line
+          context.moveTo(start+width/2,horizon);
+          context.lineTo(start+width/2,horizon+height);
+
+          //if this is the last element
+          if (i==name.length){
+            context.moveTo(start+width/2,horizon+height);
+            context.lineTo(start+width,horizon);
+
+          }
+          else{
+            //the arrow
+            context.moveTo(start+0.75*width,mid_horizon);
+            context.lineTo(start+width+interval,mid_horizon);
+
+            context.moveTo(start+width+interval,mid_horizon);
+            context.lineTo(start+width+interval-x,mid_horizon+y);
+          
+            context.moveTo(start+width+interval,mid_horizon);
+            context.lineTo(start+width+interval-x,mid_horizon-y); 
+          }
+          
+       
+        
+          var startAngle = 1.2 * Math.PI;
+          var endAngle = 1 * Math.PI;
+          var counterClockwise = true;
+      
+          context.stroke();
+            
+          context.beginPath();
+          context.arc(start+width/4+radius*0.81, mid_horizon+width/2, radius, startAngle, endAngle, counterClockwise);
+
+          context.moveTo(start+width/4+radius*0.81-radius,mid_horizon+width/2);
+          context.lineTo(start+width/4+radius*0.81-radius-x,mid_horizon-y+width/2);
+
+          context.moveTo(start+width/4+radius*0.81-radius,mid_horizon+width/2);
+          context.lineTo(start+width/4+radius*0.81-radius+x,mid_horizon-y+width/2); 
+
+          context.font = ' 15pt Calibri';
+          context.fillStyle = '#859900';
+          context.fillText(name.charAt(name_counter), start+width/4+radius*0.81-radius-width/14, mid_horizon+width/2+width/2.1);
+
+          context.lineWidth=1;
+          context.strokeStyle='#F9BF3B';
+          context.stroke();
+          start+=width/2*2+interval;      
+          name_counter+=1;
+        }
+      }
+
+    </script>
+
+  <!-- JavaScript at the bottom for fast page loading -->
+
+  <!-- Grab Google CDN's jQuery, with a protocol relative URL; fall back to local if offline -->
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.6.2/jquery.min.js"></script>
+  <script>window.jQuery || document.write('<script src="js/libs/jquery-1.6.2.min.js"><\/script>')</script>
+
+
+  <!-- scripts concatenated and minified via ant build script-->
+  <script defer src="/javascripts/app.js"></script>
+  <!-- end scripts-->
+
+	
+
+  <!-- Prompt IE 6 users to install Chrome Frame. Remove this if you want to support IE 6.
+       chromium.org/developers/how-tos/chrome-frame-getting-started -->
+  <!--[if lt IE 7 ]>
+    <script src="//ajax.googleapis.com/ajax/libs/chrome-frame/1.0.3/CFInstall.min.js"></script>
+    <script>window.attachEvent('onload',function(){CFInstall.check({mode:'overlay'})})</script>
+  <![endif]-->
+ 
+
+  <script type="text/javascript">
+    (function(){
+      var twitterWidgets = document.createElement('script');
+      twitterWidgets.type = 'text/javascript';
+      twitterWidgets.async = true;
+      twitterWidgets.src = 'http://platform.twitter.com/widgets.js';
+      document.getElementsByTagName('head')[0].appendChild(twitterWidgets);
+    })();
+  </script>
+
+
+
+
+
+
+
+</body>
+</html>
+

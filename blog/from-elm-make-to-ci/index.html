@@ -1,0 +1,485 @@
+<!doctype html>
+<!-- paulirish.com/2008/conditional-stylesheets-vs-css-hacks-answer-neither/ -->
+<!--[if lt IE 7]> <html class="no-js ie6 oldie" lang="en"> <![endif]-->
+<!--[if IE 7]>    <html class="no-js ie7 oldie" lang="en"> <![endif]-->
+<!--[if IE 8]>    <html class="no-js ie8 oldie" lang="en"> <![endif]-->
+<!-- Consider adding an manifest.appcache: h5bp.com/d/Offline -->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en"> <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+
+  <!-- Use the .htaccess and remove these lines to avoid edge case issues.
+       More info: h5bp.com/b/378 -->
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+
+  <title>Elmでアプリを作る: elm-makeからCIまで |  kim hirokuni</title>
+  <meta name="author" content="kim hirokuni">
+  
+
+  
+  <!-- Mobile viewport optimized: j.mp/bplateviewport -->
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+
+  <!-- Place favicon.ico and apple-touch-icon.png in the root directory: mathiasbynens.be/notes/touch-icons -->
+  <link href="/favicon.png" rel="icon">
+
+  <!-- CSS: implied media=all -->
+  <!-- CSS concatenated and minified via ant build script-->
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <link href='https://fonts.googleapis.com/css?family=Inconsolata' rel='stylesheet' type='text/css'>
+  <!-- end CSS-->
+
+  <!-- More ideas for your <head> here: h5bp.com/d/head-Tips -->
+
+  <!-- All JavaScript at the bottom, except for Modernizr / Respond.
+       Modernizr enables HTML5 elements & feature detects; Respond is a polyfill for min/max-width CSS3 Media Queries
+       For optimal performance, use a custom Modernizr build: www.modernizr.com/download/ -->
+  <script src="/javascripts/libs/modernizr-2.0.6.min.js"></script>
+</head>
+
+<body id="post">
+
+  <div id="container">
+    <nav role="navigation" ><ul class="main-navigation">
+  <li style='float:left;margin-right:5px'><a class='nav' href="/">Home</a></li>
+</ul><br><br>
+</nav>
+    <article>
+
+
+  <h1 class="article-title">Elmでアプリを作る: elm-makeからCIまで</h1>
+  <div class="article-content"><p>この記事はQiita Elm Adventcalendar 2017に投稿した記事です。</p>
+
+<h2>最初に</h2>
+
+<p>Functional Reactive Programmingを調べていて偶然Elmに出会いました。最新版のElm0.18ではElmはFRPの概念を完全に取り払い関係なくなりましたが、
+実際にElmを触ってみるとどんどんその面白さに引き込まれて行きました。もっとElmで何か作りたくなったので自分の子供が遊べるようなToy Appを作ることにしました。
+このアプリを作る際にはまった点や大事な点をできるだけ丁寧に解説してみたいと思います。</p>
+
+<h2>この記事の対象者</h2>
+
+<p>この記事ではElmについての基本知識があることを前提としています。Elmにはすでに素晴らしいチュートリアルがあるかです。もし、まだElmに触ったことがなければ <a href="https://guide.elm-laang.org/">https://guide.elm-laang.org/</a> と <a href="https://www.elm-tutorial.org/en/">https://www.elm-tutorial.org/en/</a> にゆずります。
+基本の文法はわかるけどいまいちSubscriptionや$Portがわからないなーという人には楽しんでもらえると思います。という自分もそれらの機能には今回初めて触るので、疑問に思ったとこや考え方をかければと思います。</p>
+
+<h2>Airplane Toy App</h2>
+
+<p>この記事で解説しているアプリは <a href="https://s3-ap-northeast-1.amazonaws.com/airplane-toy-app/index.html">https://s3-ap-northeast-1.amazonaws.com/airplane-toy-app/index.html</a> で公開しています。 (このアプリは音が出るので注意!!)
+コードは <a href="https://github.com/kimh/kids-toy-apps">https://github.com/kimh/kids-toy-apps</a> で公開しています。
+2歳になる自分の息子に作ったアプリなのでとても単純な仕様で、クリックした場所に飛行機がいかにも子供が好きそうな音を出して移動する、というだけのアプリです。
+しかしElmで実際にアプリを作るのに必要なことはほとんど使う必要があったのでとても勉強になりました。</p>
+
+<h2>イベントフロー</h2>
+
+<p>このアプリでは以下のようなイベントフローで構成されています。</p>
+
+<p>ページをロード &ndash;> Init関数が呼ばれModelが初期化される &ndash;> ユーザー (うちの息子) が画面のどこかをクリックする &ndash;> <code>MouseMsg</code>メッセージが送信される &ndash;> Subscriptionを通じて、Update関数が呼ばれる。クリックされた座標を取得して、Modelにセットする。 &ndash;> Modelに新しい座標がセットされると飛行機が動く &ndash;> 同時に <code>PlaySound</code> メッセージが送信される &ndash;> JavascriptにPortでメッセージを送信する &ndash;> Javascript側で <code>audio</code> 要素の <code>play</code> メソッドを呼ぶ</p>
+
+<h2>飛行機画像のレンダリング</h2>
+
+<p>飛行機の画像を扱うのに Elm Collageを使っています。Collageのライブラリには主に<a href="https://github.com/evancz/elm-graphics">https://github.com/evancz/elm-graphics</a> と <a href="http://package.elm-lang.org/packages/timjs/elm-collage/latest">http://package.elm-lang.org/packages/timjs/elm-collage/latest</a> がありますが、後者です。timjs/elm-collageはevancz/elm-graphisを置き換えるものだと考えているのでこれからアプリを作るのならtimjs/elm-collageを使うことぼをお勧めします。</p>
+
+<p>重要となるポイントを説明していきます。</p>
+
+<p><code>image</code> で飛行機の画像ファイルを読み込んで <code>shift</code> で初期位置まで移動させます。 <code>pos</code> は 渡されたModelから作成します。(後述)</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>plane =
+</span><span class='line'>    image (500, 500) "images/airplane.svg"
+</span><span class='line'>    |&gt; shift pos</span></code></pre></td></tr></table></div></figure>
+
+
+<p><code>spacer</code> を使っている部分は少しわかりにくいです。timjs/elm-collageでは座標が絶対的ではなく他の要素からの相対的なCollageの位置を指定するので
+<code>plane</code> だけを <code>shift</code> しても画像が動いてくれませんでした。そこで <code>plane</code> の前に透明な要素である <code>spacer</code> を挟むことでうまく移動してくれるようにしました。（このあたりは自分の理解も曖昧なのでもう少し調べます）<code>group</code> は複数のCollageを並べてくれる関数です。</p>
+
+<p>コメントアウトしている <code>debug</code> は有効にするとCollageのボーダーとセンターを赤線で表示してくれるのでつまった時に便利なのでいつでも有効にできるように残しています。</p>
+
+<p>最後に要素を <code>Html Msg</code> 型に <code>svg</code> で変換しています。このパターンはCollageではいつも使うパターンです。</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>group [
+</span><span class='line'>  spacer 300 300,
+</span><span class='line'>  plane
+</span><span class='line'>]
+</span><span class='line'>    -- |&gt; Collage.Layout.debug
+</span><span class='line'>    | &gt; svg |</span></code></pre></td></tr></table></div></figure>
+
+
+<h2>アニメーション</h2>
+
+<p>飛行機を任意の場所に移動するために <code>elm-animation</code> を使っています。基本的な考え方はブラウザのフレーム更新毎に送られる <code>Tick</code> メッセージを捕まえてその中でモデルを更新します。</p>
+
+<p>重要となるポイントを説明していきます。</p>
+
+<p>モデルにはx座標、y座標、clockをもたせています。これらの値を <code>Tick</code> イベントの中で更新します。</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>type alias Model =
+</span><span class='line'>    { x : Animation, y : Animation, clock : Time }
+</span><span class='line'>
+</span><span class='line'>model : Model
+</span><span class='line'>model =
+</span><span class='line'>    Model
+</span><span class='line'>        (animation 0 |&gt; duration Time.second)
+</span><span class='line'>        (animation 0 |&gt; duration Time.second)
+</span><span class='line'>        0</span></code></pre></td></tr></table></div></figure>
+
+
+<p><code>Tick</code> メッセージは引数つきのメッセージで、引数にアニメーションの初期状態から差分の時刻が送られてきます。それをモデルの <code>clock</code> にセットしています。</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>update : Msg -&gt; Model -&gt; (Model, Cmd Msg)
+</span><span class='line'>update msg model =
+</span><span class='line'>    case msg of
+</span><span class='line'>        Tick dt -&gt;
+</span><span class='line'>            let
+</span><span class='line'>                clock = model.clock + dt
+</span><span class='line'>            in
+</span><span class='line'>                ({ model | clock = clock }, Cmd.none)</span></code></pre></td></tr></table></div></figure>
+
+
+<p>更新されたclockの値と飛行機のx,y座標を <code>animate</code> に渡すとその時刻での飛行機の座標が返ってきます。 <code>shift pos</code> をするとその座標に画像がレンダリングされます。これを各 <code>Tick</code> 毎に行うことで画像が移動していくように見えます。</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>view { x, y, clock } =
+</span><span class='line'>    let
+</span><span class='line'>        pos =
+</span><span class='line'>            ( animate clock x, animate clock y )
+</span><span class='line'>
+</span><span class='line'>        plane =
+</span><span class='line'>            image (500, 500) "images/airplane.svg"
+</span><span class='line'>            |&gt; shift pos</span></code></pre></td></tr></table></div></figure>
+
+
+<p><code>Tick</code> メッセージはそのままでは送信されません。送信するためには <code>Subscription</code> で <code>animation-frame</code> という別のライブラリを使って <code>AnimationFrame.diffs Tick</code> を呼びます。Animationするためのライブラリ(<code>elm-animation</code>) とフレーム遷移を扱うライブラリが別なのは面白いポイントです。</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>subs =
+</span><span class='line'>    Sub.batch
+</span><span class='line'>        [
+</span><span class='line'>        AnimationFrame.diffs Tick,
+</span><span class='line'>        Mouse.clicks MouseMsg
+</span><span class='line'>        ]</span></code></pre></td></tr></table></div></figure>
+
+
+<h2>マウスイベント</h2>
+
+<p>クリックされた場所まで飛行機を移動しないといけないのでマウスイベントを捕まえてクリックされた座標を取得します。</p>
+
+<p>まずマウスイベントを捕まえるために <code>Mouse.clicks MouseMsg</code> をサブスクライブします。</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>subs =
+</span><span class='line'>    Sub.batch
+</span><span class='line'>        [
+</span><span class='line'>        AnimationFrame.diffs Tick,
+</span><span class='line'>        Mouse.clicks MouseMsg
+</span><span class='line'>        ]</span></code></pre></td></tr></table></div></figure>
+
+
+<p>実際にマウスイベントを扱うには <code>MouseMsg</code> を捕まえます。<code>MouseMsg</code> は引数つきのメッセージで引数にはクリックされた座標が入っています。 このアプリ独自のロジックで <code>adjustment</code> とかを使っていますが、重要なのはクリックされた座標をFloat型に変換して <code>retarget</code> に渡すところです。<code>retarget</code> は画像がどこまで動くかの値 <code>to</code> を更新して座標で返すので、それをモデルの座標にセットします。こうすることでクリックされた位置が新しいアニメーションの <code>to</code> になります。</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>MouseMsg position -&gt;
+</span><span class='line'>   let
+</span><span class='line'>       -- We need this so that plan's center moves to the new postion
+</span><span class='line'>       adjustment = -150
+</span><span class='line'>       posx = position.x
+</span><span class='line'>              |&gt; toFloat
+</span><span class='line'>              |&gt; (+) adjustment
+</span><span class='line'>       posy = position.y
+</span><span class='line'>              |&gt; toFloat
+</span><span class='line'>              |&gt; (+) adjustment
+</span><span class='line'>              |&gt; (*) -1
+</span><span class='line'>       newX = retarget model.clock posx model.x
+</span><span class='line'>       newY = retarget model.clock posy model.y
+</span><span class='line'>   in
+</span><span class='line'>       ({model | x = newX, y = newY } |&gt; update PlaySound)</span></code></pre></td></tr></table></div></figure>
+
+
+<h2>音を鳴らす</h2>
+
+<p>このアプリを作るときに一番わかりにくかったところはクリックされたときに音を鳴らす動作です。Javascriptだと <code>audio</code> 要素を取得して <code>play</code> 関数を呼ぶだけなんですが <code>play</code> は副作用を及ぼす関数なので調べた限りではElmからは直接呼ぶことができませんでした。そこで <code>Port</code> の出番です。</p>
+
+<p>Portの仕組みはとても簡単で、Javascript側でElmからのメッセージをサブスクライブして何か送られてきたら使いたいJavascriptのコードを実行するだけです。今回の例だと、Elmが音を鳴らしたいときにPortにメッセージを送り、Javascript側で <code>audio</code> 要素を取得して <code>play</code> を呼ぶだけです。</p>
+
+<p>まずJavascript側から説明します。このコードは <code>index.html</code> に書かれています。</p>
+
+<p><code>app.ports.play.subscribe(function(val){...|})</code> がElmからPortにメッセージが送られてきた時に呼ばれるコールバックです。単純に <code>audio</code> 要素を取得して <code>play</code> しているところがメインです。(一度 <code>pause</code> しているのは音が終わる前にもう一度クリックされた時に最初から再生するためにです。)</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>&lt;body background="images/sky.jpg"&gt;
+</span><span class='line'>    &lt;audio id="my-audio" src="audios/flee1.mp3"&gt;&lt;/audio&gt;
+</span><span class='line'>    &lt;script type="text/javascript"&gt;
+</span><span class='line'>     var app = Elm.Main.fullscreen();
+</span><span class='line'>
+</span><span class='line'>     // Triggered from Elm
+</span><span class='line'>     app.ports.play.subscribe(function(val){
+</span><span class='line'>         var audio = document.getElementById('my-audio');
+</span><span class='line'>         audio.pause();
+</span><span class='line'>         audio.currentTime = 0;
+</span><span class='line'>         audio.play();
+</span><span class='line'>     });
+</span><span class='line'>    &lt;/script&gt;
+</span><span class='line'>&lt;/body&gt;</span></code></pre></td></tr></table></div></figure>
+
+
+<p>次にPortにメッセージを送る側のElmコードを見てみます。Updateの中で <code>PlaySound</code> を捕まえます。 <code>PlaySound</code> がどこからくるかというと <code>MouseMsg</code> をハンドリングする際に戻り値で手動で <code>update</code> を呼んで <code>PlaySound</code> のコマンドを渡しています。</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>({model | x = newX, y = newY } |&gt; update PlaySound)</span></code></pre></td></tr></table></div></figure>
+
+
+<p><code>play 0</code> と呼ぶとJavascript側でサブスクライブしているPortに <code>0</code> という値が送られます。ここではJavascript側は何も値は必要ないのですが引数なしで送る方法がわからなかったので適当な値を渡しているだけです。</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>PlaySound -&gt;
+</span><span class='line'>    (model, play 0)</span></code></pre></td></tr></table></div></figure>
+
+
+<h2>まとめ</h2>
+
+<p>大事な点はだいたいカバーしたと思います。純粋関数言語からアニメーションを扱うやり方や考え方はとても面白かったです。はじめは少しとっつきにくいかもしれませんが、慣れれば他の似たようなライブラリも簡単に理解できるようになりました。</p>
+
+<p>この記事を通してElmのファンが増えてくれれば嬉しいです!</p>
+</div>
+  
+    <section>
+      <h1>Comments</h1>
+      <div id="disqus_thread"><div id="disqus_thread"></div>
+<script type="text/javascript">
+  var disqus_shortname = 'kimstechblog';
+  var disqus_identifier = 'http://kimh.github.io/blog/from-elm-make-to-ci/';
+  var disqus_url = 'http://kimh.github.io/blog/from-elm-make-to-ci/';
+  //var disqus_developer = 1;
+  (function() {
+    var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+    dsq.src = 'http://' + disqus_shortname + '.disqus.com/embed.js';
+    (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+  })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+</div>
+    </section>
+  
+
+</article>
+
+
+      <p class="meta">
+      
+        <a class="basic-alignment left nav" href="/blog/my-investment-principles/" title="Previous Post: My Investment Principles">&laquo; My Investment Principles</a>
+      
+      
+    </p>
+  </div>
+    <script>
+      var name = document.getElementById('name-helper').innerHTML;
+
+      var canvas = document.getElementById('myCanvas');
+
+      //The name (up to 28 characters long, including white space)
+      var length = name.length;
+      if (length>28){//Exceed character length limit, remove canvas
+          canvas.remove();
+      }
+      else{
+            
+
+        var context = canvas.getContext('2d');
+
+        //calculate width and length
+        var width=700/1.25/length;
+        var start;
+        if (width>40){
+          width=40;
+        }
+
+        var height= width/2;
+
+        //the start postion of the link list
+        var start = (700-width*length*1.25)/2;
+        var horizon = 5;
+
+        //DO NOT CHANGE THOSE
+        var mid_horizon = horizon+height/2;
+        var name_counter =0;
+
+        var x = height/5;
+        var y = height/5;
+        var interval=width/4;
+        
+        var radius = 0.75*width;
+        
+        var text_pos=width*1.1;
+
+
+        canvas.height=mid_horizon+width/2+width/2.1+5;
+        
+        for (var i=1;i<name.length+1;i++){
+
+          context.beginPath();
+          context.strokeStyle='#F9BF3B';
+          
+          //the rectangle
+          context.rect(start, horizon, width, height);
+
+          //the middle line
+          context.moveTo(start+width/2,horizon);
+          context.lineTo(start+width/2,horizon+height);
+
+          //if this is the last element
+          if (i==name.length){
+            context.moveTo(start+width/2,horizon+height);
+            context.lineTo(start+width,horizon);
+
+          }
+          else{
+            //the arrow
+            context.moveTo(start+0.75*width,mid_horizon);
+            context.lineTo(start+width+interval,mid_horizon);
+
+            context.moveTo(start+width+interval,mid_horizon);
+            context.lineTo(start+width+interval-x,mid_horizon+y);
+          
+            context.moveTo(start+width+interval,mid_horizon);
+            context.lineTo(start+width+interval-x,mid_horizon-y); 
+          }
+          
+       
+        
+          var startAngle = 1.2 * Math.PI;
+          var endAngle = 1 * Math.PI;
+          var counterClockwise = true;
+      
+          context.stroke();
+            
+          context.beginPath();
+          context.arc(start+width/4+radius*0.81, mid_horizon+width/2, radius, startAngle, endAngle, counterClockwise);
+
+          context.moveTo(start+width/4+radius*0.81-radius,mid_horizon+width/2);
+          context.lineTo(start+width/4+radius*0.81-radius-x,mid_horizon-y+width/2);
+
+          context.moveTo(start+width/4+radius*0.81-radius,mid_horizon+width/2);
+          context.lineTo(start+width/4+radius*0.81-radius+x,mid_horizon-y+width/2); 
+
+          context.font = ' 15pt Calibri';
+          context.fillStyle = '#859900';
+          context.fillText(name.charAt(name_counter), start+width/4+radius*0.81-radius-width/14, mid_horizon+width/2+width/2.1);
+
+          context.lineWidth=1;
+          context.strokeStyle='#F9BF3B';
+          context.stroke();
+          start+=width/2*2+interval;      
+          name_counter+=1;
+        }
+      }
+
+    </script>
+
+  <!-- JavaScript at the bottom for fast page loading -->
+
+  <!-- Grab Google CDN's jQuery, with a protocol relative URL; fall back to local if offline -->
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.6.2/jquery.min.js"></script>
+  <script>window.jQuery || document.write('<script src="js/libs/jquery-1.6.2.min.js"><\/script>')</script>
+
+
+  <!-- scripts concatenated and minified via ant build script-->
+  <script defer src="/javascripts/app.js"></script>
+  <!-- end scripts-->
+
+	
+
+  <!-- Prompt IE 6 users to install Chrome Frame. Remove this if you want to support IE 6.
+       chromium.org/developers/how-tos/chrome-frame-getting-started -->
+  <!--[if lt IE 7 ]>
+    <script src="//ajax.googleapis.com/ajax/libs/chrome-frame/1.0.3/CFInstall.min.js"></script>
+    <script>window.attachEvent('onload',function(){CFInstall.check({mode:'overlay'})})</script>
+  <![endif]-->
+ 
+
+  <script type="text/javascript">
+    (function(){
+      var twitterWidgets = document.createElement('script');
+      twitterWidgets.type = 'text/javascript';
+      twitterWidgets.async = true;
+      twitterWidgets.src = 'http://platform.twitter.com/widgets.js';
+      document.getElementsByTagName('head')[0].appendChild(twitterWidgets);
+    })();
+  </script>
+
+
+
+
+
+
+
+</body>
+</html>
+
