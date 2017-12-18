@@ -4,7 +4,7 @@
   <title><![CDATA[Program Is Made At Night]]></title>
   <link href="http://kimh.github.io/atom.xml" rel="self"/>
   <link href="http://kimh.github.io/"/>
-  <updated>2017-12-18T21:43:29+09:00</updated>
+  <updated>2017-12-18T22:02:21+09:00</updated>
   <id>http://kimh.github.io/</id>
   <author>
     <name><![CDATA[kim hirokuni]]></name>
@@ -14,22 +14,21 @@
 
   
   <entry>
-    <title type="html"><![CDATA[Elmでアプリを作る: elm-makeからCIまで]]></title>
-    <link href="http://kimh.github.io/blog/from-elm-make-to-ci/"/>
+    <title type="html"><![CDATA[CollageとAnimationを使ってElmでアプリを作る]]></title>
+    <link href="http://kimh.github.io/blog/make-elm-app/"/>
     <updated>2017-12-11T21:48:00+09:00</updated>
-    <id>http://kimh.github.io/blog/from-elm-make-to-ci</id>
+    <id>http://kimh.github.io/blog/make-elm-app</id>
     <content type="html"><![CDATA[<p>この記事はQiita Elm Adventcalendar 2017に投稿した記事です。</p>
 
 <h2>最初に</h2>
 
-<p>Functional Reactive Programmingを調べていて偶然Elmに出会いました。最新版のElm0.18ではElmはFRPの概念を完全に取り払い関係なくなりましたが、
-実際にElmを触ってみるとどんどんその面白さに引き込まれて行きました。もっとElmで何か作りたくなったので自分の子供が遊べるようなToy Appを作ることにしました。
-このアプリを作る際にはまった点や大事な点をできるだけ丁寧に解説してみたいと思います。</p>
+<p>Functional Reactive Programmingを調べていて偶然Elmに出会いました。最新版のElm0.18ではElmはFRPの概念を完全に取り払いFRPとは関係なくなりましたが、
+実際にElmを触ってみるとどんどんその面白さに引き込まれて行きました。もっとElmで何か作りたくなったので自分の子供が遊べるようなToy Appを作ることにしました。 このアプリを作る際にはまった点や大事な点をできるだけ丁寧に解説してみたいと思います。</p>
 
 <h2>この記事の対象者</h2>
 
-<p>この記事ではElmについての基本知識があることを前提としています。Elmにはすでに素晴らしいチュートリアルがあるかです。もし、まだElmに触ったことがなければ <a href="https://guide.elm-laang.org/">https://guide.elm-laang.org/</a> と <a href="https://www.elm-tutorial.org/en/">https://www.elm-tutorial.org/en/</a> にゆずります。
-基本の文法はわかるけどいまいちSubscriptionや$Portがわからないなーという人には楽しんでもらえると思います。という自分もそれらの機能には今回初めて触るので、疑問に思ったとこや考え方をかければと思います。</p>
+<p>この記事ではElmについての基本知識があることを前提としています。Elmにはすでに素晴らしいチュートリアルがあるのでまだElmに触ったことがなければ <a href="https://guide.elm-laang.org/">https://guide.elm-laang.org/</a> と <a href="https://www.elm-tutorial.org/en/">https://www.elm-tutorial.org/en/</a> をお勧めします。
+基本の文法はわかるけどいまいちSubscriptionやPortがわからないなーという人には楽しんでもらえると思います。</p>
 
 <h2>Airplane Toy App</h2>
 
@@ -46,39 +45,41 @@
 
 <h2>飛行機画像のレンダリング</h2>
 
-<p>飛行機の画像を扱うのに Elm Collageを使っています。Collageのライブラリには主に<a href="https://github.com/evancz/elm-graphics">https://github.com/evancz/elm-graphics</a> と <a href="http://package.elm-lang.org/packages/timjs/elm-collage/latest">http://package.elm-lang.org/packages/timjs/elm-collage/latest</a> がありますが、後者です。timjs/elm-collageはevancz/elm-graphisを置き換えるものだと考えているのでこれからアプリを作るのならtimjs/elm-collageを使うことぼをお勧めします。</p>
+<p>飛行機の画像を扱うのに Elm Collageを使っています。Collageのライブラリには主に<a href="https://github.com/evancz/elm-graphics">https://github.com/evancz/elm-graphics</a> と <a href="https://github.com/timjs/elm-collage">https://github.com/timjs/elm-collage</a> がありますが、後者です。timjs/elm-collageはevancz/elm-graphisを置き換えるものだと考えているのでこれからアプリを作るのならtimjs/elm-collageを使うことぼをお勧めします。</p>
 
 <p>重要となるポイントを説明していきます。</p>
 
 <p><code>image</code> で飛行機の画像ファイルを読み込んで <code>shift</code> で初期位置まで移動させます。 <code>pos</code> は 渡されたModelから作成します。(後述)</p>
 
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
 <span class='line-number'>3</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>plane =
-</span><span class='line'>    image (500, 500) "images/airplane.svg"
-</span><span class='line'>    |&gt; shift pos</span></code></pre></td></tr></table></div></figure>
+</pre></td><td class='code'><pre><code class='haskell'><span class='line'><span class="nf">plane</span> <span class="ow">=</span>
+</span><span class='line'>    <span class="n">image</span> <span class="p">(</span><span class="mi">500</span><span class="p">,</span> <span class="mi">500</span><span class="p">)</span> <span class="s">&quot;images/airplane.svg&quot;</span>
+</span><span class='line'>    <span class="o">|&gt;</span> <span class="n">shift</span> <span class="n">pos</span>
+</span></code></pre></td></tr></table></div></figure>
 
 
 <p><code>spacer</code> を使っている部分は少しわかりにくいです。timjs/elm-collageでは座標が絶対的ではなく他の要素からの相対的なCollageの位置を指定するので
-<code>plane</code> だけを <code>shift</code> しても画像が動いてくれませんでした。そこで <code>plane</code> の前に透明な要素である <code>spacer</code> を挟むことでうまく移動してくれるようにしました。（このあたりは自分の理解も曖昧なのでもう少し調べます）<code>group</code> は複数のCollageを並べてくれる関数です。</p>
+<code>plane</code> だけを <code>shift</code> しても画像が動いてくれませんでした。そこで <code>plane</code> の前に透明な要素である <code>spacer</code> を挟むことでうまく移動してくれるようにしました。（このあたりは自分の理解も曖昧なのでもっとうまい方法があるかも）<code>group</code> は複数のCollageを並べてくれる関数です。</p>
 
 <p>コメントアウトしている <code>debug</code> は有効にするとCollageのボーダーとセンターを赤線で表示してくれるのでつまった時に便利なのでいつでも有効にできるように残しています。</p>
 
 <p>最後に要素を <code>Html Msg</code> 型に <code>svg</code> で変換しています。このパターンはCollageではいつも使うパターンです。</p>
 
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
 <span class='line-number'>3</span>
 <span class='line-number'>4</span>
 <span class='line-number'>5</span>
 <span class='line-number'>6</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>group [
-</span><span class='line'>  spacer 300 300,
-</span><span class='line'>  plane
-</span><span class='line'>]
-</span><span class='line'>    -- |&gt; Collage.Layout.debug
-</span><span class='line'>    | &gt; svg |</span></code></pre></td></tr></table></div></figure>
+</pre></td><td class='code'><pre><code class='haskell'><span class='line'><span class="nf">group</span> <span class="p">[</span>
+</span><span class='line'>  <span class="n">spacer</span> <span class="mi">300</span> <span class="mi">300</span><span class="p">,</span>
+</span><span class='line'>  <span class="n">plane</span>
+</span><span class='line'><span class="p">]</span>
+</span><span class='line'>    <span class="c1">-- |&gt; Collage.Layout.debug</span>
+</span><span class='line'>    <span class="o">|</span> <span class="o">&gt;</span> <span class="n">svg</span> <span class="o">|</span>
+</span></code></pre></td></tr></table></div></figure>
 
 
 <h2>アニメーション</h2>
@@ -89,7 +90,7 @@
 
 <p>モデルにはx座標、y座標、clockをもたせています。これらの値を <code>Tick</code> イベントの中で更新します。</p>
 
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
 <span class='line-number'>3</span>
 <span class='line-number'>4</span>
@@ -98,20 +99,21 @@
 <span class='line-number'>7</span>
 <span class='line-number'>8</span>
 <span class='line-number'>9</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>type alias Model =
-</span><span class='line'>    { x : Animation, y : Animation, clock : Time }
+</pre></td><td class='code'><pre><code class='haskell'><span class='line'><span class="kr">type</span> <span class="n">alias</span> <span class="kt">Model</span> <span class="ow">=</span>
+</span><span class='line'>    <span class="p">{</span> <span class="n">x</span> <span class="kt">:</span> <span class="kt">Animation</span><span class="p">,</span> <span class="n">y</span> <span class="kt">:</span> <span class="kt">Animation</span><span class="p">,</span> <span class="n">clock</span> <span class="kt">:</span> <span class="kt">Time</span> <span class="p">}</span>
 </span><span class='line'>
-</span><span class='line'>model : Model
-</span><span class='line'>model =
-</span><span class='line'>    Model
-</span><span class='line'>        (animation 0 |&gt; duration Time.second)
-</span><span class='line'>        (animation 0 |&gt; duration Time.second)
-</span><span class='line'>        0</span></code></pre></td></tr></table></div></figure>
+</span><span class='line'><span class="nf">model</span> <span class="kt">:</span> <span class="kt">Model</span>
+</span><span class='line'><span class="nf">model</span> <span class="ow">=</span>
+</span><span class='line'>    <span class="kt">Model</span>
+</span><span class='line'>        <span class="p">(</span><span class="n">animation</span> <span class="mi">0</span> <span class="o">|&gt;</span> <span class="n">duration</span> <span class="kt">Time</span><span class="o">.</span><span class="n">second</span><span class="p">)</span>
+</span><span class='line'>        <span class="p">(</span><span class="n">animation</span> <span class="mi">0</span> <span class="o">|&gt;</span> <span class="n">duration</span> <span class="kt">Time</span><span class="o">.</span><span class="n">second</span><span class="p">)</span>
+</span><span class='line'>        <span class="mi">0</span>
+</span></code></pre></td></tr></table></div></figure>
 
 
 <p><code>Tick</code> メッセージは引数つきのメッセージで、引数にアニメーションの初期状態から差分の時刻が送られてきます。それをモデルの <code>clock</code> にセットしています。</p>
 
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
 <span class='line-number'>3</span>
 <span class='line-number'>4</span>
@@ -119,19 +121,20 @@
 <span class='line-number'>6</span>
 <span class='line-number'>7</span>
 <span class='line-number'>8</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>update : Msg -&gt; Model -&gt; (Model, Cmd Msg)
-</span><span class='line'>update msg model =
-</span><span class='line'>    case msg of
-</span><span class='line'>        Tick dt -&gt;
-</span><span class='line'>            let
-</span><span class='line'>                clock = model.clock + dt
-</span><span class='line'>            in
-</span><span class='line'>                ({ model | clock = clock }, Cmd.none)</span></code></pre></td></tr></table></div></figure>
+</pre></td><td class='code'><pre><code class='haskell'><span class='line'><span class="nf">update</span> <span class="kt">:</span> <span class="kt">Msg</span> <span class="ow">-&gt;</span> <span class="kt">Model</span> <span class="ow">-&gt;</span> <span class="p">(</span><span class="kt">Model</span><span class="p">,</span> <span class="kt">Cmd</span> <span class="kt">Msg</span><span class="p">)</span>
+</span><span class='line'><span class="nf">update</span> <span class="n">msg</span> <span class="n">model</span> <span class="ow">=</span>
+</span><span class='line'>    <span class="kr">case</span> <span class="n">msg</span> <span class="kr">of</span>
+</span><span class='line'>        <span class="kt">Tick</span> <span class="n">dt</span> <span class="ow">-&gt;</span>
+</span><span class='line'>            <span class="kr">let</span>
+</span><span class='line'>                <span class="n">clock</span> <span class="ow">=</span> <span class="n">model</span><span class="o">.</span><span class="n">clock</span> <span class="o">+</span> <span class="n">dt</span>
+</span><span class='line'>            <span class="kr">in</span>
+</span><span class='line'>                <span class="p">({</span> <span class="n">model</span> <span class="o">|</span> <span class="n">clock</span> <span class="ow">=</span> <span class="n">clock</span> <span class="p">},</span> <span class="kt">Cmd</span><span class="o">.</span><span class="n">none</span><span class="p">)</span>
+</span></code></pre></td></tr></table></div></figure>
 
 
 <p>更新されたclockの値と飛行機のx,y座標を <code>animate</code> に渡すとその時刻での飛行機の座標が返ってきます。 <code>shift pos</code> をするとその座標に画像がレンダリングされます。これを各 <code>Tick</code> 毎に行うことで画像が移動していくように見えます。</p>
 
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
 <span class='line-number'>3</span>
 <span class='line-number'>4</span>
@@ -139,30 +142,32 @@
 <span class='line-number'>6</span>
 <span class='line-number'>7</span>
 <span class='line-number'>8</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>view { x, y, clock } =
-</span><span class='line'>    let
-</span><span class='line'>        pos =
-</span><span class='line'>            ( animate clock x, animate clock y )
+</pre></td><td class='code'><pre><code class='haskell'><span class='line'><span class="nf">view</span> <span class="p">{</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">clock</span> <span class="p">}</span> <span class="ow">=</span>
+</span><span class='line'>    <span class="kr">let</span>
+</span><span class='line'>        <span class="n">pos</span> <span class="ow">=</span>
+</span><span class='line'>            <span class="p">(</span> <span class="n">animate</span> <span class="n">clock</span> <span class="n">x</span><span class="p">,</span> <span class="n">animate</span> <span class="n">clock</span> <span class="n">y</span> <span class="p">)</span>
 </span><span class='line'>
-</span><span class='line'>        plane =
-</span><span class='line'>            image (500, 500) "images/airplane.svg"
-</span><span class='line'>            |&gt; shift pos</span></code></pre></td></tr></table></div></figure>
+</span><span class='line'>        <span class="n">plane</span> <span class="ow">=</span>
+</span><span class='line'>            <span class="n">image</span> <span class="p">(</span><span class="mi">500</span><span class="p">,</span> <span class="mi">500</span><span class="p">)</span> <span class="s">&quot;images/airplane.svg&quot;</span>
+</span><span class='line'>            <span class="o">|&gt;</span> <span class="n">shift</span> <span class="n">pos</span>
+</span></code></pre></td></tr></table></div></figure>
 
 
 <p><code>Tick</code> メッセージはそのままでは送信されません。送信するためには <code>Subscription</code> で <code>animation-frame</code> という別のライブラリを使って <code>AnimationFrame.diffs Tick</code> を呼びます。Animationするためのライブラリ(<code>elm-animation</code>) とフレーム遷移を扱うライブラリが別なのは面白いポイントです。</p>
 
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
 <span class='line-number'>3</span>
 <span class='line-number'>4</span>
 <span class='line-number'>5</span>
 <span class='line-number'>6</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>subs =
-</span><span class='line'>    Sub.batch
-</span><span class='line'>        [
-</span><span class='line'>        AnimationFrame.diffs Tick,
-</span><span class='line'>        Mouse.clicks MouseMsg
-</span><span class='line'>        ]</span></code></pre></td></tr></table></div></figure>
+</pre></td><td class='code'><pre><code class='haskell'><span class='line'><span class="nf">subs</span> <span class="ow">=</span>
+</span><span class='line'>    <span class="kt">Sub</span><span class="o">.</span><span class="n">batch</span>
+</span><span class='line'>        <span class="p">[</span>
+</span><span class='line'>        <span class="kt">AnimationFrame</span><span class="o">.</span><span class="n">diffs</span> <span class="kt">Tick</span><span class="p">,</span>
+</span><span class='line'>        <span class="kt">Mouse</span><span class="o">.</span><span class="n">clicks</span> <span class="kt">MouseMsg</span>
+</span><span class='line'>        <span class="p">]</span>
+</span></code></pre></td></tr></table></div></figure>
 
 
 <h2>マウスイベント</h2>
@@ -171,23 +176,24 @@
 
 <p>まずマウスイベントを捕まえるために <code>Mouse.clicks MouseMsg</code> をサブスクライブします。</p>
 
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
 <span class='line-number'>3</span>
 <span class='line-number'>4</span>
 <span class='line-number'>5</span>
 <span class='line-number'>6</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>subs =
-</span><span class='line'>    Sub.batch
-</span><span class='line'>        [
-</span><span class='line'>        AnimationFrame.diffs Tick,
-</span><span class='line'>        Mouse.clicks MouseMsg
-</span><span class='line'>        ]</span></code></pre></td></tr></table></div></figure>
+</pre></td><td class='code'><pre><code class='haskell'><span class='line'><span class="nf">subs</span> <span class="ow">=</span>
+</span><span class='line'>    <span class="kt">Sub</span><span class="o">.</span><span class="n">batch</span>
+</span><span class='line'>        <span class="p">[</span>
+</span><span class='line'>        <span class="kt">AnimationFrame</span><span class="o">.</span><span class="n">diffs</span> <span class="kt">Tick</span><span class="p">,</span>
+</span><span class='line'>        <span class="kt">Mouse</span><span class="o">.</span><span class="n">clicks</span> <span class="kt">MouseMsg</span>
+</span><span class='line'>        <span class="p">]</span>
+</span></code></pre></td></tr></table></div></figure>
 
 
 <p>実際にマウスイベントを扱うには <code>MouseMsg</code> を捕まえます。<code>MouseMsg</code> は引数つきのメッセージで引数にはクリックされた座標が入っています。 このアプリ独自のロジックで <code>adjustment</code> とかを使っていますが、重要なのはクリックされた座標をFloat型に変換して <code>retarget</code> に渡すところです。<code>retarget</code> は画像がどこまで動くかの値 <code>to</code> を更新して座標で返すので、それをモデルの座標にセットします。こうすることでクリックされた位置が新しいアニメーションの <code>to</code> になります。</p>
 
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
 <span class='line-number'>3</span>
 <span class='line-number'>4</span>
@@ -202,21 +208,22 @@
 <span class='line-number'>13</span>
 <span class='line-number'>14</span>
 <span class='line-number'>15</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>MouseMsg position -&gt;
-</span><span class='line'>   let
-</span><span class='line'>       -- We need this so that plan's center moves to the new postion
-</span><span class='line'>       adjustment = -150
-</span><span class='line'>       posx = position.x
-</span><span class='line'>              |&gt; toFloat
-</span><span class='line'>              |&gt; (+) adjustment
-</span><span class='line'>       posy = position.y
-</span><span class='line'>              |&gt; toFloat
-</span><span class='line'>              |&gt; (+) adjustment
-</span><span class='line'>              |&gt; (*) -1
-</span><span class='line'>       newX = retarget model.clock posx model.x
-</span><span class='line'>       newY = retarget model.clock posy model.y
-</span><span class='line'>   in
-</span><span class='line'>       ({model | x = newX, y = newY } |&gt; update PlaySound)</span></code></pre></td></tr></table></div></figure>
+</pre></td><td class='code'><pre><code class='haskell'><span class='line'><span class="kt">MouseMsg</span> <span class="n">position</span> <span class="ow">-&gt;</span>
+</span><span class='line'>   <span class="kr">let</span>
+</span><span class='line'>       <span class="c1">-- We need this so that plan&#39;s center moves to the new postion</span>
+</span><span class='line'>       <span class="n">adjustment</span> <span class="ow">=</span> <span class="o">-</span><span class="mi">150</span>
+</span><span class='line'>       <span class="n">posx</span> <span class="ow">=</span> <span class="n">position</span><span class="o">.</span><span class="n">x</span>
+</span><span class='line'>              <span class="o">|&gt;</span> <span class="n">toFloat</span>
+</span><span class='line'>              <span class="o">|&gt;</span> <span class="p">(</span><span class="o">+</span><span class="p">)</span> <span class="n">adjustment</span>
+</span><span class='line'>       <span class="n">posy</span> <span class="ow">=</span> <span class="n">position</span><span class="o">.</span><span class="n">y</span>
+</span><span class='line'>              <span class="o">|&gt;</span> <span class="n">toFloat</span>
+</span><span class='line'>              <span class="o">|&gt;</span> <span class="p">(</span><span class="o">+</span><span class="p">)</span> <span class="n">adjustment</span>
+</span><span class='line'>              <span class="o">|&gt;</span> <span class="p">(</span><span class="o">*</span><span class="p">)</span> <span class="o">-</span><span class="mi">1</span>
+</span><span class='line'>       <span class="n">newX</span> <span class="ow">=</span> <span class="n">retarget</span> <span class="n">model</span><span class="o">.</span><span class="n">clock</span> <span class="n">posx</span> <span class="n">model</span><span class="o">.</span><span class="n">x</span>
+</span><span class='line'>       <span class="n">newY</span> <span class="ow">=</span> <span class="n">retarget</span> <span class="n">model</span><span class="o">.</span><span class="n">clock</span> <span class="n">posy</span> <span class="n">model</span><span class="o">.</span><span class="n">y</span>
+</span><span class='line'>   <span class="kr">in</span>
+</span><span class='line'>       <span class="p">({</span><span class="n">model</span> <span class="o">|</span> <span class="n">x</span> <span class="ow">=</span> <span class="n">newX</span><span class="p">,</span> <span class="n">y</span> <span class="ow">=</span> <span class="n">newY</span> <span class="p">}</span> <span class="o">|&gt;</span> <span class="n">update</span> <span class="kt">PlaySound</span><span class="p">)</span>
+</span></code></pre></td></tr></table></div></figure>
 
 
 <h2>音を鳴らす</h2>
@@ -227,9 +234,9 @@
 
 <p>まずJavascript側から説明します。このコードは <code>index.html</code> に書かれています。</p>
 
-<p><code>app.ports.play.subscribe(function(val){...|})</code> がElmからPortにメッセージが送られてきた時に呼ばれるコールバックです。単純に <code>audio</code> 要素を取得して <code>play</code> しているところがメインです。(一度 <code>pause</code> しているのは音が終わる前にもう一度クリックされた時に最初から再生するためにです。)</p>
+<p><code>app.ports.play.subscribe(function(val){...})</code> がElmからPortにメッセージが送られてきた時に呼ばれるコールバックです。単純に <code>audio</code> 要素を取得して <code>play</code> しているところがメインです。(一度 <code>pause</code> しているのは音が終わる前にもう一度クリックされた時に最初から再生するためにです。)</p>
 
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
 <span class='line-number'>3</span>
 <span class='line-number'>4</span>
@@ -243,39 +250,42 @@
 <span class='line-number'>12</span>
 <span class='line-number'>13</span>
 <span class='line-number'>14</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>&lt;body background="images/sky.jpg"&gt;
-</span><span class='line'>    &lt;audio id="my-audio" src="audios/flee1.mp3"&gt;&lt;/audio&gt;
-</span><span class='line'>    &lt;script type="text/javascript"&gt;
-</span><span class='line'>     var app = Elm.Main.fullscreen();
+</pre></td><td class='code'><pre><code class='html'><span class='line'><span class="nt">&lt;body</span> <span class="na">background=</span><span class="s">&quot;images/sky.jpg&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>    <span class="nt">&lt;audio</span> <span class="na">id=</span><span class="s">&quot;my-audio&quot;</span> <span class="na">src=</span><span class="s">&quot;audios/flee1.mp3&quot;</span><span class="nt">&gt;&lt;/audio&gt;</span>
+</span><span class='line'>    <span class="nt">&lt;script </span><span class="na">type=</span><span class="s">&quot;text/javascript&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>     <span class="kd">var</span> <span class="nx">app</span> <span class="o">=</span> <span class="nx">Elm</span><span class="p">.</span><span class="nx">Main</span><span class="p">.</span><span class="nx">fullscreen</span><span class="p">();</span>
 </span><span class='line'>
-</span><span class='line'>     // Triggered from Elm
-</span><span class='line'>     app.ports.play.subscribe(function(val){
-</span><span class='line'>         var audio = document.getElementById('my-audio');
-</span><span class='line'>         audio.pause();
-</span><span class='line'>         audio.currentTime = 0;
-</span><span class='line'>         audio.play();
-</span><span class='line'>     });
-</span><span class='line'>    &lt;/script&gt;
-</span><span class='line'>&lt;/body&gt;</span></code></pre></td></tr></table></div></figure>
+</span><span class='line'>     <span class="c1">// Triggered from Elm</span>
+</span><span class='line'>     <span class="nx">app</span><span class="p">.</span><span class="nx">ports</span><span class="p">.</span><span class="nx">play</span><span class="p">.</span><span class="nx">subscribe</span><span class="p">(</span><span class="kd">function</span><span class="p">(</span><span class="nx">val</span><span class="p">){</span>
+</span><span class='line'>         <span class="kd">var</span> <span class="nx">audio</span> <span class="o">=</span> <span class="nb">document</span><span class="p">.</span><span class="nx">getElementById</span><span class="p">(</span><span class="s1">&#39;my-audio&#39;</span><span class="p">);</span>
+</span><span class='line'>         <span class="nx">audio</span><span class="p">.</span><span class="nx">pause</span><span class="p">();</span>
+</span><span class='line'>         <span class="nx">audio</span><span class="p">.</span><span class="nx">currentTime</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+</span><span class='line'>         <span class="nx">audio</span><span class="p">.</span><span class="nx">play</span><span class="p">();</span>
+</span><span class='line'>     <span class="p">});</span>
+</span><span class='line'>    <span class="nt">&lt;/script&gt;</span>
+</span><span class='line'><span class="nt">&lt;/body&gt;</span>
+</span></code></pre></td></tr></table></div></figure>
 
 
 <p>次にPortにメッセージを送る側のElmコードを見てみます。Updateの中で <code>PlaySound</code> を捕まえます。 <code>PlaySound</code> がどこからくるかというと <code>MouseMsg</code> をハンドリングする際に戻り値で手動で <code>update</code> を呼んで <code>PlaySound</code> のコマンドを渡しています。</p>
 
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>({model | x = newX, y = newY } |&gt; update PlaySound)</span></code></pre></td></tr></table></div></figure>
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='haskell'><span class='line'><span class="p">({</span><span class="n">model</span> <span class="o">|</span> <span class="n">x</span> <span class="ow">=</span> <span class="n">newX</span><span class="p">,</span> <span class="n">y</span> <span class="ow">=</span> <span class="n">newY</span> <span class="p">}</span> <span class="o">|&gt;</span> <span class="n">update</span> <span class="kt">PlaySound</span><span class="p">)</span>
+</span></code></pre></td></tr></table></div></figure>
 
 
 <p><code>play 0</code> と呼ぶとJavascript側でサブスクライブしているPortに <code>0</code> という値が送られます。ここではJavascript側は何も値は必要ないのですが引数なしで送る方法がわからなかったので適当な値を渡しているだけです。</p>
 
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>PlaySound -&gt;
-</span><span class='line'>    (model, play 0)</span></code></pre></td></tr></table></div></figure>
+</pre></td><td class='code'><pre><code class='haskell'><span class='line'><span class="kt">PlaySound</span> <span class="ow">-&gt;</span>
+</span><span class='line'>    <span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">play</span> <span class="mi">0</span><span class="p">)</span>
+</span></code></pre></td></tr></table></div></figure>
 
 
 <h2>まとめ</h2>
 
-<p>大事な点はだいたいカバーしたと思います。純粋関数言語からアニメーションを扱うやり方や考え方はとても面白かったです。はじめは少しとっつきにくいかもしれませんが、慣れれば他の似たようなライブラリも簡単に理解できるようになりました。</p>
+<p>大事な点はだいたいカバーしたと思います。純粋関数言語からアニメーションを扱う考え方はとても面白かったです。はじめは少しとっつきにくいかもしれませんが、慣れれば他の似たようなライブラリも簡単に理解できるようになりました。</p>
 
 <p>この記事を通してElmのファンが増えてくれれば嬉しいです!</p>
 ]]></content>
