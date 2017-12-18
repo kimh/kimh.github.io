@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "Elmでアプリを作る: elm-makeからCIまで"
+title: "CollageとAnimationを使ってElmでアプリを作る"
 date: 2017-12-11 21:48
 comments: true
 categories:
@@ -10,14 +10,13 @@ categories:
 
 ## 最初に
 
-Functional Reactive Programmingを調べていて偶然Elmに出会いました。最新版のElm0.18ではElmはFRPの概念を完全に取り払い関係なくなりましたが、
-実際にElmを触ってみるとどんどんその面白さに引き込まれて行きました。もっとElmで何か作りたくなったので自分の子供が遊べるようなToy Appを作ることにしました。
-このアプリを作る際にはまった点や大事な点をできるだけ丁寧に解説してみたいと思います。
+Functional Reactive Programmingを調べていて偶然Elmに出会いました。最新版のElm0.18ではElmはFRPの概念を完全に取り払いFRPとは関係なくなりましたが、
+実際にElmを触ってみるとどんどんその面白さに引き込まれて行きました。もっとElmで何か作りたくなったので自分の子供が遊べるようなToy Appを作ることにしました。 このアプリを作る際にはまった点や大事な点をできるだけ丁寧に解説してみたいと思います。
 
 ## この記事の対象者
 
-この記事ではElmについての基本知識があることを前提としています。Elmにはすでに素晴らしいチュートリアルがあるかです。もし、まだElmに触ったことがなければ https://guide.elm-laang.org/ と https://www.elm-tutorial.org/en/ にゆずります。
-基本の文法はわかるけどいまいちSubscriptionや$Portがわからないなーという人には楽しんでもらえると思います。という自分もそれらの機能には今回初めて触るので、疑問に思ったとこや考え方をかければと思います。
+この記事ではElmについての基本知識があることを前提としています。Elmにはすでに素晴らしいチュートリアルがあるのでまだElmに触ったことがなければ https://guide.elm-laang.org/ と https://www.elm-tutorial.org/en/ をお勧めします。
+基本の文法はわかるけどいまいちSubscriptionやPortがわからないなーという人には楽しんでもらえると思います。
 
 ## Airplane Toy App
 
@@ -34,26 +33,26 @@ Functional Reactive Programmingを調べていて偶然Elmに出会いました�
 
 ## 飛行機画像のレンダリング
 
-飛行機の画像を扱うのに Elm Collageを使っています。Collageのライブラリには主にhttps://github.com/evancz/elm-graphics と http://package.elm-lang.org/packages/timjs/elm-collage/latest がありますが、後者です。timjs/elm-collageはevancz/elm-graphisを置き換えるものだと考えているのでこれからアプリを作るのならtimjs/elm-collageを使うことぼをお勧めします。
+飛行機の画像を扱うのに Elm Collageを使っています。Collageのライブラリには主にhttps://github.com/evancz/elm-graphics と https://github.com/timjs/elm-collage がありますが、後者です。timjs/elm-collageはevancz/elm-graphisを置き換えるものだと考えているのでこれからアプリを作るのならtimjs/elm-collageを使うことぼをお勧めします。
 
 重要となるポイントを説明していきます。
 
 `image` で飛行機の画像ファイルを読み込んで `shift` で初期位置まで移動させます。 `pos` は 渡されたModelから作成します。(後述)
 
-```elm
+```haskell
 plane =
     image (500, 500) "images/airplane.svg"
     |> shift pos
 ```
 
 `spacer` を使っている部分は少しわかりにくいです。timjs/elm-collageでは座標が絶対的ではなく他の要素からの相対的なCollageの位置を指定するので
-`plane` だけを `shift` しても画像が動いてくれませんでした。そこで `plane` の前に透明な要素である `spacer` を挟むことでうまく移動してくれるようにしました。（このあたりは自分の理解も曖昧なのでもう少し調べます）`group` は複数のCollageを並べてくれる関数です。
+`plane` だけを `shift` しても画像が動いてくれませんでした。そこで `plane` の前に透明な要素である `spacer` を挟むことでうまく移動してくれるようにしました。（このあたりは自分の理解も曖昧なのでもっとうまい方法があるかも）`group` は複数のCollageを並べてくれる関数です。
 
 コメントアウトしている `debug` は有効にするとCollageのボーダーとセンターを赤線で表示してくれるのでつまった時に便利なのでいつでも有効にできるように残しています。
 
 最後に要素を `Html Msg` 型に `svg` で変換しています。このパターンはCollageではいつも使うパターンです。
 
-```
+```haskell
 group [
   spacer 300 300,
   plane
@@ -70,7 +69,7 @@ group [
 
 モデルにはx座標、y座標、clockをもたせています。これらの値を `Tick` イベントの中で更新します。
 
-```
+```haskell
 type alias Model =
     { x : Animation, y : Animation, clock : Time }
 
@@ -84,7 +83,7 @@ model =
 
 `Tick` メッセージは引数つきのメッセージで、引数にアニメーションの初期状態から差分の時刻が送られてきます。それをモデルの `clock` にセットしています。
 
-```
+```haskell
 update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
     case msg of
@@ -97,7 +96,7 @@ update msg model =
 
 更新されたclockの値と飛行機のx,y座標を `animate` に渡すとその時刻での飛行機の座標が返ってきます。 `shift pos` をするとその座標に画像がレンダリングされます。これを各 `Tick` 毎に行うことで画像が移動していくように見えます。
 
-```
+```haskell
 view { x, y, clock } =
     let
         pos =
@@ -110,7 +109,7 @@ view { x, y, clock } =
 
 `Tick` メッセージはそのままでは送信されません。送信するためには `Subscription` で `animation-frame` という別のライブラリを使って `AnimationFrame.diffs Tick` を呼びます。Animationするためのライブラリ(`elm-animation`) とフレーム遷移を扱うライブラリが別なのは面白いポイントです。
 
-```
+```haskell
 subs =
     Sub.batch
         [
@@ -125,7 +124,7 @@ subs =
 
 まずマウスイベントを捕まえるために `Mouse.clicks MouseMsg` をサブスクライブします。
 
-```
+```haskell
 subs =
     Sub.batch
         [
@@ -136,7 +135,7 @@ subs =
 
 実際にマウスイベントを扱うには `MouseMsg` を捕まえます。`MouseMsg` は引数つきのメッセージで引数にはクリックされた座標が入っています。 このアプリ独自のロジックで `adjustment` とかを使っていますが、重要なのはクリックされた座標をFloat型に変換して `retarget` に渡すところです。`retarget` は画像がどこまで動くかの値 `to` を更新して座標で返すので、それをモデルの座標にセットします。こうすることでクリックされた位置が新しいアニメーションの `to` になります。
 
-```
+```haskell
 MouseMsg position ->
    let
        -- We need this so that plan's center moves to the new postion
@@ -162,10 +161,10 @@ Portの仕組みはとても簡単で、Javascript側でElmからのメッセー
 
 まずJavascript側から説明します。このコードは `index.html` に書かれています。
 
-`app.ports.play.subscribe(function(val){...|})` がElmからPortにメッセージが送られてきた時に呼ばれるコールバックです。単純に `audio` 要素を取得して `play` しているところがメインです。(一度 `pause` しているのは音が終わる前にもう一度クリックされた時に最初から再生するためにです。)
+`app.ports.play.subscribe(function(val){...})` がElmからPortにメッセージが送られてきた時に呼ばれるコールバックです。単純に `audio` 要素を取得して `play` しているところがメインです。(一度 `pause` しているのは音が終わる前にもう一度クリックされた時に最初から再生するためにです。)
 
 
-```
+```html
 <body background="images/sky.jpg">
     <audio id="my-audio" src="audios/flee1.mp3"></audio>
     <script type="text/javascript">
@@ -184,19 +183,19 @@ Portの仕組みはとても簡単で、Javascript側でElmからのメッセー
 
 次にPortにメッセージを送る側のElmコードを見てみます。Updateの中で `PlaySound` を捕まえます。 `PlaySound` がどこからくるかというと `MouseMsg` をハンドリングする際に戻り値で手動で `update` を呼んで `PlaySound` のコマンドを渡しています。
 
-```
+```haskell
 ({model | x = newX, y = newY } |> update PlaySound)
 ```
 
 `play 0` と呼ぶとJavascript側でサブスクライブしているPortに `0` という値が送られます。ここではJavascript側は何も値は必要ないのですが引数なしで送る方法がわからなかったので適当な値を渡しているだけです。
 
-```
+```haskell
 PlaySound ->
     (model, play 0)
 ```
 
 ## まとめ
 
-大事な点はだいたいカバーしたと思います。純粋関数言語からアニメーションを扱うやり方や考え方はとても面白かったです。はじめは少しとっつきにくいかもしれませんが、慣れれば他の似たようなライブラリも簡単に理解できるようになりました。
+大事な点はだいたいカバーしたと思います。純粋関数言語からアニメーションを扱う考え方はとても面白かったです。はじめは少しとっつきにくいかもしれませんが、慣れれば他の似たようなライブラリも簡単に理解できるようになりました。
 
 この記事を通してElmのファンが増えてくれれば嬉しいです!
