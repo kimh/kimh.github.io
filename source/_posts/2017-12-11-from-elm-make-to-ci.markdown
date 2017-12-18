@@ -40,7 +40,7 @@ Functional Reactive Programmingを調べていて偶然Elmに出会いました�
 
 `image` で飛行機の画像ファイルを読み込んで `shift` で初期位置まで移動させます。 `pos` は 渡されたModelから作成します。(後述)
 
-```
+```elm
 plane =
     image (500, 500) "images/airplane.svg"
     |> shift pos
