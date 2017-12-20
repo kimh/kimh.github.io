@@ -15,7 +15,7 @@ Functional Reactive Programmingを調べていて偶然Elmに出会いました�
 
 ## この記事の対象者
 
-この記事ではElmについての基本知識があることを前提としています。Elmにはすでに素晴らしいチュートリアルがあるのでまだElmに触ったことがなければ https://guide.elm-laang.org/ と https://www.elm-tutorial.org/en/ をお勧めします。
+この記事ではElmについての基本知識があることを前提としています。Elmにはすでに素晴らしいチュートリアルがあるのでまだElmに触ったことがなければ https://guide.elm-lang.org/ と https://www.elm-tutorial.org/en/ をお勧めします。
 基本の文法はわかるけどいまいちSubscriptionやPortがわからないなーという人には楽しんでもらえると思います。
 
 ## Airplane Toy App
