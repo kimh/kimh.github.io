@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "(WIP) Big ideas in 2017"
+title: "Big ideas in 2017"
 date: 2017-01-09 10:22
 comments: true
 categories:
