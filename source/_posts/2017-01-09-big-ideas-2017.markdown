@@ -10,4 +10,4 @@ categories:
 Here is a list of big ideas that I learned in 2017. The work is in progress.
 
 * Time does not exist
-* Average doesn't always exist
+* When you reach 30, there more things NOT to do than to do
