@@ -4,7 +4,7 @@
   <title><![CDATA[Program Is Made At Night]]></title>
   <link href="http://kimh.github.io/atom.xml" rel="self"/>
   <link href="http://kimh.github.io/"/>
-  <updated>2017-12-27T09:16:39+09:00</updated>
+  <updated>2018-02-01T22:04:08+09:00</updated>
   <id>http://kimh.github.io/</id>
   <author>
     <name><![CDATA[kim hirokuni]]></name>
@@ -12,6 +12,362 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[Regex Notes]]></title>
+    <link href="http://kimh.github.io/blog/regex-notes/"/>
+    <updated>2018-02-01T22:01:00+09:00</updated>
+    <id>http://kimh.github.io/blog/regex-notes</id>
+    <content type="html"><![CDATA[<h2>基本動作</h2>
+
+<ul>
+<li>Regex Engine</li>
+<li>Regexデータ</li>
+<li>文字列データ</li>
+</ul>
+
+
+<p>この三つがメインでEngineがRegexデータと文字列データをひとつずつチェックしていく。<strong>マッチ</strong>というのはRegex全体で表現されるパターンが全体でマッチしている場合のことをいう。(ただ各Regexがマッチしている場合もマッチともいう)。わかりづらいので各Regexがマッチしていることは成功といいダメな時は失敗と呼ぶ。</p>
+
+<p>以下はもっとも基本なマッチ。</p>
+
+<h2>Regex基本原則</h2>
+
+<p>まずはRegexの基本原則を見てみる。しかし、これらの基本原則はオプションによって変化して、場合ごとに考え方を変えないといけないところにRegexの難しがあると思う。ただ、基本原則をしっかり理解しておけば、変化系にも対応しやすくなる。</p>
+
+<h3>左から一文字ずつマッチしていく</h3>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>/ab/
+</span><span class='line'>ab</span></code></pre></td></tr></table></div></figure>
+
+
+<ol>
+<li>Regex: <code>a</code> 文字列: <code>"a"</code> => 成功</li>
+<li>Regex: <code>b</code> 文字列: <code>"b"</code> => 成功</li>
+<li>終了</li>
+<li>結果: <code>"ab"</code>にマッチした。</li>
+</ol>
+
+
+<p>Regex EngineはRegexデータ、文字列ともに現在のステップのポジションを覚えていて、ステップ毎にそれらのポジションをひとつずつずらしていく。ポジションは左から右に動いていく。</p>
+
+<h3>マッチした時点で終了</h3>
+
+<p>マッチが達成されたら、それ以降の文字列は無視する。これを貪欲でないマッチとか一般的には呼ぶが自分にはどうもわかりずらい。代わりに<strong>せっかちマッチ</strong>と覚えている。せっかちなので一度マッチした時点で<strong>マッチしたよ！</strong>と言って仕事を終わってしまう。</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>/ab/
+</span><span class='line'>abab</span></code></pre></td></tr></table></div></figure>
+
+
+<ol>
+<li>Regex: <code>a</code> 文字列: <code>"a"</code> => 成功</li>
+<li>Regex: <code>b</code> 文字列: <code>"b"</code> => 成功</li>
+<li>主なEngineではデフォルトではLazy、つまりマッチが成功した時点で終わる</li>
+<li>終了</li>
+<li>結果: 最初の<code>"ab"</code>だけにマッチした。</li>
+</ol>
+
+
+<h3>マッチが成功するために全ての可能性を試す</h3>
+
+<p>Regexにとって一番大事な仕事はマッチする文字列を探すこと。それを達成するためにRegexは全ての可能性を試す。</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>/ab/
+</span><span class='line'>acab</span></code></pre></td></tr></table></div></figure>
+
+
+<ol>
+<li>Regex: <code>a</code> 文字列: <code>"a"</code> => 成功</li>
+<li>Regex: <code>b</code> 文字列: <code>"c"</code> => 失敗</li>
+<li>失敗したのでRegexの最初に戻ってマッチさせようとする。これをBacktrackと呼ぶ。Backtrack == 巻き戻し と考えればいい</li>
+<li>Regex: <code>a</code> 文字列: <code>"a"</code> => 成功</li>
+<li>Regex: <code>b</code> 文字列: <code>"b"</code> => 成功</li>
+<li>終了</li>
+<li>結果: <code>"ab"</code>にマッチした。</li>
+</ol>
+
+
+<h2>よく使われる応用Regex</h2>
+
+<p>ここからは実際によく使うRegexを紹介。中には基本原則で紹介した動作を変えるものもあるので、場合ごとに動作がどう変わるかを把握しないといけない。</p>
+
+<h3>g を使うと一度マッチしても続けてマッチさせようとする（貪欲マッチ)</h3>
+
+<p>Regexの最後に <code>g</code> をつけると一度マッチしても終了せず続けてマッチさせようとする。<code>g</code>を修飾子と呼びこの動作を貪欲マッチと呼ぶ。せっかちマッチの場合と同じでわかりにくいので<strong>熱心マッチ</strong>と覚える。これは基本動作のせっかちマッチを変える。</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>/ab/g
+</span><span class='line'>abab</span></code></pre></td></tr></table></div></figure>
+
+
+<ol>
+<li>Regex: <code>a</code> 文字列: <code>"a"</code> => 成功</li>
+<li>Regex: <code>b</code> 文字列: <code>"b"</code> => 成功</li>
+<li>熱心モードなので文字列がある残っている以上つづける。</li>
+<li>Regex: <code>a</code> 文字列: <code>"a"</code> => 成功</li>
+<li>Regex: <code>b</code> 文字列: <code>"b"</code> => 成功</li>
+<li>終了</li>
+<li>結果: <code>"abab"</code>にマッチした。</li>
+</ol>
+
+
+<h3>文字だけじゃなくその位置を含めて成功/失敗を判定（アンカー）</h3>
+
+<p>今まで見てきたRegexは同じ文字かどうかを判定するものだった。例えば、<code>/ab/</code>はaのあとにbが続く<code>"ab"</code>にマッチする。言い換えれば、aのあとにbが続く限りそれがどこにあろうがマッチする。だから<code>"1ab2</code>はこの場合マッチする。</p>
+
+<p><code>^</code>と<code>$</code>がRegexの前につくと文字のマッチだけじゃなくその文字がある位置まで見る。こうゆう種類のRegexをアンカーと呼ぶ。</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>/^a/
+</span><span class='line'>1a</span></code></pre></td></tr></table></div></figure>
+
+
+<ol>
+<li>Regex: <code>^a</code> 文字列: <code>"1"</code> => 失敗</li>
+<li>BacktrackでRegexが最初に戻る。</li>
+<li>Regex: <code>^a</code> 文字列: <code>"a"</code> => 失敗</li>
+<li><code>"a"</code>にはマッチしているが <code>^a</code>は一番最初にある<code>"a"</code>なので失敗。</li>
+<li>終了</li>
+<li>結果: マッチなし</li>
+</ol>
+
+
+<h3>改行直後の文字は最初の文字列ではない</h3>
+
+<p><code>^</code>は文字列の最初の位置にマッチするが、改行直後の文字列は最初の文字とはならない。この動作が主なRegexエンジンのデフォルト。</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>/^a/
+</span><span class='line'>
+</span><span class='line'># 複数行に渡る文字列
+</span><span class='line'>1a
+</span><span class='line'>a
+</span><span class='line'>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<ol>
+<li>Regex: <code>^a</code> 文字列: <code>"1"</code> => 失敗</li>
+<li>BacktrackでRegexが最初に戻る。</li>
+<li>Regex: <code>^a</code> 文字列: <code>"a"</code> => 失敗</li>
+<li>BacktrackでRegexが最初に戻る。</li>
+<li>Regex: <code>^a</code> 文字列: <code>"a"</code> => 失敗</li>
+<li><code>^a</code>はあくまで文字列全体の最初にある<code>"a"</code>。二つ目の<code>"a"</code>は行の最初のaだが文字列全体の最初ではないのでマッチしない。</li>
+<li>終了</li>
+<li>結果: マッチなし</li>
+</ol>
+
+
+<h3>mを使うと改行が入っていても最初の文字とみなす</h3>
+
+<p>上で例だと改行直後、二つ目の<code>"a"</code>は<code>/^a/</code>にはマッチしなかった。これをマッチさせるには<code>m</code>修飾子を使う。すると、改行直後の文字でも文字列の最初とみなされる。</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>/^a/m
+</span><span class='line'>
+</span><span class='line'># 複数行に渡る文字列
+</span><span class='line'>1a
+</span><span class='line'>a</span></code></pre></td></tr></table></div></figure>
+
+
+<ol>
+<li>Regex: <code>^a</code> 文字列: <code>"1"</code> => 失敗</li>
+<li>BacktrackでRegexが最初に戻る。</li>
+<li>Regex: <code>^a</code> 文字列: <code>"a"</code> => 成功</li>
+<li><code>m</code>修飾子があるので改行直後の<code>"a"</code>は文字列の最初とみなされる。</li>
+<li>終了</li>
+<li>結果: 二つ目の<code>a</code>にマッチ</li>
+</ol>
+
+
+<p><code>m</code>を使った時の動作をmulti-lineモードと呼ぶ。</p>
+
+<h3>（ほぼ）どんな文字にもマッチする . (ドット)</h3>
+
+<p>どんな文字にでもマッチするRegexに<code>.</code>がある。</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>/.../
+</span><span class='line'>1&!</span></code></pre></td></tr></table></div></figure>
+
+
+<ol>
+<li>Regex: <code>.</code> 文字列: <code>"1"</code> => 成功</li>
+<li>Regex: <code>.</code> 文字列: <code>"&amp;"</code> => 成功</li>
+<li>Regex: <code>.</code> 文字列: <code>"!"</code> => 成功</li>
+<li>終了</li>
+<li>結果: <code>1&amp;!</code>にマッチ</li>
+</ol>
+
+
+<p>しかし<code>.</code>にも例外はあり改行にはマッチしない。</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>/.../
+</span><span class='line'># 複数行に渡る文字列
+</span><span class='line'>1
+</span><span class='line'>2</span></code></pre></td></tr></table></div></figure>
+
+
+<ol>
+<li>Regex: <code>.</code> 文字列: <code>"1"</code> => 成功</li>
+<li>Regex: <code>.</code> 文字列: <code>\n</code>  => 失敗</li>
+<li>Backtrackで最初の <code>.</code>に戻る</li>
+<li>Regex: <code>.</code> 文字列: <code>"2"</code> => 成功</li>
+<li>Regex: <code>.</code> 文字列: <code>\n</code>  => 失敗</li>
+<li>終了</li>
+<li>結果: マッチなし</li>
+</ol>
+
+
+<h3>s を使うと . (ドット)が改行にもマッチする</h3>
+
+<p><code>s</code>修飾子を使うと<code>.</code>が改行にもマッチするようになる。</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>/.../s
+</span><span class='line'># 複数行に渡る文字列
+</span><span class='line'>1
+</span><span class='line'>2</span></code></pre></td></tr></table></div></figure>
+
+
+<ol>
+<li>Regex: <code>.</code> 文字列: <code>"1"</code> => 成功</li>
+<li>Regex: <code>.</code> 文字列: <code>\n</code>  => 成功</li>
+<li>Regex: <code>.</code> 文字列: <code>"2"</code> => 成功</li>
+<li>終了</li>
+<li>結果: <code>1\n2</code>にマッチ</li>
+</ol>
+
+
+<p><code>s</code>を使った時の動作をsingle-lineモードと呼ぶ。注意するのは single-modeとmulti-lineモードは全く別物だということ。single-lineモードは<code>.</code>が改行も含むようにすることに対して、multi-lineモードはアンカー (<code>^</code>や<code>&amp;</code>)が改行を考慮するするようにすることなので、single-lineとmulti-lineは相反するモードではない。（両方指定可能)</p>
+
+<h3>パターンを繰り返す</h3>
+
+<p><code>+</code>や<code>*</code>を使うとその直前のRegexを繰り返してマッチするようにできる。<code>+</code>は直前のRegexの一回以上の繰り返し。</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>/a+/
+</span><span class='line'>aaa</span></code></pre></td></tr></table></div></figure>
+
+
+<ol>
+<li>Regex: <code>a+</code> 文字列: <code>"a"</code> => 成功</li>
+<li>Regex: <code>a+</code> 文字列: <code>"a"</code> => 成功</li>
+<li>Regex: <code>a+</code> 文字列: <code>"a"</code> => 成功</li>
+<li>終了</li>
+<li>結果: <code>"aaa"</code>にマッチ</li>
+</ol>
+
+
+<p><code>*</code>は直前のRegexの0回以上に繰り返し。つまりマッチする文字がなくても成功になる。</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>/a*b/
+</span><span class='line'>b</span></code></pre></td></tr></table></div></figure>
+
+
+<ol>
+<li>Regex: <code>a*</code> 文字列: <code>"b"</code> => 成功</li>
+<li><code>*</code>は0回以上のaの繰り返せば成功、つまりaがなくても成功とみなす。</li>
+<li>Regex: <code>b</code> 文字列: <code>"b"</code> => 成功</li>
+<li>終了</li>
+<li>結果: <code>"b"</code>にマッチ</li>
+</ol>
+
+
+<h3>Regexの最後に行く前に文字が終わってしまったら文字を戻す</h3>
+
+<p><code>.</code>と<code>+</code>や<code>*</code>を組み合わせると任意の文字の無限の繰り返しを指定できるので文字列のほうが先に終わってしまうことがある。Regexが失敗したときはBacktrackして次の文字からまたやり直したが繰り返しを使うと文字の方を巻き戻す。普通のBacktrackと区別するために文字列Backtrackと呼ぶ。Regexがこうゆう動きをするのは、最初に書いた<strong>マッチが成功するために全ての可能性を試す</strong>という基本原則があるから。</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>/a.+b/
+</span><span class='line'>aab</span></code></pre></td></tr></table></div></figure>
+
+
+<ol>
+<li>Regex: <code>a</code> 文字列: <code>"a"</code> => 成功</li>
+<li>Regex: <code>.+</code> 文字列: <code>"a"</code> => 成功</li>
+<li><code>.+</code>は任意の文字の繰り返しなので次のRegexには進まない。</li>
+<li>Regex: <code>.+</code> 文字列: <code>"b"</code> => 成功</li>
+<li>この時点で文字列が終わってしまったが、Regex側は<code>b</code>がまだ残っている。<code>b</code>まで成功しないとマッチではない。</li>
+<li>文字列をマッチするとわかっているところまでBacktrackする(この場合最初の<code>"aa"</code>が<code>/a.+/</code>でマッチするとわかっているのでここまで戻す。）</li>
+<li>Regex: <code>b</code> 文字列: <code>"b"</code>=> 成功</li>
+<li>終了</li>
+<li>結果: <code>"aab"</code>にマッチ</li>
+</ol>
+
+
+<h2>もし ~ ならマッチを試みる</h2>
+
+<p>ここまで紹介したRegexではプログラミングでつかう<code>IF ~ then ~ END</code>のようなことはできない。それをできるようにするのがLookahead。重要なポイントはLookaheadは条件をしていしるだけなのでそれ自体はマッチの結果には含まれない。</p>
+
+<h3>もしXにYがつづけばマッチ (Positive Lookahead)</h3>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>/a(?=b)/
+</span><span class='line'>abd</span></code></pre></td></tr></table></div></figure>
+
+
+<ol>
+<li>Regex: <code>a</code> 文字列: <code>"a"</code> => 成功</li>
+<li>Regex: <code>(?=b)</code>の<code>b</code>の部分 文字列: <code>"b"</code> => 成功</li>
+<li>Regex: <code>(?=b)</code>の<code>?=</code>の部分 上のステップで<code>b</code>がマッチしたら成功 => 成功</li>
+<li>終了</li>
+<li>結果: <code>"a"</code>にマッチ。<strong>bはあくまで条件なのでb自体にはマッチしない</strong></li>
+</ol>
+
+
+<p>この例ではあまり意味があるように思えないがLookaheadはXが続かないYを探す時に真価を発揮する。</p>
+
+<h3>もしXにYがつづかなければマッチ (Negative Lookahead)</h3>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>q(?!u)
+</span><span class='line'>aq</span></code></pre></td></tr></table></div></figure>
+
+
+<ol>
+<li>Regex: <code>q</code> 文字列: <code>"a"</code> => 失敗</li>
+<li>Backtrack</li>
+<li>Regex: <code>q</code> 文字列: <code>"q"</code> => 成功</li>
+<li>Regex: <code>(?!=u)</code>の<code>u</code>の部分 文字列: <code>"u"</code> => 失敗</li>
+<li>Regex: <code>(?!u)</code>の<code>?!</code>の部分 上のステップで<code>u</code>がマッチしていないから成功 => 成功</li>
+<li>終了</li>
+<li>結果: <code>"q"</code>にマッチ</li>
+</ol>
+
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[CollageとAnimationを使ってElmでアプリを作る]]></title>
@@ -5469,310 +5825,6 @@ Below is default zero value for primitive types.</p>
 <blockquote><p><strong>(10)</strong> <strong>a=2</strong>と<strong>b=1</strong>を<strong>(1)</strong>に代入します => <strong>c=3</strong></p></blockquote>
 
 <p>これで終わりです。無事元の多項式である<strong>y=2x<sup>2</sup>+x+3</strong>を得ることができました。係数がない項がシークレットなので正しいシークレットである<strong>3</strong>を復元することができました。</p>
-]]></content>
-  </entry>
-  
-  <entry>
-    <title type="html"><![CDATA[Divide And Manage Secret Data Securely With Shamir's Secret Sharing]]></title>
-    <link href="http://kimh.github.io/blog/en/security/protect-your-secret-key-with-shamirs-secret-sharing/"/>
-    <updated>2014-04-22T20:51:00+09:00</updated>
-    <id>http://kimh.github.io/blog/en/security/protect-your-secret-key-with-shamirs-secret-sharing</id>
-    <content type="html"><![CDATA[<p><img src="http://kimh.github.io/images/pieces.jpg" alt="" /></p>
-
-<p>Recently, I came to know an interesting and new idea about password storage schema called <a href="https://github.com/PolyPassHash/PolyPassHash">PollyPassHash</a>.</p>
-
-<p>I may write about PolyPassHasing in more details in separate post, but in summary, PolyPassHashing proposes a new password storage schema that requires certain numbers of shared keys to decrypt the encrypted password.</p>
-
-<p>In this post, I will write about <strong><em>Shamir&rsquo;s secret sharing</em></strong>, one of key technologies used in PolyPassHashing, and try to explain the mathematical basis that archive this great secret sharing technology.</p>
-
-<h2>Contents of This Article</h2>
-
-<h4><a href="#what_is_shamirs_secret_sharing">What is Shamir&rsquo;s secret sharing?</a></h4>
-
-<h4><a href="#basic_terms">Basic terms</a></h4>
-
-<h4><a href="#handson">HandsOn: Play Shamir&rsquo;s Secret with Ruby</a></h4>
-
-<h4><a href="#handson">Understanding mathematical basis</a></h4>
-
-<ul>
-<li><a href="#share_computation">Share Computation</a></li>
-<li><a href="#secret_reconstruction">Secret Reconstruction</a></li>
-</ul>
-
-
-<p><a id="what_is_shamirs_secret_sharing"></a></p>
-
-<h2>What is Shamir&rsquo;s secret sharing</h2>
-
-<p>As the name implies, Shamir&rsquo;s secret sharing is created by Adi Shamir, an famous Israeli cryptographer, who also contributed to the invention of RSA algorithm.</p>
-
-<p>Shamir&rsquo;s secret sharing is an algorithm that divides a secret into shares. Secret can be recovered by combining certain numbers of shares.</p>
-
-<p>Imagine a case where you have to encrypt some data. No matter which encryption method you use, you must store the secret key used in the encryption in order to decrypt later.</p>
-
-<p>The key has to be very secured. If the key is stolen by attacker, your data will be easily decrypted. However, storing key is always difficult problem. It gets even more difficult if you need to share the key with others.</p>
-
-<p>This problem of storing and sharing secret key is cause of headache for administrators.</p>
-
-<p>However, if you use Shamir&rsquo;s secret sharing algorithm, you can solve the two problems to greater extent.</p>
-
-<p>You can divide your secret key into pieces and distribute them to other administrators. Each administrator still needs to keep a piece of secret key, but knowing a piece is not enough to recover the original secret.</p>
-
-<p>Because attacker must compromise multiple administrator&rsquo;s pieces, secret generated by Shamir&rsquo;s secret sharing is very difficult to be compromised.</p>
-
-<p><a id="basic_terms"></a></p>
-
-<h2>Basic Terms</h2>
-
-<p>Before going into details, let&rsquo;s clarify some terms used in Shamir&rsquo;s Secret sharing.</p>
-
-<h4>Secret</h4>
-
-<p>Secret is a secret message or number that you want to share with others securely.</p>
-
-<h4>Share</h4>
-
-<p>Share is a piece of secret. Secret is divided into pieces and each piece is called share. It is computed from given secret. In order to recover the secret, you need to get certain numbers of shares.</p>
-
-<h4>Threshold</h4>
-
-<p>Threshold is the number of shares you need at least in order to recover your secret. You can restore your secret only when you have more than or equal to the number of threshold.</p>
-
-<p><a id="handson"></a></p>
-
-<h2>HandsOn: Play Shamir&rsquo;s Secret With Ruby</h2>
-
-<p>Do you want to see what you can do with Shamir&rsquo;s secret sharing? Let&rsquo;s use a small Ruby library that I wrote to demonstrate the idea. This library is ported from Python Shamir&rsquo;s secret sharing library used in <a href="https://github.com/PolyPassHash/PolyPassHash">PolyPassHash project</a> originally written by <a href="https://github.com/JustinCappos">JustinCappos</a>.</p>
-
-<p>First get the code from <a href="https://github.com/PolyPassHash/PolyPassHash-Ruby">PolyPassHash-Ruby</a> and load <code>shamirsecret.rb</code> into your <code>irb</code> session.</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-</pre></td><td class='code'><pre><code class='sh'><span class='line'><span class="nv">$ </span>git clone https://github.com/PolyPassHash/PolyPassHash-Ruby
-</span><span class='line'><span class="nv">$ </span><span class="nb">cd </span>PolyPassHash-Ruby
-</span><span class='line'><span class="nv">$ </span>irb -r ./shamirsecret.rb
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>Let&rsquo;s encrypt some messages and see if we can recover the message when giving enough numbers of shares.</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-<span class='line-number'>20</span>
-<span class='line-number'>21</span>
-</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="c1"># First, you need to instantiate ShamirSecret class.</span>
-</span><span class='line'><span class="c1"># You can specify the number of threshold in the first argument. In this case, two shares are required.</span>
-</span><span class='line'><span class="c1"># You can pass a message to encrypt in the second argument. </span>
-</span><span class='line'><span class="n">shamirsecret</span> <span class="o">=</span> <span class="no">ShamirSecret</span><span class="o">.</span><span class="n">new</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="s2">&quot;In the name of Adi Shamir&quot;</span><span class="p">)</span>
-</span><span class='line'>
-</span><span class='line'><span class="c1"># We compute shares from the given secret. Let&#39;s assume we want to distribute to three parties, so lets create three shares.</span>
-</span><span class='line'><span class="c1"># The argument is so called share number. You will know what it is later in this post.</span>
-</span><span class='line'><span class="c1"># For now, just remember that it has to be unique number.</span>
-</span><span class='line'><span class="n">s1</span> <span class="o">=</span> <span class="n">shamirsecret</span><span class="o">.</span><span class="n">compute_share</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
-</span><span class='line'><span class="n">s2</span> <span class="o">=</span> <span class="n">shamirsecret</span><span class="o">.</span><span class="n">compute_share</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
-</span><span class='line'><span class="n">s3</span> <span class="o">=</span> <span class="n">shamirsecret</span><span class="o">.</span><span class="n">compute_share</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
-</span><span class='line'>
-</span><span class='line'><span class="c1"># Once we computed shares, we will throw the secret away because we should be able to recover from shares.</span>
-</span><span class='line'><span class="n">shamirsecret</span> <span class="o">=</span> <span class="kp">nil</span>
-</span><span class='line'>
-</span><span class='line'><span class="c1"># Then we will recover the secret. Instantiate ShamirSecret again. We don&#39;t pass secret this time because we just want to recover secret.</span>
-</span><span class='line'><span class="n">shamirsecret</span> <span class="o">=</span> <span class="no">ShamirSecret</span><span class="o">.</span><span class="n">new</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
-</span><span class='line'>
-</span><span class='line'><span class="c1"># Now we can recover the secret by giving two shares or more since we set threshold to be 2.</span>
-</span><span class='line'><span class="n">shamirsecret</span><span class="o">.</span><span class="n">recover_secretdata</span><span class="p">(</span><span class="o">[</span><span class="n">s1</span><span class="p">,</span><span class="n">s3</span><span class="o">]</span><span class="p">)</span>
-</span><span class='line'><span class="o">=&gt;</span> <span class="s2">&quot;In the name of Adi Shamir&quot;</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>Let&rsquo;s confirm what happens if we gave wrong shares.</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-<span class='line-number'>20</span>
-<span class='line-number'>21</span>
-<span class='line-number'>22</span>
-</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="c1"># Instantiate and compute share in the same way</span>
-</span><span class='line'><span class="n">shamirsecret</span> <span class="o">=</span> <span class="no">ShamirSecret</span><span class="o">.</span><span class="n">new</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="s2">&quot;In the name of Adi Shamir&quot;</span><span class="p">)</span>
-</span><span class='line'><span class="n">s1</span> <span class="o">=</span> <span class="n">shamirsecret</span><span class="o">.</span><span class="n">compute_share</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
-</span><span class='line'><span class="n">s2</span> <span class="o">=</span> <span class="n">shamirsecret</span><span class="o">.</span><span class="n">compute_share</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
-</span><span class='line'><span class="n">s3</span> <span class="o">=</span> <span class="n">shamirsecret</span><span class="o">.</span><span class="n">compute_share</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
-</span><span class='line'>
-</span><span class='line'><span class="c1"># Make sure our share is valid</span>
-</span><span class='line'><span class="n">shamirsecret</span><span class="o">.</span><span class="n">is_valid_share</span><span class="p">(</span><span class="n">s1</span><span class="p">)</span>
-</span><span class='line'><span class="o">=&gt;</span> <span class="kp">true</span>
-</span><span class='line'>
-</span><span class='line'><span class="c1"># Change a byte of share</span>
-</span><span class='line'><span class="n">s1</span><span class="o">[</span><span class="mi">1</span><span class="o">][</span><span class="mi">0</span><span class="o">]</span> <span class="o">=</span> <span class="n">s1</span><span class="o">[</span><span class="mi">1</span><span class="o">][</span><span class="mi">0</span><span class="o">]</span> <span class="o">+</span> <span class="mi">1</span> <span class="o">%</span> <span class="mi">256</span>
-</span><span class='line'>
-</span><span class='line'><span class="c1"># The share is not valid anymore</span>
-</span><span class='line'><span class="n">shamirsecret</span><span class="o">.</span><span class="n">is_valid_share</span><span class="p">(</span><span class="n">s1</span><span class="p">)</span>
-</span><span class='line'><span class="o">=&gt;</span> <span class="kp">false</span>
-</span><span class='line'>
-</span><span class='line'><span class="c1"># Secret is corrupted with wrong share</span>
-</span><span class='line'><span class="n">shamirsecret</span> <span class="o">=</span> <span class="kp">nil</span>
-</span><span class='line'><span class="n">shamirsecret</span> <span class="o">=</span> <span class="no">ShamirSecret</span><span class="o">.</span><span class="n">new</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
-</span><span class='line'><span class="n">shamirsecret</span><span class="o">.</span><span class="n">recover_secretdata</span><span class="p">(</span><span class="o">[</span><span class="n">s1</span><span class="p">,</span><span class="n">s3</span><span class="o">]</span><span class="p">)</span>
-</span><span class='line'><span class="o">=&gt;</span> <span class="s2">&quot;</span><span class="se">\xC6</span><span class="s2">n the name of Adi Shamir&quot;</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p><a id="how_this_works"></a></p>
-
-<h2>How This Works</h2>
-
-<p>It&rsquo;s time to do some math. Shamir&rsquo;s secret sharing is using the very basic idea of polynomial.</p>
-
-<p>We have two major steps: <strong>Share Computation</strong> and <strong>Secret Reconstruction</strong>. Let&rsquo;s do one by one.</p>
-
-<p><a id="share_computation"></a></p>
-
-<h3>Share Computation</h3>
-
-<h4>Step1: Decide secret</h4>
-
-<p>First, we need to decide our secret message. To make our story simple, let&rsquo;s choose dead simple one, <code>3</code>, as our secret.</p>
-
-<p>If you choose more complex message such as <em>I love you</em> or <em>4b0649b1faf1c1ea7cb0e900</em>, you just need to convert them to byte array so that you can treat them as a number.</p>
-
-<h4>Step2: Decide threshold</h4>
-
-<p>Next thing to decide is the threshold. We will choose <code>3</code> as our threshold. This means that you need at least three shares to recover the secret.</p>
-
-<h4>Step3: Create polynomial</h4>
-
-<p>We need to create our polynomial. Polynomial is the equation that looks like <strong>y=3x+1</strong> or <strong>y=5x<sup>2</sup>+10x-3</strong>.
-You can choose any numbers for coefficient, but the degree of your polynomial must be <strong>threshold -1 </strong>.</p>
-
-<p>Our threshold is <code>3</code>, so the degree must be <code>2</code> in our case. The polynomial of degree of 2 should takes the form of <strong>y=ax<sup>2</sup>+bx+c</strong>. Since you can choose any numbers
-for coefficient, we will use <code>2</code> for <strong><em>a</em></strong> and <code>1</code> for <strong><em>b</em></strong>.</p>
-
-<p>What <strong><em>c</em></strong> will be? <strong><em>c</em></strong> must to be our secret. Therefore, we use <code>3</code> for <strong><em>c</em></strong>.</p>
-
-<p>This is our polynomial: <strong>y=2x<sup>2</sup>+x+3</strong>.</p>
-
-<p>Now we have everything to demonstrate Shamir&rsquo;s secret sharing. This is our configuration</p>
-
-<blockquote><p><strong>Secret:</strong> 3</p>
-
-<p><strong>Threshold:</strong>  3</p>
-
-<p><strong>Polynomial:</strong> y=2x<sup>2</sup>+x+3</p></blockquote>
-
-<h4>Step4: Draw graph</h4>
-
-<p>Note that drawing graph is not necessary to do computation for Shamir&rsquo;s secret sharing. However, we can understand how this works better by drawing graph.</p>
-
-<p>The graph of our polynomial looks like this one.</p>
-
-<p><img src="http://kimh.github.io/images/polygraph0.jpg" alt="Graph of y=2x^2+x+3" /></p>
-
-<h4>Step5: Plot points on the graph</h4>
-
-<p>Plot three points on the line of graph.</p>
-
-<p>For example, we plot <strong>(x,y)(1, 6)</strong>, <strong>(x,y)(2,13)</strong>, <strong>(x,y)(-2, 9)</strong> on the line of graph.</p>
-
-<p><img src="http://kimh.github.io/images/polygraph1.jpg" alt="Plot points on the line of graph" /></p>
-
-<p>These points are your <strong><em>shares</em></strong>. The value in <strong>x</strong> is called <em>share number</em> and the value of <strong>y</strong> is a <em>share</em>.</p>
-
-<p>Remember that we decided our threshold to be <code>3</code>? Three shares are minimum number of shares that we need. That&rsquo;s why we plotted three points.</p>
-
-<p>You can get even more shares by plotting extra points if you want to distribute shares to more parties.</p>
-
-<p>Once you get shares, forget everything but your threshold and shares!! Throw your polynomial, the graph, and your secret.</p>
-
-<p>As long as you have your shares and threshold, you can recover everything else.</p>
-
-<p><a id="secret_reconstruction"></a></p>
-
-<h3>Secret Reconstruction</h3>
-
-<p>Now you know nothing but shares and threshold, but you can still recover your secret by combining the shares.</p>
-
-<p>To get this idea, we will again use graph.</p>
-
-<p>Plot points of your shares, <strong>(x,y)(1, 6)</strong>, <strong>(x,y)(2,13)</strong>, <strong>(x,y)(-2, 9)</strong>, on the graph.
-Then connecting your points and draw imaginary line. If you could do this, you can now recover your polynomial because you are connecting
-points derived from the polynomial.</p>
-
-<p><img src="http://kimh.github.io/images/polygraph4.jpg" alt="" /></p>
-
-<p>Not sure if your line is accurate? Yes, it is is difficult to draw the completely same line because it is curving line. It doesn&rsquo;t matter because drawing graph is just to help you understand the idea.</p>
-
-<p>However, by definition, <a href="http://en.wikipedia.org/wiki/Shamir's_Secret_Sharing#Shamir.27s_secret-sharing_scheme">2 points are sufficient to define a line, 3 points are sufficient to define a parabola</a> (Wikipedia)</p>
-
-<p>Therefore, although it is difficult to draw the imaginary line by hands from points of shares,  you should be able to do that by doing some math. Now, let&rsquo;s do this.</p>
-
-<h4>Polynomial interpolation</h4>
-
-<p>Since we know that our threshold is <code>3</code>, we know that we need to get the polynomial of degree of <code>2</code> (remember that degree is threshold &ndash; 1) which looks like this: <strong>y=ax<sup>2</sup>+bx+c</strong></p>
-
-<p>Substitute three points into <strong>y=ax<sup>2</sup>+bx+c</strong>.</p>
-
-<blockquote><p><strong>(1)</strong> (1,6)  => <strong>c = a + b &ndash; 6</strong></p>
-
-<p><strong>(2)</strong> (2,13) => <strong>c = 4a + 2b &ndash; 13</strong></p>
-
-<p><strong>(3)</strong> (-2,9) => <strong>c = 4a &ndash; 2b &ndash; 9</strong></p></blockquote>
-
-<p>Now substitute <strong>(1)</strong> into <strong>(2)</strong> and <strong>(3)</strong> to get <strong>a</strong>.</p>
-
-<blockquote><p><strong>(4)</strong> substitute <strong>(1)</strong> into <strong>(2)</strong> => <strong>b = -3a + 7</strong></p>
-
-<p><strong>(5)</strong> substitute <strong>(1)</strong> into <strong>(3)</strong> => <strong>3b = 3a -3</strong></p>
-
-<p><strong>(6)</strong> substitute <strong>(4)</strong> into <strong>(5)</strong> => <strong>a = 2</strong></p></blockquote>
-
-<p>We could get <strong>a</strong>. Let&rsquo;s compute <strong>b</strong> next.</p>
-
-<blockquote><p><strong>(7)</strong> substitute <strong>a=2</strong> into <strong>(1)</strong> => <strong>c=b &ndash; 4</strong></p>
-
-<p><strong>(8)</strong> substitute <strong>a=2</strong> into <strong>(2)</strong> => <strong>c=2b &ndash; 5</strong></p>
-
-<p><strong>(9)</strong> substitute <strong>(7)</strong> into <strong>(8)</strong> => <strong>b = 1</strong></p></blockquote>
-
-<p>Now we could get <strong>a</strong> and <strong>b</strong>. At last, we can compute <strong>c</strong>.</p>
-
-<blockquote><p><strong>(10)</strong> substitute <strong>a=2</strong> and <strong>b=1</strong> into <strong>(1)</strong> => <strong>c=3</strong></p></blockquote>
-
-<p>We are done. We could recover original polynomial <strong>y=2x<sup>2</sup>+x+3</strong> and you can find your secret at free coefficient, which is <strong>3</strong>.</p>
 ]]></content>
   </entry>
   
