@@ -206,4 +206,4 @@ And try to use it.
 
 This breaks in the middle because permission spec requires `:beeaverci/user-id`, not `:beeaver/user-id`. However, they mean the same things but how to express it will be different among people. However, specs requires the name to be preceise. `:beeaverci/user-id` and `:beeaver/user-id` are completely different thing.
 
-Of course, the problem wont' be solved if you go with simply `user-id` because other person coming from Ruby background call it `useri_id` and it also breaks. However, by adding namespace, you are going to make this problem harder to deal with becayse you need to care both namespace part and actual symbol name part.
+Of course, the problem wont' be solved if you go with simply `user-id` because other person coming from Ruby background may call it `useri_id` and it also breaks. However, by adding namespace, you are going to make this problem harder to deal with becayse you need to care both namespace part and actual symbol name part.
