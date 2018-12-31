@@ -38,28 +38,37 @@
   <script src="/javascripts/libs/modernizr-2.0.6.min.js"></script>
 </head>
 
+
+
 <body>
-    <div id="container">
-        <header>
-            <span id='name-helper'>kim hirokuni</span>
-            <canvas   id="myCanvas" width="700" ></canvas>
-                <br><br>
-                <h1>Program Is Made At Night</h1>
-                <br>
-        </header>
+	<header id="header" class="inner"><header>
+    <h2> Blog Archive</h2>
+</header>
+</header>
 
-        <div id="main" role="main">
-            <nav role="navigation" ><ul class="main-navigation">
-  <li style='float:left;margin-right:7px'><a class='nav' href="/">Blog</a></li>
-  <li style='float:left;margin-right:7px'><a class='nav' href="/archives">Archives</a></li>
-  <li ><a class='nav' href="/about">About</a></li>
-</ul><br><br>
-</nav>
-            
+	<div id="content" class="inner">
 
 
-  <article>
-    <article>
+    <article class="post"><article>
+
+
+  <div class="article-read-more">
+    <p class="meta">
+      
+
+
+
+2016 06-19
+      <a rel="full-article" href="/blog/jp/standing-desk-review/">スタンディングデスクを始めようと考えている人へ</a>
+    </p>
+  </div>
+
+</article>
+
+</article>
+
+
+    <article class="post"><article>
 
 
   <div class="article-read-more">
@@ -75,12 +84,10 @@
 
 </article>
 
+</article>
 
-  </article>
 
-
-  <article>
-    <article>
+    <article class="post"><article>
 
 
   <div class="article-read-more">
@@ -96,12 +103,10 @@
 
 </article>
 
+</article>
 
-  </article>
 
-
-  <article>
-    <article>
+    <article class="post"><article>
 
 
   <div class="article-read-more">
@@ -117,12 +122,10 @@
 
 </article>
 
+</article>
 
-  </article>
 
-
-  <article>
-    <article>
+    <article class="post"><article>
 
 
   <div class="article-read-more">
@@ -138,12 +141,10 @@
 
 </article>
 
+</article>
 
-  </article>
 
-
-  <article>
-    <article>
+    <article class="post"><article>
 
 
   <div class="article-read-more">
@@ -159,12 +160,10 @@
 
 </article>
 
+</article>
 
-  </article>
 
-
-  <article>
-    <article>
+    <article class="post"><article>
 
 
   <div class="article-read-more">
@@ -180,12 +179,10 @@
 
 </article>
 
+</article>
 
-  </article>
 
-
-  <article>
-    <article>
+    <article class="post"><article>
 
 
   <div class="article-read-more">
@@ -201,12 +198,10 @@
 
 </article>
 
+</article>
 
-  </article>
 
-
-  <article>
-    <article>
+    <article class="post"><article>
 
 
   <div class="article-read-more">
@@ -222,12 +217,10 @@
 
 </article>
 
+</article>
 
-  </article>
 
-
-  <article>
-    <article>
+    <article class="post"><article>
 
 
   <div class="article-read-more">
@@ -243,33 +236,18 @@
 
 </article>
 
-
-  </article>
-
-
-  <article>
-    <article>
-
-
-  <div class="article-read-more">
-    <p class="meta">
-      
-
-
-
-2014 05-03
-      <a rel="full-article" href="/blog/jp/security/protect-your-secret-key-with-shamirs-secret-sharing-jp/">シャミアの秘密分散法で秘密のデータを分割管理する</a>
-    </p>
-  </div>
-
 </article>
 
-
-  </article>
-
-
-        </div>
-           <footer role="contentinfo" >
+<nav id="pagenavi">
+    
+        <a href="/blog/" class="prev">Prev</a>
+    
+    
+        <a href="/blog/page/3/" class="next">Next</a>
+    
+    <div class="center"><a href="/blog/archives">Blog Archives</a></div>
+</nav></div>
+	<footer id="footer" class="inner">   <footer role="contentinfo" >
     	<p>
 		Copyright &copy; 2018 - kim hirokuni -
 		 <span class="credit">Powered by <a href="http://octopress.org">Octopress</a></span> |
@@ -277,147 +255,32 @@
 	</p>
     </footer>
 
-
-    </div> <!--! end of #container -->
-      <script>
-      var name = document.getElementById('name-helper').innerHTML;
-
-      var canvas = document.getElementById('myCanvas');
-
-      //The name (up to 28 characters long, including white space)
-      var length = name.length;
-      if (length>28){//Exceed character length limit, remove canvas
-          canvas.remove();
-      }
-      else{
-            
-
-        var context = canvas.getContext('2d');
-
-        //calculate width and length
-        var width=700/1.25/length;
-        var start;
-        if (width>40){
-          width=40;
-        }
-
-        var height= width/2;
-
-        //the start postion of the link list
-        var start = (700-width*length*1.25)/2;
-        var horizon = 5;
-
-        //DO NOT CHANGE THOSE
-        var mid_horizon = horizon+height/2;
-        var name_counter =0;
-
-        var x = height/5;
-        var y = height/5;
-        var interval=width/4;
-        
-        var radius = 0.75*width;
-        
-        var text_pos=width*1.1;
+</footer>
+	<script src="/javascripts/slash.js"></script>
+<script src="/javascripts/jquery.fancybox.pack.js"></script>
+<script type="text/javascript">
+(function($){
+	$('.fancybox').fancybox();
+})(jQuery);
+</script> <!-- Delete or comment this line to disable Fancybox -->
 
 
-        canvas.height=mid_horizon+width/2+width/2.1+5;
-        
-        for (var i=1;i<name.length+1;i++){
-
-          context.beginPath();
-          context.strokeStyle='#F9BF3B';
-          
-          //the rectangle
-          context.rect(start, horizon, width, height);
-
-          //the middle line
-          context.moveTo(start+width/2,horizon);
-          context.lineTo(start+width/2,horizon+height);
-
-          //if this is the last element
-          if (i==name.length){
-            context.moveTo(start+width/2,horizon+height);
-            context.lineTo(start+width,horizon);
-
-          }
-          else{
-            //the arrow
-            context.moveTo(start+0.75*width,mid_horizon);
-            context.lineTo(start+width+interval,mid_horizon);
-
-            context.moveTo(start+width+interval,mid_horizon);
-            context.lineTo(start+width+interval-x,mid_horizon+y);
-          
-            context.moveTo(start+width+interval,mid_horizon);
-            context.lineTo(start+width+interval-x,mid_horizon-y); 
-          }
-          
-       
-        
-          var startAngle = 1.2 * Math.PI;
-          var endAngle = 1 * Math.PI;
-          var counterClockwise = true;
+<script type="text/javascript">
+      var disqus_shortname = 'kimstechblog';
       
-          context.stroke();
-            
-          context.beginPath();
-          context.arc(start+width/4+radius*0.81, mid_horizon+width/2, radius, startAngle, endAngle, counterClockwise);
-
-          context.moveTo(start+width/4+radius*0.81-radius,mid_horizon+width/2);
-          context.lineTo(start+width/4+radius*0.81-radius-x,mid_horizon-y+width/2);
-
-          context.moveTo(start+width/4+radius*0.81-radius,mid_horizon+width/2);
-          context.lineTo(start+width/4+radius*0.81-radius+x,mid_horizon-y+width/2); 
-
-          context.font = ' 15pt Calibri';
-          context.fillStyle = '#859900';
-          context.fillText(name.charAt(name_counter), start+width/4+radius*0.81-radius-width/14, mid_horizon+width/2+width/2.1);
-
-          context.lineWidth=1;
-          context.strokeStyle='#F9BF3B';
-          context.stroke();
-          start+=width/2*2+interval;      
-          name_counter+=1;
-        }
-      }
-
-    </script>
-
-  <!-- JavaScript at the bottom for fast page loading -->
-
-  <!-- Grab Google CDN's jQuery, with a protocol relative URL; fall back to local if offline -->
-  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.6.2/jquery.min.js"></script>
-  <script>window.jQuery || document.write('<script src="js/libs/jquery-1.6.2.min.js"><\/script>')</script>
-
-
-  <!-- scripts concatenated and minified via ant build script-->
-  <script defer src="/javascripts/app.js"></script>
-  <!-- end scripts-->
-
-	
-
-  <!-- Prompt IE 6 users to install Chrome Frame. Remove this if you want to support IE 6.
-       chromium.org/developers/how-tos/chrome-frame-getting-started -->
-  <!--[if lt IE 7 ]>
-    <script src="//ajax.googleapis.com/ajax/libs/chrome-frame/1.0.3/CFInstall.min.js"></script>
-    <script>window.attachEvent('onload',function(){CFInstall.check({mode:'overlay'})})</script>
-  <![endif]-->
- 
-
-  <script type="text/javascript">
-    (function(){
-      var twitterWidgets = document.createElement('script');
-      twitterWidgets.type = 'text/javascript';
-      twitterWidgets.async = true;
-      twitterWidgets.src = 'http://platform.twitter.com/widgets.js';
-      document.getElementsByTagName('head')[0].appendChild(twitterWidgets);
-    })();
-  </script>
-
-
+        
+        var disqus_script = 'count.js';
+      
+    (function () {
+      var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+      dsq.src = 'http://' + disqus_shortname + '.disqus.com/' + disqus_script;
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    }());
+</script>
 
 
 
 
 
 </body>
+</html>
