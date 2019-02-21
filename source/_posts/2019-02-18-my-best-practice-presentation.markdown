@@ -17,7 +17,7 @@ categories:
 
 ## アウトラインを作り込む
 
-プレゼンのアウトラインをDropbox Paper上でしっかり時間をかけて書いた。実際に書いたやつは[ここ](https://paper.dropbox.com/doc/CICD--AWkkEr_C_ZPOCcZagtyXC4MfAg-3m4SlWyduju1psbEqFoHX)。
+プレゼンのアウトラインをDropbox Paper上でしっかり時間をかけて書いた。ここで何度も書いたり消したりして最終的にスライドへそのままコピペできるくらいまで内容を磨いた。
 
 ## 第３者のフィードバックをもらう
 
