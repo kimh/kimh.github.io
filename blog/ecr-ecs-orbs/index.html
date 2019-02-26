@@ -1,0 +1,432 @@
+<!doctype html>
+<!-- paulirish.com/2008/conditional-stylesheets-vs-css-hacks-answer-neither/ -->
+<!--[if lt IE 7]> <html class="no-js ie6 oldie" lang="en"> <![endif]-->
+<!--[if IE 7]>    <html class="no-js ie7 oldie" lang="en"> <![endif]-->
+<!--[if IE 8]>    <html class="no-js ie8 oldie" lang="en"> <![endif]-->
+<!-- Consider adding an manifest.appcache: h5bp.com/d/Offline -->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en"> <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+
+  <!-- Use the .htaccess and remove these lines to avoid edge case issues.
+       More info: h5bp.com/b/378 -->
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+
+  <title>CircleCI Orbsを使ってECR/ECSへ自動デプロイする |  kim hirokuni</title>
+  <meta name="author" content="kim hirokuni">
+  
+
+  
+  <!-- Mobile viewport optimized: j.mp/bplateviewport -->
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+
+  <!-- Place favicon.ico and apple-touch-icon.png in the root directory: mathiasbynens.be/notes/touch-icons -->
+  <link href="/favicon.png" rel="icon">
+
+  <!-- CSS: implied media=all -->
+  <!-- CSS concatenated and minified via ant build script-->
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <link href='https://fonts.googleapis.com/css?family=Inconsolata' rel='stylesheet' type='text/css'>
+  <!-- end CSS-->
+
+  <!-- More ideas for your <head> here: h5bp.com/d/head-Tips -->
+
+  <!-- All JavaScript at the bottom, except for Modernizr / Respond.
+       Modernizr enables HTML5 elements & feature detects; Respond is a polyfill for min/max-width CSS3 Media Queries
+       For optimal performance, use a custom Modernizr build: www.modernizr.com/download/ -->
+  <script src="/javascripts/libs/modernizr-2.0.6.min.js"></script>
+</head>
+
+<body id="post">
+
+  <div id="container">
+    <nav role="navigation" ><ul class="main-navigation">
+  <li style='float:left;margin-right:5px'><a class='nav' href="/">Home</a></li>
+</ul><br><br>
+</nav>
+    <article>
+
+
+  <h1 class="article-title">CircleCI Orbsを使ってECR/ECSへ自動デプロイする</h1>
+  <div class="article-content"><h1>モチベーション</h1>
+
+<p>JAWS Days 2019でCircleCI Orbsを使ってAWSと連携されるネタで登壇してきました。当日の前日Twitterで公開することを約束しちゃったので、それならしっかりしたやつ作ろうということでブログ化しました。当日のスライドは<a href="https://speakerdeck.com/kimh/orbswoshi-tuteawshejian-dan-depuroi">ここ</a>。</p>
+
+<p><img src="/images/ecr_ecs_tweet.png" height="300" width="450" alt="tweet" />
+<a href="https://twitter.com/inokara/status/1098529153890963458">https://twitter.com/inokara/status/1098529153890963458</a></p>
+
+<h1>やりたいこと</h1>
+
+<p>CircleCIとECR、ECSを連携させて変更が自動でデプロイされるようにする。めっちゃ雑だけど以下のような感じの構成。</p>
+
+<p><img src="/images/ecs_ecr_diagram.png" height="500" width="800" alt="diagram" /></p>
+
+<p>流れとしては</p>
+
+<ul>
+<li>リポジトリのDockerイメージをアップデート</li>
+<li>GitHubへプッシュ</li>
+<li>CircleCIでイメージをビルドしてECRへプッシュ</li>
+<li>CircleCIで新しいイメージを使ってECSのタスク定義を更新してECSへプッシュ</li>
+<li>ブラザウから変更を確認</li>
+</ul>
+
+
+<p>これをするためにECR/ECS側とCircleCI側の設定が必要になる。</p>
+
+<h1>ECR側の設定</h1>
+
+<p>まずはECR側の設定。普通にリポジトリをECRで作るだけなので特別説明が必要なところはない。ひとつあるとすると、この時に設定する <code>Repository name</code> と<code>URI (1234567.dkr.ecr.us-east-1.amazonaws.com/nginx みたいなやつ)</code> はCircleCIの設定の時に必要になるくらい。</p>
+
+<h1>ECS側の設定</h1>
+
+<p>自分のAWS力が低すぐるってのもあるんだろうけど、ちょっとハマったのでこっちは詳しく解説してみようか。</p>
+
+<p>ECSには大きく分けて3つのコンポーネントがあって、Cluster → Service → Task の順でより粒度が細かくなっていく。Taskには主に実行するコンテナに関する情報を、ServiceにはどのTaskを何個起動するかやLBと連携して負荷分散などの情報を、Clusterはそれらを実行するEC2インスタンスに関する情報をそれぞれ定義する。これらの理解については<a href="https://qiita.com/NewGyu/items/9597ed2eda763bd504d7">このQiitaの記事</a>がわかりやすかった。</p>
+
+<h2>Taskの作成</h2>
+
+<ul>
+<li>Create new Task Definition: EC2を選択 (Fargateよくわからん)</li>
+<li>Task Definition Name*: 適当な名前をつける。この記事では <code>kim-app-nginx</code> にする</li>
+<li>Task Role: <code>ecsTaskRoleExecution</code> を選択。</li>
+<li>Network Mode: <code>&lt;default&gt;</code> を選択。</li>
+<li>Task execution role: <code>ecsTaskExecutionRole</code> を選択。</li>
+<li>Task memory/ CPU: 適当に。</li>
+</ul>
+
+
+<p>Add containerボタンを押してコンテナイメージを入力していく。</p>
+
+<ul>
+<li>Container name: 適当につける</li>
+<li>Image: ECRで作成したリポジトリを書く。<strong>注意するのはURI/リポジトリ:タグ</strong> の形式で書く。この記事では例として <code>1234567.dkr.ecr.us-east-1.amazonaws.com/nginx:latest</code> としておく。</li>
+<li>Port mappings: Host Portに0、Container PortにそのコンテナがListenするポートを書く。nginxの場合はContainer Portは80。<strong>Host Portを0をするところが重要。後述するけどこれをしないと複数のTaskを立てた時にポートがバッティングしてしまい自動デプロイに失敗する。</strong></li>
+</ul>
+
+
+<h2>Clusterの作成</h2>
+
+<p>Serviceを作る前にまずClusterを作成する。</p>
+
+<p>Create Clusterから <strong>EC2 Linux + Networking</strong> を選択。ここはあんまり迷うところないと思うけどContainer instance IAM roleには <code>ecsInstanceRole</code> が選択されていることを確認。Cluster nameは適当につける。このブログでは <code>default-kim</code> とする。</p>
+
+<p>Clusterが作成してしばらくするとECS Instancesのところで新しいEC2インスタンスが起動される（はず。もし起動されなかったらScale ECS Instancesを押してみて）</p>
+
+<h2>Load Balancerの作成</h2>
+
+<p>唐突にLBの話が出てきたけど、これにはちゃんと理由がある。本来であればClusterを作成したら紐づくServiceを作成する。自動デプロイなしでとりあえずECSを動かすだけならそれでいいんだけど今回はCircleCIから自動デプロイすることが最終ゴールで、これをするためにLBが必要になる。</p>
+
+<p>まずは問題を説明しよう。LBなしでServiceを作って自動デプロイすると以下のようなログが出て新しいタスクが起動しなかった。</p>
+
+<p><code>service MYSERVICE was unable to place a task because no container instance met all of its requirements. The closest matching container-instance .... is already using a port required by your task</code></p>
+
+<p>エラーメッセージにあるように、新しいタスクのポートが古いタスクとコンフリクトしてしまい、起動に失敗している。これを解決するにはコンテナがephemeralポートで起動するようするしないといけない。</p>
+
+<p><a href="https://stackoverflow.com/questions/48931823/i-cant-deploy-a-new-container-to-my-ecs-cluster-because-of-ports-in-use">このSO</a>を読むと<a href="https://aws.amazon.com/jp/premiumsupport/knowledge-center/dynamic-port-mapping-ecs/">動的ポートマッピング</a>が必要でそれをするためにはLBを作成する必要があるらしい。</p>
+
+<p>というわけで、一旦ECSの画面から離れてEC2のLoad Balancingのページに行く。Create Load BalancerからApplication Load Balancerを選択。ListenersのところでLoad Balancer ProtocolにHTTPを、Load Balancer Portは80 (nginxの待ち受けポート)を設定する。VPCはCluster作成の時に選択したVPCと同じものを選択。</p>
+
+<p>次にConfigure Security GroupsでSecurity Groupを設定するんだけどここでも一つ重要ポイントが。</p>
+
+<p><strong>選択したSGでTCPの0-65535ポートを許可しないとLBからトラフィックがコンテナまで到達しないのでタスクがちゃんと起動してくれない。</strong> これは<a href="https://docs.aws.amazon.com/ja_jp/AmazonECS/latest/developerguide/create-application-load-balancer.html#alb-configure-security-groups">公式のドキュメント</a>にも書かれているので忘れずに実施。</p>
+
+<p>最後にTargetを登録する。うまくいけばClusterを作成した時に立ち上がったECSインスタンスが表示されるはず(されない場合は間違ったVPCを選んでいる？)なのでこれを選択する。これでLBの設定は完了。</p>
+
+<h2>Serviceの作成</h2>
+
+<p>LBが無事できたらようやくServiceを作成できる。事前に作成したClusterを選択するとServicesというタブがあるのでそこから新しいServiceを作成していく。</p>
+
+<ul>
+<li>Launch Type: <code>EC2</code> (Fargateよくわからん)</li>
+<li>Task Definition: Familyに最初に作成したTaskを選択する。ここでは <code>kim-app-nginx</code> 。RevisionというのがあるけどこれはTaskをアップデートした時のバージョニングとして使われる。</li>
+<li>Service name: TaskのFamilyと同じにしておくとCircleCI Orbs側で渡すパラメーターが少なくて少し楽になる。今回はTaskと合わせて <code>kim-app-nginx</code> とする。</li>
+<li>Number Tasks: 今回は常時ひとつだけタスクが稼働しているようにするので <code>1</code> と設定。</li>
+</ul>
+
+
+<p>Minimum healthy percentとMaximum healthy percentに関しては自動デプロイと絡んで重要なので解説する。この2つの設定は起動するタスクの最低・最大数を設定する。実際の数は <code>Number Tasks * percent</code> で算出。Minで設定した数だけ常時タスクが起動して、デプロイした時にMaxで設定した数になるように旧・新タスクが平行稼働する。(新タスクが完全にデプロイされたらMinの数にまた収束する)</p>
+
+<p>今回はNumber Tasks 1、Min 100、Max 200にする。こうすると常時1タスクが起動していて、デプロイした時は旧・新合わせて2つのタスクが起動することでローリングアップデートすることができるようになる。</p>
+
+<p>これらを設定してNext StepをクリックするとLoad balancingが出てくるので、Application Load Balancerを選ぶ。すると、さっき作成したLBが出てくるので選択する。 <strong>もう一度言うけど、これをしないと自動デプロイできないので必ず先にLBを作成しましょう。</strong></p>
+
+<p>次にContainer to load balanceのところでAdd to load balancerを押すと確かnginxのコンテナが表示されるはずなので、Production listener port*に80を指定。Health check pathにはちゃんとコンテナが成功レスポンスを返すパスを指定することに注意。Service discoveryは今回必要ないので無効化にすればServiceの作成は完了。</p>
+
+<h1>AWS側のまとめ</h1>
+
+<p>ここまででAWS側の設定は全部完了した。まとめると、ECRでリポジトリを作って、ECS側でTask, Service, Clusterと自動デプロイのためにLBも作成した。LBのURLにアクセスすればnginxのレスポンスが見えるはず。</p>
+
+<h1>CircleCIの設定</h1>
+
+<p>これでようやくCircleCIの設定をすることができる。ただ、AWSに比べれば作業量ははるかに少ない。</p>
+
+<h2>環境変数の設定</h2>
+
+<p>センシティブな情報をconfig.ymlに直接書いてはまずいので環境変数に入れる。今回設定する環境変数は以下。</p>
+
+<p><strong>AWS_ACCESS_KEY_ID</strong>
+AWSのアクセスキー</p>
+
+<p><strong>AWS_SECRET_ACCESS_KEY</strong>
+AWSのシークレットキー</p>
+
+<p><strong>AWS_ECR_ACCOUNT_URL</strong>
+ECRのアカウントのURL。数字で始まって <code>amazonaws.com</code> で終わるところまで。今回の例だと <code>1234567.dkr.ecr.us-east-1.amazonaws.com</code> がそれにあたる。</p>
+
+<p><strong>AWS_REGION</strong>
+AWSのリージョン</p>
+
+<p>これらの環境変数はOrbsのデフォルト値として設定されているので同じ名前の環境変数にすることに注意。</p>
+
+<h1>aws-ecs/aws-ecr Orbsを使う</h1>
+
+<p>記事が長くなってしまうので今回はOrbsそのものについては説明スキップ。すでに日本語で情報がたくさんあるのでそっちを見てください。以下の記事がおすすめ。</p>
+
+<p><a href="https://blog.tsub.me/post/introducing-to-circleci-orbs/">https://blog.tsub.me/post/introducing-to-circleci-orbs/</a></p>
+
+<p><a href="https://www.kaizenprogrammer.com/entry/2018/12/01/111145">https://www.kaizenprogrammer.com/entry/2018/12/01/111145</a></p>
+
+<p><a href="https://github.com/sue445/circleci-user-community-meetup-01/blob/master/slides.md">https://github.com/sue445/circleci-user-community-meetup-01/blob/master/slides.md</a></p>
+
+<p>今回は<a href="https://circleci.com/orbs/registry/orb/circleci/aws-ecs">aws-ecs</a>と<a href="https://circleci.com/orbs/registry/orb/circleci/aws-ecr">aws-ecr</a>というCircleCI自身がメンテしている公認Orbsを使う。</p>
+
+<p>まずは <code>.circleci/config.yml</code> の完成系を貼っておく。</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>version: 2.1
+</span><span class='line'>orbs:
+</span><span class='line'>  aws-ecr: circleci/aws-ecr@1.0.0 #(1)
+</span><span class='line'>  aws-ecs: circleci/aws-ecs@0.0.6 #(2)
+</span><span class='line'>workflows:
+</span><span class='line'>  build-and-deploy:
+</span><span class='line'>    jobs:
+</span><span class='line'>      - aws-ecr/build_and_push_image: #(3)
+</span><span class='line'>          account-url: AWS_ECR_ACCOUNT_URL
+</span><span class='line'>          repo: 'nginx'
+</span><span class='line'>          tag: '${CIRCLE_SHA1}'
+</span><span class='line'>
+</span><span class='line'>      - aws-ecs/deploy-service-update: #(4)
+</span><span class='line'>                requires:
+</span><span class='line'>                  - aws-ecr/build_and_push_image
+</span><span class='line'>                family: 'kim-app-nginx'
+</span><span class='line'>                cluster-name: 'default-kim5'
+</span><span class='line'>                container-image-name-updates: 'container=nginx,image-and-tag=${AWS_ECR_ACCOUNT_URL}/nginx:${CIRCLE_SHA1}'</span></code></pre></td></tr></table></div></figure>
+
+
+<p><strong>(1):</strong> aws-ecr Orbをインポート</p>
+
+<p><strong>(2):</strong> aws-ecs Orbをインポート</p>
+
+<p><strong>(3):</strong> aws-ecrのOrbに <code>build_and_push_image</code> というジョブがあらかじめ用意されていてユーザーはこれに必要なパラメータを渡すだけでECRにデプロイできる。注意点としては <code>tag</code> のところで <code>${CIRCLE_SHA1}</code> をつかっている。これにはGitのコミットのSHAが入っているのでデプロイするたびに新しいタグが自動的につく。</p>
+
+<p><strong>(4):</strong> 同じくaws-ecsに事前定義されている <code>build_and_push_image</code> というジョブにパラメーターを渡すだけでECSにデプロイできる。超便利。 <code>family</code> にはTaskの名前を指定。 <code>container-image-name-updates</code> にはアップデートするタスクのコンテナ名と使うイメージをカンマ区切りで渡す。重要なのは <code>image-and-tag</code> のところで <code>${CIRCLE_SHA1}</code> をタグとしてつかうことで <code>build_and_push_image</code> でデプロイしたイメージを使っている。</p>
+
+<h1>CircleCIまとめ</h1>
+
+<p>これ以降はプッシュするたびに <code>build_and_push_image</code> で新しいイメージがECRへプッシュされ <code>deploy-service-update</code> がそのイメージを使った新しいTaskを生成してServiceでそのタスクを使うようにアップートしてくれる。すると、ECSとLoad Balancerが連携して新しいインスタンスを作って古いインスタンスをDrainすることでローリングアップデート完了！</p>
+
+<p><img src="/images/lb_draining.png" alt="rolling_update" /></p>
+
+<p>登壇したスライドでも書いたんだけど、Orbsを使うことで <code>config.yml</code> を370行から20行まで圧縮できたのでOrbsの便利さが実感できる例になった。</p>
+
+<h1>全体まとめ</h1>
+
+<ul>
+<li>ECRとECSの設定はわりと簡単</li>
+<li>だけど、自動デプロイするにはLBが必要で少し手間が必要</li>
+<li>aws-ecs/aws-ecrのOrbsは超便利。これなしでスクラッチからconfig.ymlを書くとか吐き気がする。</li>
+</ul>
+
+</div>
+  
+    <section>
+      <h1>Comments</h1>
+      <div id="disqus_thread"><div id="disqus_thread"></div>
+<script type="text/javascript">
+  var disqus_shortname = 'kimstechblog';
+  var disqus_identifier = 'http://kimh.github.io/blog/ecr-ecs-orbs/';
+  var disqus_url = 'http://kimh.github.io/blog/ecr-ecs-orbs/';
+  //var disqus_developer = 1;
+  (function() {
+    var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+    dsq.src = 'http://' + disqus_shortname + '.disqus.com/embed.js';
+    (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+  })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+</div>
+    </section>
+  
+
+</article>
+
+
+      <p class="meta">
+      
+        <a class="basic-alignment left nav" href="/blog/my-best-practice-presentation/" title="Previous Post: デブサミ2019のプレゼン作りの振り返り">&laquo; デブサミ2019のプレゼン作りの振り返り</a>
+      
+      
+    </p>
+  </div>
+    <script>
+      var name = document.getElementById('name-helper').innerHTML;
+
+      var canvas = document.getElementById('myCanvas');
+
+      //The name (up to 28 characters long, including white space)
+      var length = name.length;
+      if (length>28){//Exceed character length limit, remove canvas
+          canvas.remove();
+      }
+      else{
+            
+
+        var context = canvas.getContext('2d');
+
+        //calculate width and length
+        var width=700/1.25/length;
+        var start;
+        if (width>40){
+          width=40;
+        }
+
+        var height= width/2;
+
+        //the start postion of the link list
+        var start = (700-width*length*1.25)/2;
+        var horizon = 5;
+
+        //DO NOT CHANGE THOSE
+        var mid_horizon = horizon+height/2;
+        var name_counter =0;
+
+        var x = height/5;
+        var y = height/5;
+        var interval=width/4;
+        
+        var radius = 0.75*width;
+        
+        var text_pos=width*1.1;
+
+
+        canvas.height=mid_horizon+width/2+width/2.1+5;
+        
+        for (var i=1;i<name.length+1;i++){
+
+          context.beginPath();
+          context.strokeStyle='#F9BF3B';
+          
+          //the rectangle
+          context.rect(start, horizon, width, height);
+
+          //the middle line
+          context.moveTo(start+width/2,horizon);
+          context.lineTo(start+width/2,horizon+height);
+
+          //if this is the last element
+          if (i==name.length){
+            context.moveTo(start+width/2,horizon+height);
+            context.lineTo(start+width,horizon);
+
+          }
+          else{
+            //the arrow
+            context.moveTo(start+0.75*width,mid_horizon);
+            context.lineTo(start+width+interval,mid_horizon);
+
+            context.moveTo(start+width+interval,mid_horizon);
+            context.lineTo(start+width+interval-x,mid_horizon+y);
+          
+            context.moveTo(start+width+interval,mid_horizon);
+            context.lineTo(start+width+interval-x,mid_horizon-y); 
+          }
+          
+       
+        
+          var startAngle = 1.2 * Math.PI;
+          var endAngle = 1 * Math.PI;
+          var counterClockwise = true;
+      
+          context.stroke();
+            
+          context.beginPath();
+          context.arc(start+width/4+radius*0.81, mid_horizon+width/2, radius, startAngle, endAngle, counterClockwise);
+
+          context.moveTo(start+width/4+radius*0.81-radius,mid_horizon+width/2);
+          context.lineTo(start+width/4+radius*0.81-radius-x,mid_horizon-y+width/2);
+
+          context.moveTo(start+width/4+radius*0.81-radius,mid_horizon+width/2);
+          context.lineTo(start+width/4+radius*0.81-radius+x,mid_horizon-y+width/2); 
+
+          context.font = ' 15pt Calibri';
+          context.fillStyle = '#859900';
+          context.fillText(name.charAt(name_counter), start+width/4+radius*0.81-radius-width/14, mid_horizon+width/2+width/2.1);
+
+          context.lineWidth=1;
+          context.strokeStyle='#F9BF3B';
+          context.stroke();
+          start+=width/2*2+interval;      
+          name_counter+=1;
+        }
+      }
+
+    </script>
+
+  <!-- JavaScript at the bottom for fast page loading -->
+
+  <!-- Grab Google CDN's jQuery, with a protocol relative URL; fall back to local if offline -->
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.6.2/jquery.min.js"></script>
+  <script>window.jQuery || document.write('<script src="js/libs/jquery-1.6.2.min.js"><\/script>')</script>
+
+
+  <!-- scripts concatenated and minified via ant build script-->
+  <script defer src="/javascripts/app.js"></script>
+  <!-- end scripts-->
+
+	
+
+  <!-- Prompt IE 6 users to install Chrome Frame. Remove this if you want to support IE 6.
+       chromium.org/developers/how-tos/chrome-frame-getting-started -->
+  <!--[if lt IE 7 ]>
+    <script src="//ajax.googleapis.com/ajax/libs/chrome-frame/1.0.3/CFInstall.min.js"></script>
+    <script>window.attachEvent('onload',function(){CFInstall.check({mode:'overlay'})})</script>
+  <![endif]-->
+ 
+
+  <script type="text/javascript">
+    (function(){
+      var twitterWidgets = document.createElement('script');
+      twitterWidgets.type = 'text/javascript';
+      twitterWidgets.async = true;
+      twitterWidgets.src = 'http://platform.twitter.com/widgets.js';
+      document.getElementsByTagName('head')[0].appendChild(twitterWidgets);
+    })();
+  </script>
+
+
+
+
+
+
+
+</body>
+</html>
+
