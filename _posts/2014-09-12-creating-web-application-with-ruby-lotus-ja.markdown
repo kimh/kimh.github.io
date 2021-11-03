@@ -9,7 +9,7 @@ categories:
 - lotus
 ---
 
-![](/images/lotus.jpeg)
+![](/assets/lotus.jpeg)
 
 ***注意***  この記事はIBM製のコラボレーションソフトについてのページではありません。Rubyで書かれた[Lotus](http://lotusrb.org/)というWebフレームワークについての記事です。
 ## 内容

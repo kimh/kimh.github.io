@@ -8,7 +8,7 @@ categories:
 - jp
 - criu
 ---
-![](/images/criu.jpeg)
+![](/assets/criu.jpeg)
 
 ### 結論: 2014/6の時点ではCRIUを使ってDockerコンテナの停止/再開はできないという少し残念な結果でこの記事は終わります。しかし、記事を読んでもらえればCRIUの面白さはわかってもらえると思います。
 

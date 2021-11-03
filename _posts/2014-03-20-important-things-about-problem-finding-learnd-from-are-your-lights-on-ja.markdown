@@ -9,7 +9,7 @@ categories:
 - thoughts
 ---
 
-![Lights on?](/images/lighton.jpg)
+![Lights on?](/assets/lighton.jpg)
 
 エンジニアの一日は問題解決の連続です。普段は当たり前すぎて意識していませんが、気にしてみるといかにそうであるかがわかります。
 

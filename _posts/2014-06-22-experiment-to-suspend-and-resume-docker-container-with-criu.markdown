@@ -9,7 +9,7 @@ categories:
 - criu
 ---
 
-![](/images/criu.jpeg)
+![](/assets/criu.jpeg)
 
 ### TL;DR: You CANNOT suspend/resume Docker container as of Jun 2014 and this article ends with a bit disappointed result, but you can still find CRIU is cool thing.
 

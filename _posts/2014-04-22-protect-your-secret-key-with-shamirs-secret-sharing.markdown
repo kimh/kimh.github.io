@@ -9,7 +9,7 @@ categories:
 - security
 ---
 
-![](/images/pieces.jpg)
+![](/assets/pieces.jpg)
 
 Recently, I came to know an interesting and new idea about password storage schema called [PollyPassHash](https://github.com/PolyPassHash/PolyPassHash).
 
@@ -160,14 +160,14 @@ Note that drawing graph is not necessary to do computation for Shamir's secret s
 
 The graph of our polynomial looks like this one.
 
-![Graph of y=2x^2+x+3](/images/polygraph0.jpg)
+![Graph of y=2x^2+x+3](/assets/polygraph0.jpg)
 
 #### Step5: Plot points on the graph
 Plot three points on the line of graph.
 
 For example, we plot **(x,y)(1, 6)**, **(x,y)(2,13)**, **(x,y)(-2, 9)** on the line of graph.
 
-![Plot points on the line of graph](/images/polygraph1.jpg)
+![Plot points on the line of graph](/assets/polygraph1.jpg)
 
 These points are your ***shares***. The value in **x** is called *share number* and the value of **y** is a *share*.
 
@@ -189,7 +189,7 @@ Plot points of your shares, **(x,y)(1, 6)**, **(x,y)(2,13)**, **(x,y)(-2, 9)**, 
 Then connecting your points and draw imaginary line. If you could do this, you can now recover your polynomial because you are connecting
 points derived from the polynomial.
 
-![](/images/polygraph4.jpg)
+![](/assets/polygraph4.jpg)
 
 Not sure if your line is accurate? Yes, it is is difficult to draw the completely same line because it is curving line. It doesn't matter because drawing graph is just to help you understand the idea.
 

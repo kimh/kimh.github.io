@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.7.1 -->
+<title>「ライト、ついてますか」から学ぶ問題発見の心得 | Program Is Made At Night</title>
+<meta name="generator" content="Jekyll v4.2.1" />
+<meta property="og:title" content="「ライト、ついてますか」から学ぶ問題発見の心得" />
+<meta name="author" content="kim hirokuni" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="Write an awesome description for your new site here. You can edit this line in _config.yml. It will appear in your document head meta (for Google search results) and in your feed.xml site description." />
+<meta property="og:description" content="Write an awesome description for your new site here. You can edit this line in _config.yml. It will appear in your document head meta (for Google search results) and in your feed.xml site description." />
+<link rel="canonical" href="http://localhost:4000/blog/jp/thoughts/important-things-about-problem-finding-learnd-from-are-your-lights-on-ja/" />
+<meta property="og:url" content="http://localhost:4000/blog/jp/thoughts/important-things-about-problem-finding-learnd-from-are-your-lights-on-ja/" />
+<meta property="og:site_name" content="Program Is Made At Night" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2014-03-20T23:46:00+09:00" />
+<meta name="twitter:card" content="summary" />
+<meta property="twitter:title" content="「ライト、ついてますか」から学ぶ問題発見の心得" />
+<script type="application/ld+json">
+{"url":"http://localhost:4000/blog/jp/thoughts/important-things-about-problem-finding-learnd-from-are-your-lights-on-ja/","headline":"「ライト、ついてますか」から学ぶ問題発見の心得","dateModified":"2014-03-20T23:46:00+09:00","datePublished":"2014-03-20T23:46:00+09:00","description":"Write an awesome description for your new site here. You can edit this line in _config.yml. It will appear in your document head meta (for Google search results) and in your feed.xml site description.","author":{"@type":"Person","name":"kim hirokuni"},"mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/blog/jp/thoughts/important-things-about-problem-finding-learnd-from-are-your-lights-on-ja/"},"@type":"BlogPosting","@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="http://localhost:4000/feed.xml" title="Program Is Made At Night" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">Program Is Made At Night</a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/about/">About</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">「ライト、ついてますか」から学ぶ問題発見の心得</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2014-03-20T23:46:00+09:00" itemprop="datePublished">Mar 20, 2014
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <p><img src="/assets/lighton.jpg" alt="Lights on?" /></p>
+
+<p>エンジニアの一日は問題解決の連続です。普段は当たり前すぎて意識していませんが、気にしてみるといかにそうであるかがわかります。</p>
+
+<ul>
+  <li>落ちたサーバを復旧させる</li>
+  <li>与えられた文字列を正規化するコードを書く</li>
+  <li>関係者全員のスケジュールが合うようにミーティングをセッティングする</li>
+</ul>
+
+<p>優れた解決方法を考えだすには、まず問題を正しく定義しなければいけません。</p>
+
+<p>この記事では問題発見学の名著、「<a href="&quot;http://www.amazon.co.jp/%E3%83%A9%E3%82%A4%E3%83%88%E3%80%81%E3%81%A4%E3%81%84%E3%81%A6%E3%81%BE%E3%81%99%E3%81%8B%E2%80%95%E5%95%8F%E9%A1%8C%E7%99%BA%E8%A6%8B%E3%81%AE%E4%BA%BA%E9%96%93%E5%AD%A6-%E3%83%89%E3%83%8A%E3%83%AB%E3%83%89%E3%83%BBC%E3%83%BB%E3%82%B4%E3%83%BC%E3%82%B9/dp/4320023684&quot;">ライト、ついてますか</a>」 から重要な点を引用して、どのようにすればより良い問題定義ができるかについて書きたいと思います。</p>
+
+<p><strong>注：</strong>引用が英語なのは原本しか読んでいないからです。”訳：”とあるところは自分で翻訳しただけなので日本語版の実際の言い回しとは異なります。
+また今回読んだKindle版にはページ情報がなかったので、引用元はページ番号ではなくその引用があった章を代わりに書いています。</p>
+
+<h2 id="問題とは何か">問題とは何か？</h2>
+<p><strong><em>A problem is a difference between things as desired and things as perceived</em></strong> <strong>（３章）</strong></p>
+
+<p><strong>訳：</strong>問題とはそうあるべき状態と今ある状態の差である</p>
+
+<p>そもそも問題とはなんでしょうか？著者は問題を上記のように定義しています。
+問題をこのように定義するといいことがひとつあります。それは、見方を変えることで問題が解決する可能性があることです。</p>
+
+<p>とても時間のかかる処理があるとします。真っ先に思いつく解決方法は処理を早くすることです。しかし、見方を変えて
+処理に時間がかかってもいいと考えたらどうでしょうか？バッチ処理にして夜中にやればどうでしょうか？このように見方を変えるだけで
+問題そのものをなくすことができます。</p>
+
+<p><strong><em>Don’t take their solution method for a problem definition</em></strong> <strong>（４章）</strong></p>
+
+<p><strong>訳：</strong>他人の解決方法を問題の定義としてはいけない</p>
+
+<p>人が問題だと言っていることが本当の問題とは限りません。本に書かれている例が一番わかりやすいので要約して紹介します。</p>
+
+<blockquote>
+  <p>会社の購入担当者がある競売で一番有利になる競り方を考えるように命じられました。この競売にはとても複雑なルールがあり
+沢山のケースを考慮しなければいけないと考え、考える限りのケース想定してその中で一番いいものを使うことにしました。</p>
+
+  <p>ケースの組み合わせは、４の１１乗、4,000,000パターンありそのすべてをシミュレーションするようにプログラマのグループに命じました。
+パターンが多いので普通にやると彼らのコンピュータでは１２時間かかってしまい、それだと競売の時間までにぎりぎりです。</p>
+
+  <p>プログラマのグループは上司の自分たちの抱えている問題は4,000,000パターンの計算をいかにして高速化することだと言い、アドバイスを求めました。</p>
+
+  <p>上司は少し考え、購入担当者の部屋に言って詳しい競売のルールを聞きに行きました。</p>
+
+  <p>詳しいルールを理解した上司はベストな競売の方法を一瞬で導きだしました。</p>
+
+  <p>ルールを正しく分析すれば、4,000,000パターンの計算など必要なかったのです。</p>
+</blockquote>
+
+<p>この話で学ぶことは、他人（購入担当者とプログラマ）が問題の解決方法だと信じた計算を本当の問題と考えてはいけないということです。
+真の問題は4,000,000ケースの計算の高速化ではなく、競売で一番有利な方法を導きだすことなのです。</p>
+
+<h2 id="問題を解決する前に">問題を解決する前に</h2>
+<p>問題がきちんと定義されれば解決することはさほど難しくありません。しかし、ちょっと待ってください。その問題はあなたの問題ですか？
+本当にあなたが解決しないといけませんか？まずは、次の質問を自分に問いかけてみましょう。</p>
+
+<p><strong><em>Whose problem is it?</em></strong> <strong>（１１章）</strong></p>
+
+<p><strong>訳：</strong>誰の問題か？</p>
+
+<p>本当にあなたが解決しなければいけませんか？もし、その問題が誰かの問題ならあなたが解決しようとするべきではありません。
+もし、あなたの問題でなければ、頼まれないかぎり何もしないのがベストです。私たちは自分の問題解決に時間に忙しいはずですから。</p>
+
+<p><strong><em>Where does this problem come from?</em></strong> <strong>（１４章）</strong></p>
+
+<p><strong>訳：</strong>この問題はどこから来たのか？</p>
+
+<p>この問いも問題が本当に自分の問題なのか調べるのに役立ちます。なぜ自分はその問題に直面しているのか？なぜこんなことになったのか？
+自分に落ち度があるか？それとも、誰か他人に巻き込まれたか？</p>
+
+<p>もし、問題の出所が自分であった場合は自分がしていることを正せばいいので解決は比較的簡単です。</p>
+
+<p><strong><em>Ignoring the problem</em></strong> <strong>（３章）</strong></p>
+
+<p><strong>訳：</strong>問題を無視する</p>
+
+<p>時には問題そのものを無視するのもありです。気づかないふりをしていまいましょう。問題は、あるべき状態と現在の状態の差ですが、
+人間はすぐに適応する生き物です。最初はみんな問題だと感じてもいつの間にかそれが当たり前のようになるものです。</p>
+
+<p>あなたが作り出したバグのワークアラウンドのために、オペレーションの人に余計な手動の作業が発生したとします。”近い内に直す”と言って、
+１年も経てばワークアラウンド作業はオペレーションの業務に組み込まれて、その作業が当たり前のものになります。おめでとう！ <strong>あるべき状態</strong> と <strong>今ある状態</strong> が同じになり問題そのものが消えました。</p>
+
+<p>….もちろん、勧められる方法ではありませんがこれも一つの問題解決方法と言えます。</p>
+
+<h2 id="考えをやめない">考えをやめない</h2>
+<p>あなたは問題を正しく定義して適切な解答を導き出しました。しかし、まだリラックスはできません。</p>
+
+<p><strong><em>Each solution is the source of the next problem</em></strong> <strong>（７章）</strong></p>
+
+<p><strong>訳：</strong>あるひとつの解決方法は別の新しい問題を生む</p>
+
+<p>私たちが問題を解決してもリラックスできないのは、その解決方法がまた別の問題を生み出すからです。これはエンジニアは直感的に理解していると思います。
+PythonやRubyのような動的型付けなスクリプトプログラミング言語はそれまで他の言語が抱えていた問題を沢山解決しました。
+インタープリタさえあればどこでも同じコードを走らせることもできるし、対話的にプログラミングすることもできます。
+メタプログラミングを使うことで動的にコードを生成することでコードのDRY化をもたらしました。</p>
+
+<p>しかし、今では動的片付け言語がもたらした解決方法は他の問題を生むことは広く知られています。インタープリタを挟むのでスクリプト言語の実行速度は遅く、
+メタプログラミングはコードをデバックしずらくして、コードの保守性を下げてしまうことがしばしばあります。</p>
+
+<p>PythonやRubyがもたらした過去の問題への解決は新たな問題を生み、今度は静的型付けの言語がそれらの問題を解決すべく注目されています。そして、この連鎖は恐らくずっと続くでしょう。</p>
+
+<p>これに対してできることはそれほどないはずです。一つ言えるのは、問題への解決方法が新たな問題を生む、ということを認識して常に考えることをやめないことです。</p>
+
+<p><strong><em>The really important thing in dealing with problems is to know that the question is never answered, but that it doesn’t matter, as long as you keep asking</em></strong> <strong>（第６章）</strong></p>
+
+<p><strong>訳：</strong>最も重要なことは問題は解決されることがないと知ることだ。しかし、考えることを止めなければは大したことではない。</p>
+
+<p>無事に解決方法を見つけても、その解決方法が最も正しかったかどうかはわかりません。それどころか、問題定義がそもそも正しくなかったかもしれません。
+自分の出した答えが完璧だったと信じることが一番厄介です。なぜなら、完璧な答えなどないからです。だから、私たちは常に問題を振り返って見直さなければいけないのです。</p>
+
+  </div><a class="u-url" href="/blog/jp/thoughts/important-things-about-problem-finding-learnd-from-are-your-lights-on-ja/" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading">Program Is Made At Night</h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name">kim hirokuni</li><li><a class="u-email" href="mailto:yangkookkim@gmail.com">yangkookkim@gmail.com</a></li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"><li><a href="https://github.com/jekyll"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#github"></use></svg> <span class="username">jekyll</span></a></li><li><a href="https://www.twitter.com/jekyllrb"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#twitter"></use></svg> <span class="username">jekyllrb</span></a></li></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p>Write an awesome description for your new site here. You can edit this line in _config.yml. It will appear in your document head meta (for Google search results) and in your feed.xml site description.</p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>

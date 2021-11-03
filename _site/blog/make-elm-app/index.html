@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.7.1 -->
+<title>CollageとAnimationを使ってElmでアプリを作る | Program Is Made At Night</title>
+<meta name="generator" content="Jekyll v4.2.1" />
+<meta property="og:title" content="CollageとAnimationを使ってElmでアプリを作る" />
+<meta name="author" content="kim hirokuni" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="この記事はQiita Elm Adventcalendar 2017に投稿した記事です。" />
+<meta property="og:description" content="この記事はQiita Elm Adventcalendar 2017に投稿した記事です。" />
+<link rel="canonical" href="http://localhost:4000/blog/make-elm-app/" />
+<meta property="og:url" content="http://localhost:4000/blog/make-elm-app/" />
+<meta property="og:site_name" content="Program Is Made At Night" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2017-12-11T21:48:00+09:00" />
+<meta name="twitter:card" content="summary" />
+<meta property="twitter:title" content="CollageとAnimationを使ってElmでアプリを作る" />
+<script type="application/ld+json">
+{"url":"http://localhost:4000/blog/make-elm-app/","headline":"CollageとAnimationを使ってElmでアプリを作る","dateModified":"2017-12-11T21:48:00+09:00","datePublished":"2017-12-11T21:48:00+09:00","description":"この記事はQiita Elm Adventcalendar 2017に投稿した記事です。","author":{"@type":"Person","name":"kim hirokuni"},"mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/blog/make-elm-app/"},"@type":"BlogPosting","@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="http://localhost:4000/feed.xml" title="Program Is Made At Night" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">Program Is Made At Night</a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/about/">About</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">CollageとAnimationを使ってElmでアプリを作る</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2017-12-11T21:48:00+09:00" itemprop="datePublished">Dec 11, 2017
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <p>この記事はQiita Elm Adventcalendar 2017に投稿した記事です。</p>
+
+<h2 id="最初に">最初に</h2>
+
+<p>Functional Reactive Programmingを調べていて偶然Elmに出会いました。最新版のElm0.18ではElmはFRPの概念を完全に取り払いFRPとは関係なくなりましたが、
+実際にElmを触ってみるとどんどんその面白さに引き込まれて行きました。もっとElmで何か作りたくなったので自分の子供が遊べるようなToy Appを作ることにしました。 このアプリを作る際にはまった点や大事な点をできるだけ丁寧に解説してみたいと思います。</p>
+
+<h2 id="この記事の対象者">この記事の対象者</h2>
+
+<p>この記事ではElmについての基本知識があることを前提としています。Elmにはすでに素晴らしいチュートリアルがあるのでまだElmに触ったことがなければ https://guide.elm-lang.org/ と https://www.elm-tutorial.org/en/ をお勧めします。
+基本の文法はわかるけどいまいちSubscriptionやPortがわからないなーという人には楽しんでもらえると思います。</p>
+
+<h2 id="airplane-toy-app">Airplane Toy App</h2>
+
+<p>この記事で解説しているアプリは https://s3-ap-northeast-1.amazonaws.com/airplane-toy-app/index.html で公開しています。 (このアプリは音が出るので注意!!)
+コードは https://github.com/kimh/kids-toy-apps で公開しています。
+2歳になる自分の息子に作ったアプリなのでとても単純な仕様で、クリックした場所に飛行機がいかにも子供が好きそうな音を出して移動する、というだけのアプリです。
+しかしElmで実際にアプリを作るのに必要なことはほとんど使う必要があったのでとても勉強になりました。</p>
+
+<h2 id="イベントフロー">イベントフロー</h2>
+
+<p>このアプリでは以下のようなイベントフローで構成されています。</p>
+
+<p>ページをロード -&gt; Init関数が呼ばれModelが初期化される -&gt; ユーザー (うちの息子) が画面のどこかをクリックする -&gt; <code class="language-plaintext highlighter-rouge">MouseMsg</code>メッセージが送信される -&gt; Subscriptionを通じて、Update関数が呼ばれる。クリックされた座標を取得して、Modelにセットする。 -&gt; Modelに新しい座標がセットされると飛行機が動く -&gt; 同時に <code class="language-plaintext highlighter-rouge">PlaySound</code> メッセージが送信される -&gt; JavascriptにPortでメッセージを送信する -&gt; Javascript側で <code class="language-plaintext highlighter-rouge">audio</code> 要素の <code class="language-plaintext highlighter-rouge">play</code> メソッドを呼ぶ</p>
+
+<h2 id="飛行機画像のレンダリング">飛行機画像のレンダリング</h2>
+
+<p>飛行機の画像を扱うのに Elm Collageを使っています。Collageのライブラリには主にhttps://github.com/evancz/elm-graphics と https://github.com/timjs/elm-collage がありますが、後者です。timjs/elm-collageはevancz/elm-graphisを置き換えるものだと考えているのでこれからアプリを作るのならtimjs/elm-collageを使うことぼをお勧めします。</p>
+
+<p>重要となるポイントを説明していきます。</p>
+
+<p><code class="language-plaintext highlighter-rouge">image</code> で飛行機の画像ファイルを読み込んで <code class="language-plaintext highlighter-rouge">shift</code> で初期位置まで移動させます。 <code class="language-plaintext highlighter-rouge">pos</code> は 渡されたModelから作成します。(後述)</p>
+
+<div class="language-haskell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">plane</span> <span class="o">=</span>
+    <span class="n">image</span> <span class="p">(</span><span class="mi">500</span><span class="p">,</span> <span class="mi">500</span><span class="p">)</span> <span class="s">"images/airplane.svg"</span>
+    <span class="o">|&gt;</span> <span class="n">shift</span> <span class="n">pos</span>
+</code></pre></div></div>
+
+<p><code class="language-plaintext highlighter-rouge">spacer</code> を使っている部分は少しわかりにくいです。timjs/elm-collageでは座標が絶対的ではなく他の要素からの相対的なCollageの位置を指定するので
+<code class="language-plaintext highlighter-rouge">plane</code> だけを <code class="language-plaintext highlighter-rouge">shift</code> しても画像が動いてくれませんでした。そこで <code class="language-plaintext highlighter-rouge">plane</code> の前に透明な要素である <code class="language-plaintext highlighter-rouge">spacer</code> を挟むことでうまく移動してくれるようにしました。（このあたりは自分の理解も曖昧なのでもっとうまい方法があるかも）<code class="language-plaintext highlighter-rouge">group</code> は複数のCollageを並べてくれる関数です。</p>
+
+<p>コメントアウトしている <code class="language-plaintext highlighter-rouge">debug</code> は有効にするとCollageのボーダーとセンターを赤線で表示してくれるのでつまった時に便利なのでいつでも有効にできるように残しています。</p>
+
+<p>最後に要素を <code class="language-plaintext highlighter-rouge">Html Msg</code> 型に <code class="language-plaintext highlighter-rouge">svg</code> で変換しています。このパターンはCollageではいつも使うパターンです。</p>
+
+<div class="language-haskell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">group</span> <span class="p">[</span>
+  <span class="n">spacer</span> <span class="mi">300</span> <span class="mi">300</span><span class="p">,</span>
+  <span class="n">plane</span>
+<span class="p">]</span>
+    <span class="c1">-- |&gt; Collage.Layout.debug</span>
+    <span class="o">|</span> <span class="o">&gt;</span> <span class="n">svg</span> <span class="o">|</span>
+</code></pre></div></div>
+
+<h2 id="アニメーション">アニメーション</h2>
+
+<p>飛行機を任意の場所に移動するために <code class="language-plaintext highlighter-rouge">elm-animation</code> を使っています。基本的な考え方はブラウザのフレーム更新毎に送られる <code class="language-plaintext highlighter-rouge">Tick</code> メッセージを捕まえてその中でモデルを更新します。</p>
+
+<p>重要となるポイントを説明していきます。</p>
+
+<p>モデルにはx座標、y座標、clockをもたせています。これらの値を <code class="language-plaintext highlighter-rouge">Tick</code> イベントの中で更新します。</p>
+
+<div class="language-haskell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kr">type</span> <span class="n">alias</span> <span class="kt">Model</span> <span class="o">=</span>
+    <span class="p">{</span> <span class="n">x</span> <span class="o">:</span> <span class="kt">Animation</span><span class="p">,</span> <span class="n">y</span> <span class="o">:</span> <span class="kt">Animation</span><span class="p">,</span> <span class="n">clock</span> <span class="o">:</span> <span class="kt">Time</span> <span class="p">}</span>
+
+<span class="n">model</span> <span class="o">:</span> <span class="kt">Model</span>
+<span class="n">model</span> <span class="o">=</span>
+    <span class="kt">Model</span>
+        <span class="p">(</span><span class="n">animation</span> <span class="mi">0</span> <span class="o">|&gt;</span> <span class="n">duration</span> <span class="kt">Time</span><span class="o">.</span><span class="n">second</span><span class="p">)</span>
+        <span class="p">(</span><span class="n">animation</span> <span class="mi">0</span> <span class="o">|&gt;</span> <span class="n">duration</span> <span class="kt">Time</span><span class="o">.</span><span class="n">second</span><span class="p">)</span>
+        <span class="mi">0</span>
+</code></pre></div></div>
+
+<p><code class="language-plaintext highlighter-rouge">Tick</code> メッセージは引数つきのメッセージで、引数にアニメーションの初期状態から差分の時刻が送られてきます。それをモデルの <code class="language-plaintext highlighter-rouge">clock</code> にセットしています。</p>
+
+<div class="language-haskell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">update</span> <span class="o">:</span> <span class="kt">Msg</span> <span class="o">-&gt;</span> <span class="kt">Model</span> <span class="o">-&gt;</span> <span class="p">(</span><span class="kt">Model</span><span class="p">,</span> <span class="kt">Cmd</span> <span class="kt">Msg</span><span class="p">)</span>
+<span class="n">update</span> <span class="n">msg</span> <span class="n">model</span> <span class="o">=</span>
+    <span class="kr">case</span> <span class="n">msg</span> <span class="kr">of</span>
+        <span class="kt">Tick</span> <span class="n">dt</span> <span class="o">-&gt;</span>
+            <span class="kr">let</span>
+                <span class="n">clock</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">clock</span> <span class="o">+</span> <span class="n">dt</span>
+            <span class="kr">in</span>
+                <span class="p">({</span> <span class="n">model</span> <span class="o">|</span> <span class="n">clock</span> <span class="o">=</span> <span class="n">clock</span> <span class="p">},</span> <span class="kt">Cmd</span><span class="o">.</span><span class="n">none</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>更新されたclockの値と飛行機のx,y座標を <code class="language-plaintext highlighter-rouge">animate</code> に渡すとその時刻での飛行機の座標が返ってきます。 <code class="language-plaintext highlighter-rouge">shift pos</code> をするとその座標に画像がレンダリングされます。これを各 <code class="language-plaintext highlighter-rouge">Tick</code> 毎に行うことで画像が移動していくように見えます。</p>
+
+<div class="language-haskell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">view</span> <span class="p">{</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">clock</span> <span class="p">}</span> <span class="o">=</span>
+    <span class="kr">let</span>
+        <span class="n">pos</span> <span class="o">=</span>
+            <span class="p">(</span> <span class="n">animate</span> <span class="n">clock</span> <span class="n">x</span><span class="p">,</span> <span class="n">animate</span> <span class="n">clock</span> <span class="n">y</span> <span class="p">)</span>
+
+        <span class="n">plane</span> <span class="o">=</span>
+            <span class="n">image</span> <span class="p">(</span><span class="mi">500</span><span class="p">,</span> <span class="mi">500</span><span class="p">)</span> <span class="s">"images/airplane.svg"</span>
+            <span class="o">|&gt;</span> <span class="n">shift</span> <span class="n">pos</span>
+</code></pre></div></div>
+
+<p><code class="language-plaintext highlighter-rouge">Tick</code> メッセージはそのままでは送信されません。送信するためには <code class="language-plaintext highlighter-rouge">Subscription</code> で <code class="language-plaintext highlighter-rouge">animation-frame</code> という別のライブラリを使って <code class="language-plaintext highlighter-rouge">AnimationFrame.diffs Tick</code> を呼びます。Animationするためのライブラリ(<code class="language-plaintext highlighter-rouge">elm-animation</code>) とフレーム遷移を扱うライブラリが別なのは面白いポイントです。</p>
+
+<div class="language-haskell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">subs</span> <span class="o">=</span>
+    <span class="kt">Sub</span><span class="o">.</span><span class="n">batch</span>
+        <span class="p">[</span>
+        <span class="kt">AnimationFrame</span><span class="o">.</span><span class="n">diffs</span> <span class="kt">Tick</span><span class="p">,</span>
+        <span class="kt">Mouse</span><span class="o">.</span><span class="n">clicks</span> <span class="kt">MouseMsg</span>
+        <span class="p">]</span>
+</code></pre></div></div>
+
+<h2 id="マウスイベント">マウスイベント</h2>
+
+<p>クリックされた場所まで飛行機を移動しないといけないのでマウスイベントを捕まえてクリックされた座標を取得します。</p>
+
+<p>まずマウスイベントを捕まえるために <code class="language-plaintext highlighter-rouge">Mouse.clicks MouseMsg</code> をサブスクライブします。</p>
+
+<div class="language-haskell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">subs</span> <span class="o">=</span>
+    <span class="kt">Sub</span><span class="o">.</span><span class="n">batch</span>
+        <span class="p">[</span>
+        <span class="kt">AnimationFrame</span><span class="o">.</span><span class="n">diffs</span> <span class="kt">Tick</span><span class="p">,</span>
+        <span class="kt">Mouse</span><span class="o">.</span><span class="n">clicks</span> <span class="kt">MouseMsg</span>
+        <span class="p">]</span>
+</code></pre></div></div>
+
+<p>実際にマウスイベントを扱うには <code class="language-plaintext highlighter-rouge">MouseMsg</code> を捕まえます。<code class="language-plaintext highlighter-rouge">MouseMsg</code> は引数つきのメッセージで引数にはクリックされた座標が入っています。 このアプリ独自のロジックで <code class="language-plaintext highlighter-rouge">adjustment</code> とかを使っていますが、重要なのはクリックされた座標をFloat型に変換して <code class="language-plaintext highlighter-rouge">retarget</code> に渡すところです。<code class="language-plaintext highlighter-rouge">retarget</code> は画像がどこまで動くかの値 <code class="language-plaintext highlighter-rouge">to</code> を更新して座標で返すので、それをモデルの座標にセットします。こうすることでクリックされた位置が新しいアニメーションの <code class="language-plaintext highlighter-rouge">to</code> になります。</p>
+
+<div class="language-haskell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kt">MouseMsg</span> <span class="n">position</span> <span class="o">-&gt;</span>
+   <span class="kr">let</span>
+       <span class="c1">-- We need this so that plan's center moves to the new postion</span>
+       <span class="n">adjustment</span> <span class="o">=</span> <span class="o">-</span><span class="mi">150</span>
+       <span class="n">posx</span> <span class="o">=</span> <span class="n">position</span><span class="o">.</span><span class="n">x</span>
+              <span class="o">|&gt;</span> <span class="n">toFloat</span>
+              <span class="o">|&gt;</span> <span class="p">(</span><span class="o">+</span><span class="p">)</span> <span class="n">adjustment</span>
+       <span class="n">posy</span> <span class="o">=</span> <span class="n">position</span><span class="o">.</span><span class="n">y</span>
+              <span class="o">|&gt;</span> <span class="n">toFloat</span>
+              <span class="o">|&gt;</span> <span class="p">(</span><span class="o">+</span><span class="p">)</span> <span class="n">adjustment</span>
+              <span class="o">|&gt;</span> <span class="p">(</span><span class="o">*</span><span class="p">)</span> <span class="o">-</span><span class="mi">1</span>
+       <span class="n">newX</span> <span class="o">=</span> <span class="n">retarget</span> <span class="n">model</span><span class="o">.</span><span class="n">clock</span> <span class="n">posx</span> <span class="n">model</span><span class="o">.</span><span class="n">x</span>
+       <span class="n">newY</span> <span class="o">=</span> <span class="n">retarget</span> <span class="n">model</span><span class="o">.</span><span class="n">clock</span> <span class="n">posy</span> <span class="n">model</span><span class="o">.</span><span class="n">y</span>
+   <span class="kr">in</span>
+       <span class="p">({</span><span class="n">model</span> <span class="o">|</span> <span class="n">x</span> <span class="o">=</span> <span class="n">newX</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">newY</span> <span class="p">}</span> <span class="o">|&gt;</span> <span class="n">update</span> <span class="kt">PlaySound</span><span class="p">)</span>
+</code></pre></div></div>
+
+<h2 id="音を鳴らす">音を鳴らす</h2>
+
+<p>このアプリを作るときに一番わかりにくかったところはクリックされたときに音を鳴らす動作です。Javascriptだと <code class="language-plaintext highlighter-rouge">audio</code> 要素を取得して <code class="language-plaintext highlighter-rouge">play</code> 関数を呼ぶだけなんですが <code class="language-plaintext highlighter-rouge">play</code> は副作用を及ぼす関数なので調べた限りではElmからは直接呼ぶことができませんでした。そこで <code class="language-plaintext highlighter-rouge">Port</code> の出番です。</p>
+
+<p>Portの仕組みはとても簡単で、Javascript側でElmからのメッセージをサブスクライブして何か送られてきたら使いたいJavascriptのコードを実行するだけです。今回の例だと、Elmが音を鳴らしたいときにPortにメッセージを送り、Javascript側で <code class="language-plaintext highlighter-rouge">audio</code> 要素を取得して <code class="language-plaintext highlighter-rouge">play</code> を呼ぶだけです。</p>
+
+<p>まずJavascript側から説明します。このコードは <code class="language-plaintext highlighter-rouge">index.html</code> に書かれています。</p>
+
+<p><code class="language-plaintext highlighter-rouge">app.ports.play.subscribe(function(val){...})</code> がElmからPortにメッセージが送られてきた時に呼ばれるコールバックです。単純に <code class="language-plaintext highlighter-rouge">audio</code> 要素を取得して <code class="language-plaintext highlighter-rouge">play</code> しているところがメインです。(一度 <code class="language-plaintext highlighter-rouge">pause</code> しているのは音が終わる前にもう一度クリックされた時に最初から再生するためにです。)</p>
+
+<div class="language-html highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nt">&lt;body</span> <span class="na">background=</span><span class="s">"images/sky.jpg"</span><span class="nt">&gt;</span>
+    <span class="nt">&lt;audio</span> <span class="na">id=</span><span class="s">"my-audio"</span> <span class="na">src=</span><span class="s">"audios/flee1.mp3"</span><span class="nt">&gt;&lt;/audio&gt;</span>
+    <span class="nt">&lt;script </span><span class="na">type=</span><span class="s">"text/javascript"</span><span class="nt">&gt;</span>
+     <span class="kd">var</span> <span class="nx">app</span> <span class="o">=</span> <span class="nx">Elm</span><span class="p">.</span><span class="nx">Main</span><span class="p">.</span><span class="nx">fullscreen</span><span class="p">();</span>
+
+     <span class="c1">// Triggered from Elm</span>
+     <span class="nx">app</span><span class="p">.</span><span class="nx">ports</span><span class="p">.</span><span class="nx">play</span><span class="p">.</span><span class="nx">subscribe</span><span class="p">(</span><span class="kd">function</span><span class="p">(</span><span class="nx">val</span><span class="p">){</span>
+         <span class="kd">var</span> <span class="nx">audio</span> <span class="o">=</span> <span class="nb">document</span><span class="p">.</span><span class="nx">getElementById</span><span class="p">(</span><span class="dl">'</span><span class="s1">my-audio</span><span class="dl">'</span><span class="p">);</span>
+         <span class="nx">audio</span><span class="p">.</span><span class="nx">pause</span><span class="p">();</span>
+         <span class="nx">audio</span><span class="p">.</span><span class="nx">currentTime</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+         <span class="nx">audio</span><span class="p">.</span><span class="nx">play</span><span class="p">();</span>
+     <span class="p">});</span>
+    <span class="nt">&lt;/script&gt;</span>
+<span class="nt">&lt;/body&gt;</span>
+</code></pre></div></div>
+
+<p>次にPortにメッセージを送る側のElmコードを見てみます。Updateの中で <code class="language-plaintext highlighter-rouge">PlaySound</code> を捕まえます。 <code class="language-plaintext highlighter-rouge">PlaySound</code> がどこからくるかというと <code class="language-plaintext highlighter-rouge">MouseMsg</code> をハンドリングする際に戻り値で手動で <code class="language-plaintext highlighter-rouge">update</code> を呼んで <code class="language-plaintext highlighter-rouge">PlaySound</code> のコマンドを渡しています。</p>
+
+<div class="language-haskell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">({</span><span class="n">model</span> <span class="o">|</span> <span class="n">x</span> <span class="o">=</span> <span class="n">newX</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">newY</span> <span class="p">}</span> <span class="o">|&gt;</span> <span class="n">update</span> <span class="kt">PlaySound</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p><code class="language-plaintext highlighter-rouge">play 0</code> と呼ぶとJavascript側でサブスクライブしているPortに <code class="language-plaintext highlighter-rouge">0</code> という値が送られます。ここではJavascript側は何も値は必要ないのですが引数なしで送る方法がわからなかったので適当な値を渡しているだけです。</p>
+
+<div class="language-haskell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kt">PlaySound</span> <span class="o">-&gt;</span>
+    <span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">play</span> <span class="mi">0</span><span class="p">)</span>
+</code></pre></div></div>
+
+<h2 id="まとめ">まとめ</h2>
+
+<p>大事な点はだいたいカバーしたと思います。純粋関数言語からアニメーションを扱う考え方はとても面白かったです。はじめは少しとっつきにくいかもしれませんが、慣れれば他の似たようなライブラリも簡単に理解できるようになりました。</p>
+
+<p>この記事を通してElmのファンが増えてくれれば嬉しいです!</p>
+
+  </div><a class="u-url" href="/blog/make-elm-app/" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading">Program Is Made At Night</h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name">kim hirokuni</li><li><a class="u-email" href="mailto:yangkookkim@gmail.com">yangkookkim@gmail.com</a></li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"><li><a href="https://github.com/jekyll"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#github"></use></svg> <span class="username">jekyll</span></a></li><li><a href="https://www.twitter.com/jekyllrb"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#twitter"></use></svg> <span class="username">jekyllrb</span></a></li></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p>Write an awesome description for your new site here. You can edit this line in _config.yml. It will appear in your document head meta (for Google search results) and in your feed.xml site description.</p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>

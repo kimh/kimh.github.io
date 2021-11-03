@@ -9,7 +9,7 @@ categories:
 - dashing
 ---
 
-![Dashing Preview](/images/dashing_preview.png)
+![Dashing Preview](/assets/dashing_preview.png)
 
 ## Dashingの紹介
 [Dashing](https://github.com/Shopify/dashing)というダッシュボード作成のフレームワークをご存知ですか？ Dashingを使えば、上のようなダッシュボードを簡単に作ることができます。いいですよね？欲しいですよね？
@@ -32,7 +32,7 @@ categories:
 このチュートリアルで使うサンプルのダッシュボードをまず作成しましょう。サンプルダッシュボードは **My Dashboard** という名前にして、**Fizz Buzz** ウィジェットを作成しましょう。
 FizzBuzzウィジェットは一定間隔で数字をインクリメントしていって、３で割り切れる数字の場合は**Fizz**と、５で割り切れる場合は**Buzz**と、どちらでも割り切れる場合は、**FizzBuzz**と表示するウィジェットです。
 
-![Widget Preview](/images/fizzbuzz.png)
+![Widget Preview](/assets/fizzbuzz.png)
 
 新しいダッシュボードを作成するのは以下のコマンドを実行するだけです。
 

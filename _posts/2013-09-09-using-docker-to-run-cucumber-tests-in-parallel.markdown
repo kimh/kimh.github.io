@@ -8,7 +8,7 @@ categories:
 - en
 - docker
 ---
-![](/images/homepage-docker-logo.png)
+![](/assets/homepage-docker-logo.png)
 ## What is Docker?
 You can think of [Docker](https://www.docker.io/) as a wrapper to create and run Linux LXC very easily. In addition to that, Docker comes with very unique technology called "union file system" that allows you to manage the version of your containers with familiar command like _commit_ or _push_ just like you are using git.
 

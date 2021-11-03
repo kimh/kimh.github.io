@@ -1,0 +1,317 @@
+<p>仕事でUnprivilegedな親LXCコンテナ上で子コンテナを動かす必要があった。つまり、コンテナの入れ子。さらにLXCのストレージバックエンドにBtrfsを使わないといけない。要件の特殊さから包括的な方法が見つからなかったので自分で書くことにした。</p>
+
+<p><strong><em>Unprivileged LXCコンテナとは何か</em></strong></p>
+
+<p>まずそもそもUnprivileged LXCコンテナがいまひとつ何かわかっていなかったのでまずはその理解から。</p>
+
+<p>簡単に言うとroot権限を持っていないユーザが作成・起動したLXCコンテナのことをこう呼ぶらしい。LXCを使う場合、 <code class="language-plaintext highlighter-rouge">lxc-create</code> でコンテナを作成して <code class="language-plaintext highlighter-rouge">lxc-start</code> で起動するけど普通はこれはrootユーザじゃないといけない。
+しかし、rootユーザでしてしまうとコンテナ上のrootユーザがホストのuid 0を持つことになってしまい、いくらchroot環境でコンテナが動いていたとしてもセキュリティ的によくない。これを避けるために一般ユーザでコンテナを動かして
+コンテナ上のrootユーザをホストのrootじゃないユーザのuidにマッピングする。こうすればコンテナ上では変わらずrootになれるけどホストのrootとは違うので安全が確保できるというもの。</p>
+
+<p>Unprivileged LXCを調べていると以下のようなLXCのコンフィグを必ず見ると思う。</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>lxc.id_map = u 0 100000 65536
+lxc.id_map = g 0 100000 65536
+</code></pre></div></div>
+
+<p>このコンフィグでは uid (1行目) と gid (２行目) のマッピングを定義していてそれぞれの意味は、</p>
+
+<ul>
+  <li>0: コンテナが使えるuid/gidは0から始まり</li>
+  <li>10000: ホスト上の uid/gid 100000から</li>
+  <li>65536: ホスト上の65536個のuid/gidをコンテナに割りあてる</li>
+</ul>
+
+<p>という意味。つまり、ホスト上の100000から165536までのuid/gidをコンテナのマッピングに使うよ、ということ。</p>
+
+<p>このマッピングを定義するだけではダメで、この設定をLXCが使えるようにホスト上で設定しないとダメ。</p>
+
+<p>設定は <code class="language-plaintext highlighter-rouge">/etc/subuid</code> と <code class="language-plaintext highlighter-rouge">/etc/subgid</code> に書く。</p>
+
+<p><code class="language-plaintext highlighter-rouge">/etc/subuid</code></p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>vagrant:100000:65536
+
+</code></pre></div></div>
+
+<p><code class="language-plaintext highlighter-rouge">/etc/subgid</code></p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>vagrant:100000:65536
+</code></pre></div></div>
+
+<p>Unprivileged LXCを使うために必須なのは実はこれだけ。</p>
+
+<p>LXCの設定か何かで <code class="language-plaintext highlighter-rouge">--unprivileged</code> みたいに指定するのかと思うのかもしれないけどそうではない。Unprivilegedなコンテナとはあくまで一般ユーザで作成・起動したコンテナというだけ。</p>
+
+<p><strong><em>Btrfストレージバックエンド</em></strong></p>
+
+<p>LXCは複数のストレージバックエンドに対応している。<code class="language-plaintext highlighter-rouge">zfs</code> <code class="language-plaintext highlighter-rouge">btrfs</code> <code class="language-plaintext highlighter-rouge">dir</code> などなど。どのバックエンドを使うかは要件によると思うけど、基本は高機能なファイルシステムなbtrfsとかzfsを使う方が
+パフォーマンス的にいいし使える機能とかも違ってくる。今回は仕事の関係でbtrfsを使う</p>
+
+<p>Btrfsをストレージバックエンドに使うとは具体的にはどういうことだろう？</p>
+
+<p>これは簡単にいうと、BtrfsでフォーマットしてマウントされたディレクトリをLXCコンテナの保存先に指定するということ。具体的なやり方は後述するけど、こんな感じ。</p>
+
+<ul>
+  <li>ホストマシンに <code class="language-plaintext highlighter-rouge">/dev/sdb</code> というディスクデバイスを追加する</li>
+  <li><code class="language-plaintext highlighter-rouge">/dev/sdb</code> を <code class="language-plaintext highlighter-rouge">/mnt</code> にbtrfsでマウントする</li>
+  <li>LXCコンテナのrootfsに <code class="language-plaintext highlighter-rouge">/mnt</code> 以下のディレクトリを指定する。(Ex. <code class="language-plaintext highlighter-rouge">/mnt/box1</code>)</li>
+</ul>
+
+<p>これもUnprivilegedと同じでbtrfsを使うという設定が特にあるわけではない。コンテナの保存先をbtrfsのディレクトリに指定するだけ。詳しくは後述する。</p>
+
+<p><strong><em>Nestedコンテナ</em></strong></p>
+
+<p>ここまでですでにややこしいけど、さらにもう少しだけややこしくする。LXCの特徴の一つにコンテナの入れ子のサポートがある。つまり、ホストの上でコンテナ1を動かして、コンテナ1の上でコンテナ2を動かして、コンテナ2の上で、、、ということができる。</p>
+
+<p>今回の要件は一つ目のコンテナはUnprivilegedで二つ目のコンテナはPrivilegedコンテナにする。PrivilegedといってもUnprivilegedの上で動いているのでセキュリティの問題はない。</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>入れ子コンテナイメージ図
+
+   ----------
+   |コンテナ2|
+   ----------
+   Privileged
+  -------------
+  |  コンテナ1 |
+  -------------
+  Unprivileged
+-----------------
+|     ホスト1    |
+-----------------
+Vagrant上のLinux VM
+</code></pre></div></div>
+
+<p><strong><em>構築手順</em></strong></p>
+
+<p>ここからは具体的な構築の手順を説明していく。</p>
+
+<p><strong><em>Vagrantでホストマシンを作成</em></strong></p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>$ mkdir lxc
+$ vagrant init trusty # trustyは自分でつけた名前かもしれないけど、とにかくどのBoxでもいいのでtrusty
+$ vagrant up; vagrant ssh
+</code></pre></div></div>
+
+<p>LXCではカーネルのバージョンがすごく大事。最近でこそ安定してきたけどマイナーバージョンが違うと壊れてて動かないというのはよくある話。vagrantで作ったtrustyのカーネルは以下だった。</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>$ uname -a
+Linux vagrant-ubuntu-trusty 3.13.0-24-generic #46-Ubuntu SMP Thu Apr 10 19:11:08 UTC 2014 x86_64 x86_64 x86_64 GNU/Linux
+</code></pre></div></div>
+
+<p>まずはLXCとbtrfsをインストール。</p>
+
+<p>LXCは1.1.5を使いたいので以下のコマンドでインストール。</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>$ sudo apt-get install -y -t trusty-backports lxc
+$ vagrant@vagrant-ubuntu-trusty:~$ dpkg -l | grep lxc
+ii  liblxc1        1.1.5-0ubuntu3~ubuntu14.04.1  amd64 Linux Containers userspace tools (library)
+ii  lxc            1.1.5-0ubuntu3~ubuntu14.04.1  amd64 Linux Containers userspace tools
+ii  lxc-templates  1.1.5-0ubuntu3~ubuntu14.04.1  amd64 Linux Containers userspace tools (templates)
+ii  lxcfs          0.11-0ubuntu3~ubuntu14.04.1   amd64 FUSE based filesystem for LXC
+ii  python3-lxc    1.1.5-0ubuntu3~ubuntu14.04.1  amd64 Linux Containers userspace tools (Python 3.x bindings
+</code></pre></div></div>
+
+<p>Btrfsもインストールする。</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>$ sudo apt-get install btrfs-tools
+$ dpkg -l | grep btrfs
+ii  btrfs-tools 3.12-1ubuntu0.1 amd64 Checksumming Copy on Write Filesystem utilities
+</code></pre></div></div>
+
+<p><strong><em>Brtfs領域を作成</em></strong></p>
+
+<p>次にLXCが使うbtrfsファイルシステムを作成する。ホストマシンに<code class="language-plaintext highlighter-rouge">/dev/sdb</code>という新しいディスクを追加してこれを<code class="language-plaintext highlighter-rouge">/mnt</code>にマウントする。</p>
+
+<p>ディスクを追加する方法は色々ググった結果以下をVagrantファイルに書くとできた。（ストレートには行かなかった気もするけどこのあたりの説明はめんどくさいので省く。）</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>    config.vm.provider :virtualbox do |vb|
+      file_to_disk = "./tmp/disk1.vdi"
+      if not File.exist?(file_to_disk) then
+        vb.customize ["createhd",
+                      "--filename", file_to_disk,
+                      "--size", 300 * 1024]
+      end
+      vb.customize ['storageattach', :id,
+                    '--storagectl', 'SATA Controller',
+                    '--port', 1,
+                    '--device', 0,
+                    '--type', 'hdd',
+                    '--medium', file_to_disk]
+    end
+</code></pre></div></div>
+
+<p>無事に<code class="language-plaintext highlighter-rouge">/dev/sdb</code>を追加できたら<code class="language-plaintext highlighter-rouge">fdisk</code>で確認する。</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>$ sudo fdisk -l | grep sdb
+Disk /dev/sdb doesn't contain a valid partition table
+Disk /dev/sdb: 322.1 GB, 322122547200 bytes
+</code></pre></div></div>
+
+<p>Btrfsでフォーマットする。</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>$ sudo mkfs -t btrfs /dev/sdb
+
+WARNING! - Btrfs v3.12 IS EXPERIMENTAL
+WARNING! - see http://btrfs.wiki.kernel.org before using
+
+Turning ON incompat feature 'extref': increased hardlink limit per file to 65536
+fs created label (null) on /dev/sdb
+        nodesize 16384 leafsize 16384 sectorsize 4096 size 300.00GiB
+Btrfs v3.12
+</code></pre></div></div>
+
+<p><code class="language-plaintext highlighter-rouge">/mnt</code>にマウントする。</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>$ echo '/dev/sdb /mnt               btrfs   defaults 0       1' | sudo tee -a /etc/fstab
+$ sudo mount /mnt
+</code></pre></div></div>
+
+<p>最後にvagrantユーザが書き込めるように権限を変更。</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>$ sudo chown vagrant:vagrant /mnt
+</code></pre></div></div>
+
+<p>これで <code class="language-plaintext highlighter-rouge">/mnt</code> をLXCのバックエンドとして使う準備ができた。</p>
+
+<p><strong><em>Unprivileged LXCの準備</em></strong></p>
+
+<p>次にUnprivileged LXCを使う準備をしていく。上記で説明したようにuid/gidのマッピングの設定をする。Vagrantで作ったBoxではvagrantという一般ユーザがデフォルトなのでこのユーザでUnprivilegedコンテナを作成する。</p>
+
+<p>上記でも書いたけど、Unprivilegedコンテナとはあくまでrootじゃないユーザで作るコンテナのこと。</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>$ echo 'vagrant:100000:65536' | sudo tee -a /etc/subuid
+$ echo 'vagrant:100000:65536' | sudo tee -a /etc/subgid
+</code></pre></div></div>
+
+<p>このコマンドの意味は最初の説明をみてください。</p>
+
+<p>次にvagrantユーザが使うLXCのコンフィグを設定する。主なファイルは <code class="language-plaintext highlighter-rouge">~/.config/lxc/default.conf</code> と <code class="language-plaintext highlighter-rouge">~/.config/lxc/lxc.conf</code>。</p>
+
+<p><code class="language-plaintext highlighter-rouge">~/.config/lxc/default.conf</code></p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>lxc.id_map = u 0 100000 65536
+lxc.id_map = g 0 100000 65536
+lxc.network.type = veth
+lxc.network.link = lxcbr0
+lxc.network.flags = up
+lxc.network.hwaddr = 00:16:3e:xx:xx:xx
+</code></pre></div></div>
+
+<p><code class="language-plaintext highlighter-rouge">~/.config/lxc/lxc.conf</code></p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>lxc.lxcpath = /mnt
+</code></pre></div></div>
+
+<p><code class="language-plaintext highlighter-rouge">lxc.lxcpath</code> はLXCがコンテナとコンテナのコンフィグを保存する場所を指定する。今回はbtrfsでマウントしたディレクトリを使いたいので <code class="language-plaintext highlighter-rouge">/mnt</code> と指定する。</p>
+
+<p>コンフィグがちゃんと設定されているかどうかは <code class="language-plaintext highlighter-rouge">lxc-config</code> コマンドを使ってできる。</p>
+
+<p>確認可能なコンフィグの一覧は <code class="language-plaintext highlighter-rouge">-l</code> オプションで見れる。</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>$ lxc-config -l
+lxc.default_config
+lxc.lxcpath
+lxc.bdev.lvm.vg
+lxc.bdev.lvm.thin_pool
+lxc.bdev.zfs.root
+lxc.cgroup.use
+lxc.cgroup.pattern
+
+</code></pre></div></div>
+
+<p>LXCにはコンフィグがたくさんあるのになぜこれだけしか確認できないのかは不明。コンフィグの値を確認するには設定の名前を渡す。</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>$ lxc-config lxc.lxcpath
+/mnt
+</code></pre></div></div>
+
+<p>最後にもう一つ。Unprivilegedコンテナ上のrootは本当のrootではないので本来ならデバイスにアクセスできない。これで一番問題になるのはネットワークの設定。ネットワークインターフェースはコンテナから色々カスタマイズしたい
+ことが普通だから。この問題の解決するために <code class="language-plaintext highlighter-rouge">lxc-user-nic</code> というツールがLXCについている。Unprivilegedコンテナ上でネットワークの操作をするために <code class="language-plaintext highlighter-rouge">/etc/lxc/lxc-usernet</code> に以下の設定を入れる。</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>vagrant veth lxcbr0 10
+</code></pre></div></div>
+
+<p>このコンフィグはvagrantユーザがlxcbr0というブリッジデバイスに <code class="language-plaintext highlighter-rouge">veth</code> ネットワークインターフェイスを１０個まで作成できるという意味。</p>
+
+<p><strong><em>コンテナの作成・起動</em></strong></p>
+
+<p>ここまででUnprivilegedなコンテナを作成する準備は整った。以下のコマンドでコンテナをダウンロードする。</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>$ lxc-create -t download -n box1 -B btrfs -- -d ubuntu -r trusty -a amd64
+</code></pre></div></div>
+
+<p>これで起動もできる状態になったけど今回はコンテナを入れ子にしたいので作成したコンテナのコンフィグを変更する。</p>
+
+<p>コンンフィグは <code class="language-plaintext highlighter-rouge">/mnt/box1/config</code> にある。以下の設定を追加。</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>lxc.mount.auto = cgroup
+lxc.aa_profile = lxc-container-default-with-nesting
+</code></pre></div></div>
+
+<p><code class="language-plaintext highlighter-rouge">lxc.mount.auto = cgroup</code>は調べてないのでよくわからない。おそらく、<code class="language-plaintext highlighter-rouge">cgroupfs</code> を自動マウントするということだけど、 <code class="language-plaintext highlighter-rouge">cgroupfs</code> が説明できるほど理解していないので省略。</p>
+
+<p><code class="language-plaintext highlighter-rouge">lxc.aa_profile = lxc-container-default-with-nesting</code> はコンテナの入れ子をAppArmorで許可する設定。これがないと入れ子はできない。</p>
+
+<p>これですべての準備は整った。以下のコマンドでコンテナを起動する。</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>lxc-start -n box1 -d --logfile test.log --logpriority DEBUG
+</code></pre></div></div>
+
+<p><code class="language-plaintext highlighter-rouge">--logfile test.log --logpriority DEBUG</code> はなんらかの問題でコンテナが起動できない時にデバッグで便利なので指定しておくといい。</p>
+
+<p>自分の環境では <code class="language-plaintext highlighter-rouge">lxc-start: utils.c: setproctitle: 1455 Invalid argument - setting cmdline failed</code> というエラーが出たけど無害みたいなので無視。</p>
+
+<p>無事に起動できたら <code class="language-plaintext highlighter-rouge">lxc-attacth</code> でログインする。</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>$ lxc-attach -n box1
+</code></pre></div></div>
+
+<p>これでUnprivilegedコンテナを起動することができた。</p>
+
+<p>どうやってこのコンテナがUnprivilegedコンテナだと確認できるだろうか？コンテナ内からはあくまでroot権限があるように見えるのでよくわからない。</p>
+
+<p>一番手っ取り早いファイルはコンテナで作られたファイルのuid/gidをコンテナの中と外で確認することだと思う。試しにやって見る。</p>
+
+<p>まずは <code class="language-plaintext highlighter-rouge">box1</code> にログインしてrootユーザーでファイルを作成して見る。</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>$ touch /foo
+</code></pre></div></div>
+
+<p>そしてこのファイルを作成したユーザのuid/gidを確認してみる。</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>$ ls -ln /foo
+-rw-rw-r-- 1 0 0 0 Jan  7 08:51 /foo
+</code></pre></div></div>
+
+<p>rootで作成したのでuid/gidは0になっている。</p>
+
+<p>次に <code class="language-plaintext highlighter-rouge">box1</code> から抜けてホストマシン側で作成したファイルのuid/gidを確認する。コンテナのファイルシステムは <code class="language-plaintext highlighter-rouge">/mnt</code> に保存されている。</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>$ ls -ln /mnt/box16/rootfs/foo
+-rw-rw-r-- 1 100000 100000 0 Jan  7 08:51 /mnt/box16/rootfs/foo
+</code></pre></div></div>
+
+<p>uid/gidが100000になっている。ちゃんと設定した通りコンテナのuid/gid 0がホスト側の100000にマッピングされているので <code class="language-plaintext highlighter-rouge">box1</code> はUnprivilegedコンテナだとわかる。</p>
+
+<p><strong><em>コンテナの入れ子</em></strong></p>
+
+<p>最後にもう一つの目標であるコンテナの入れ子をやって見る。つまり、<code class="language-plaintext highlighter-rouge">box1</code> にログインして <code class="language-plaintext highlighter-rouge">n1</code> という名前でさらにコンテナを起動する。</p>
+
+<p>これをするために、少し変な感じがするけどbox1上でLXCをインストールしないといけない。</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>$ apt-get update
+$ apt-get install lxc
+</code></pre></div></div>
+
+<p><code class="language-plaintext highlighter-rouge">n1</code> はPrivilegedなコンテナ(といってもUnprivileged上のPrivilegedなので実際にはUnprivilegedと同じ)でいいのでLXCをインストールすればすぐに作成できる。</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>$ lxc-create -n n1 -t ubuntu-cloud
+</code></pre></div></div>
+
+<p>でコンテナをダウンロードして</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>$ lxc-start -n n1 -d
+</code></pre></div></div>
+
+<p>で起動するだけ。問題なく起動すれば <code class="language-plaintext highlighter-rouge">n1</code> にまたログインして普通のコンテナとして使うことができるはず。</p>

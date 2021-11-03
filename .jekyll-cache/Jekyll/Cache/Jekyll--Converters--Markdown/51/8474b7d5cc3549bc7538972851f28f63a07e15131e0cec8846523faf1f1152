@@ -1,0 +1,9 @@
+I"Û<h2 id="contents-of-this-article">Contents of This Article</h2>
+<h4 id="why-do-we-need-to-use-dockerfile"><a href="#why_do_we_need_to_use_dockerfile">Why do we need to use Dockerfile?</a></h4>
+<h4 id="add-and-understanding-context-in-dockerfile"><a href="#add_and_understanding_context_in_dockerfile">ADD and understanding context in Dockerfile</a></h4>
+<h4 id="treat-your-container-like-a-binary-with-cmd"><a href="#treat_your_container_like_a_binary_with_cmd">Treat your container like a binary with CMD</a></h4>
+<h4 id="difference-between-cmd-and-entrypoint"><a href="#difference_between_cmd_and_entrypoint">Difference between CMD and ENTRYPOINT</a></h4>
+<ul>
+  <li><a href="#exec_format_error">exec format error</a></li>
+</ul>
+:ET

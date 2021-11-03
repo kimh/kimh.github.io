@@ -309,7 +309,7 @@ We will use Marionette [LayoutView](https://github.com/marionettejs/backbone.mar
 
 Let's take a example of creating shopping car page. The page contains two sub-views: item list view and pricing view.
 
-![](/images/shopping_cart1.png)
+![](/assets/shopping_cart1.png)
 
 Here is our code that creates this shopping cart page. First we create a layout html and layout view.
 
@@ -376,7 +376,7 @@ That's it. Marionette region provides a convenient method called `show()` where 
 
 Creating further nested sub-view is easy. Let's say you want to divide `PriceListView` into `TotalPriceListView` and `SubTotalPriceListView`.
 
-![](/images/shopping_cart2.png)
+![](/assets/shopping_cart2.png)
 
 What you have to do is extending `PriceListView` from `LayoutView` instead of `ItemView` and add region objects.
 
@@ -446,7 +446,7 @@ The role of Controller is to instantiate objects, access backend, and build comp
 
 Let's imagine that we want to render previous shopping cart page.
 
-![](/images/shopping_cart1.png)
+![](/assets/shopping_cart1.png)
 
 To render the page, several things has to be done.
 

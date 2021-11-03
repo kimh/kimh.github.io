@@ -1,0 +1,129 @@
+I",<p><img src="/assets/homepage-docker-logo.png" alt="" /></p>
+<h2 id="dockerってなに">Dockerってなに？</h2>
+<p><a href="https://www.docker.io/">Docker</a> は一言で言えばLXCのラッパーです。Dockerを使うことですこし面倒なLXCをとても簡単に操作することができるようになります。それに加えて、Dockerは”Union File System”という機能があり、これのおかげでLXCコンテナのバージョン管理を_commit_や_push_など使い慣れたインターフェイスで操作することができます。まるでGitのLXC版のような感覚です。</p>
+
+<p>LXCとは仮想化技術のひとつでホストマシンからは隔離されたコンテナと呼ばれる仮想マシンを実行することができます。ハイパーバイザー型の仮想化の代表であるXen Serverなどとは異なり、LXCは軽量な仮想マシンを作成することができます。とても軽量なので、通常は同じリソースでハイパーバイザー型の仮想マシンよりも多くのマシンを実行することができます。</p>
+
+<p>この軽量とLXCの性質が生きてくるのは、多くのテストを実行することだと思います。</p>
+
+<p>テストを実行する時、できるだけ各テストが他のテストに影響を与えないことに気を配っていると思います。これをするためには、いくつもの仮想マシンを立ち上げて、そこで各テストを実行するというやり方があると思います。ハイパーバイザー型の仮想マシンでもこの方法を実行できますが、ハイパーバイザー型のマシンは開始/停止に時間がかかるため、テスト全体の実行時間が増えてしまうという欠点があります。
+しかし、LXCならこの問題を克服できます。なぜなら、LXCではマシンを実行するのは１つのプロセスを起動するのと同じくらい軽量だからです。</p>
+
+<h2 id="dockerをインストールしてみよう">Dockerをインストールしてみよう</h2>
+<p>DockerのインストールはUbuntu12.04を使っていればとても簡単です。</p>
+
+<p>以下は<a href="http://docs.docker.io/en/latest/installation/ubuntulinux/">Dockerのサイトに</a>に記載されていた手順です。</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nb">sudo </span>apt-get update
+<span class="nb">sudo </span>apt-get <span class="nb">install </span>linux-image-generic-lts-raring linux-headers-generic-lts-raring
+<span class="nb">sudo </span>reboot
+<span class="nb">sudo </span>sh <span class="nt">-c</span> <span class="s2">"curl https://get.docker.io/gpg | apt-key add -"</span>
+<span class="nb">sudo </span>sh <span class="nt">-c</span> <span class="s2">"echo deb https://get.docker.io/ubuntu docker main &gt; /etc/apt/sources.list.d/docker.list"</span>
+<span class="nb">sudo </span>apt-get update
+<span class="nb">sudo </span>apt-get <span class="nb">install </span>lxc-docker
+</code></pre></div></div>
+
+<p>これでコンテナをDockerから作成できるようになりました。</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nb">sudo </span>docker run <span class="nt">-i</span> <span class="nt">-t</span> ubuntu /bin/bash
+</code></pre></div></div>
+
+<p>もし、Macを使っているならDockerをVagramtのUbuntuマシンで試すことができます。この場合のインストール方法は<a href="http://docs.docker.io/en/latest/installation/vagrant/">ここ</a>にあります。
+しかし、初めはUbuntuにインストールして試してみることをおすすめします。一度Vagrant上で動かしてみましたが、Ubuntuで動かしたよりもコンテナの実行速度が遅く感じられました。もしかしたら、すでに仮想化されているVagrant上で実行しているからかもしれません。</p>
+
+<h2 id="環境をセットアップする">環境をセットアップする</h2>
+<p>上述したようにDockerはGitにとてもよく似たインターフェイスを備えています。Dockerのイメージを<a href="https://index.docker.io/">Dockerのパブリックレポジトリ</a>からPullしてきてそれをベースにして自分の好きな変更を加えてCommitしたら、またそれをPushできます。
+今回はCucumberのテストを実行するのでRubyの実行環境があるコンテナが必要になります。もちろん、自分でコンテナを作成することもできますが今回は私が作成したイメージを使いましょう。</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c"># まずrootユーザになります</span>
+<span class="nb">sudo</span> <span class="nt">-s</span>
+
+<span class="c"># イメージをPullします</span>
+docker pull kimh/ruby-base
+
+<span class="c"># イメージでechoコマンドを実行してみましょう</span>
+docker run kimh/ruby-base <span class="nb">echo</span> <span class="s2">"Running on Docker"</span>
+</code></pre></div></div>
+
+<p>今度はコンテナにログインして、テスト用のアプリケーションをインストールしましょう。</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c"># コンテナにログインします</span>
+docker run <span class="nt">-i</span> <span class="nt">-t</span> kimh/ruby-base /bin/bash
+<span class="nb">cd</span> /git
+git clone https://github.com/kimh/docker_demo
+<span class="nb">cd </span>docker_demo/ci_app
+bundle <span class="nb">install</span>
+</code></pre></div></div>
+
+<p>この時点で２つの比較的時間がかかる作業をしたので（イメージのPullとbundle installです）コンテナの変更を保存しましょう。それをするには、変更をCommitしてイメージに保存します。</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c"># ここで exit とタイプしてはダメです！タイプするとマシンが終了して一からやり直しになってしまいます。</span>
+<span class="c"># 代わりに、Ctrl+p とタイプしてから Ctrl+q とタイプすることで終了せずにコンソールから抜けることができます。</span>
+Ctrl+p
+Ctrl+q
+<span class="c"># コンテナのidを調べます</span>
+docker ps <span class="c"># 今回はidは 23fd82dcc088 でした。多分実行環境によって違うかも？</span>
+docker commit 23fd82dcc088 kimh/ruby-base
+</code></pre></div></div>
+
+<p>これでCucumberテストを実行する環境が整いました。コンテナを起動してテストを一つ実行してみましょう。</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>docker run kimh/ruby-base /bin/bash <span class="nt">-c</span> <span class="s2">"
+  source /etc/profile
+  cd /git/docker_demo/ci_app
+  export LC_CTYPE="</span>ja_JP.UTF-8<span class="s2">"
+  export RAILS_ENV=test
+  bundle exec rake cucumber
+"</span>
+</code></pre></div></div>
+
+<p>このスクリプトでDockerはCucumberテストをkimh/ruby-baseコンテナ上で実行しました。</p>
+
+<p>いよいよ最後にテストを並列実行してみましょう。考え方としては複数のコンテナを実行して、各コンテナに一つのCucumberテストを実行させます。今回は５つのコンテナを並列で実行してみましょう。</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">DID</span><span class="o">=</span><span class="s2">""</span>
+<span class="nv">container</span><span class="o">=</span><span class="s2">"kimh/ruby-base:latest"</span>
+<span class="nb">dir</span><span class="o">=</span><span class="s2">"/git/docker_demo/ci_app"</span>
+
+<span class="k">for </span>feature <span class="k">in</span> <span class="o">{</span>0..4<span class="o">}</span>
+<span class="k">do
+  </span><span class="nv">DID</span><span class="o">=</span><span class="nv">$DID</span><span class="s2">" "</span><span class="sb">`</span><span class="nb">sudo </span>docker run <span class="nt">-d</span> <span class="nv">$container</span> /bin/bash <span class="nt">-c</span> <span class="s2">"
+  source /etc/profile
+  cd </span><span class="nv">$dir</span><span class="s2">
+  export LC_CTYPE="</span>ja_JP.UTF-8<span class="s2">"
+  export RAILS_ENV=test
+  bundle exec rake cucumber
+  "</span><span class="sb">`</span>
+<span class="k">done
+</span>docker <span class="nb">wait</span> <span class="nv">$DID</span>
+</code></pre></div></div>
+
+<p>このスクリプトのポイントは２つです。</p>
+
+<p>１つめは、実行したコンテナのidをDIDという変数に保存していることです。この変数は各コンテナのステータスコード（テストが成功したか失敗したか）を後で知る必要があるからです。</p>
+
+<p>２つめは、_docker wait_コマンドにコンテナの実行idを渡していることです。こうすると、シェルはコンテナが終了するまでブロックして、各コンテナのステータスコードを返します。</p>
+
+<p>今回だとすべてのテストはパスするはずなので、五回連続で0が表示されるはずです。（0はCucumberではパスしたという意味です）</p>
+
+<h1 id="まとめ">まとめ</h1>
+<p>今回はDockerの基本的な使い方とそれを使ってのテストの並列実行をしました。各テストはコンテナ上の独立した環境で実行されます。今回の例では同じテストを５台のコンテナ上で実行したのであまり意味はありませんが、
+異なる複数のテストを並列で実行するのも簡単にできます。今回はこんな感じでやりました。</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">DID</span><span class="o">=</span><span class="s2">""</span>
+<span class="nv">container</span><span class="o">=</span><span class="s2">"kimh/ruby-base:nice"</span>
+<span class="nb">dir</span><span class="o">=</span><span class="s2">"/git/your_repo"</span>
+
+<span class="k">for </span>feature <span class="k">in</span> <span class="sb">`</span>find  ./features/<span class="sb">`</span>
+<span class="k">do
+  </span><span class="nv">DID</span><span class="o">=</span><span class="nv">$DID</span><span class="s2">" "</span><span class="sb">`</span>docker run <span class="nt">-d</span> <span class="nv">$container</span> /bin/bash <span class="nt">-c</span> <span class="s2">"
+  source /etc/profile
+  cd </span><span class="nv">$dir</span><span class="s2">
+  export LC_CTYPE="</span>ja_JP.UTF-8<span class="s2">"
+  export RAILS_ENV=test
+  bundle exec cucumber </span><span class="nv">$feature</span><span class="s2"> -r features/
+  "</span><span class="sb">`</span>
+<span class="k">done
+</span>docker <span class="nb">wait</span> <span class="nv">$DID</span>
+</code></pre></div></div>
+:ET

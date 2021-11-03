@@ -1,0 +1,273 @@
+<p><img src="/assets/dashing_preview.png" alt="Dashing Preview" /></p>
+
+<h2 id="dashingの紹介">Dashingの紹介</h2>
+<p><a href="https://github.com/Shopify/dashing">Dashing</a>というダッシュボード作成のフレームワークをご存知ですか？ Dashingを使えば、上のようなダッシュボードを簡単に作ることができます。いいですよね？欲しいですよね？</p>
+
+<p>この記事では、自分で一からウィジェットを作成する方法を解説していきます。Dashingの基本的な使い方は、<a href="http://shopify.github.io/dashing/">公式ページ</a> を見ればすぐわかると思うのでここでは割愛です。</p>
+
+<h2 id="目次">目次</h2>
+<h4 id="サンプルダッシュボードの作成"><a href="#creating_sample_dashboard">サンプルダッシュボードの作成</a></h4>
+<h4 id="ウィジェットに必要なファイル"><a href="#files_for_widget">ウィジェットに必要なファイル</a></h4>
+<h4 id="ジョブファイルを作成"><a href="#creating_job_file">ジョブファイルを作成</a></h4>
+<h4 id="ジョブのコードを書く"><a href="#writing_job_code">ジョブのコードを書く</a></h4>
+<h4 id="ウィジェットのコードを書く"><a href="#writing_widget_code">ウィジェットのコードを書く</a></h4>
+<h4 id="ウィジェットを使う"><a href="#using_widget">ウィジェットを使う</a></h4>
+<h4 id="ウィジェットを公開する"><a href="#publishing_widget">ウィジェットを公開する</a></h4>
+
+<p><a id="creating_sample_dashboard"></a></p>
+<h2 id="サンプルダッシュボードの作成-1">サンプルダッシュボードの作成</h2>
+<p>このチュートリアルで使うサンプルのダッシュボードをまず作成しましょう。サンプルダッシュボードは <strong>My Dashboard</strong> という名前にして、<strong>Fizz Buzz</strong> ウィジェットを作成しましょう。
+FizzBuzzウィジェットは一定間隔で数字をインクリメントしていって、３で割り切れる数字の場合は<strong>Fizz</strong>と、５で割り切れる場合は<strong>Buzz</strong>と、どちらでも割り切れる場合は、<strong>FizzBuzz</strong>と表示するウィジェットです。</p>
+
+<p><img src="/assets/fizzbuzz.png" alt="Widget Preview" /></p>
+
+<p>新しいダッシュボードを作成するのは以下のコマンドを実行するだけです。</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ </span>dashing new my_dashboard
+      create  my_dashboard
+      create  my_dashboard/.gitignore
+      create  my_dashboard/Gemfile
+      create  my_dashboard/README.md
+      .... 省略 ....
+      create  my_dashboard/widgets/text/text.coffee
+      create  my_dashboard/widgets/text/text.html
+      create  my_dashboard/widgets/text/text.scss
+</code></pre></div></div>
+
+<p>これでカレントディレクトリに<code class="language-plaintext highlighter-rouge">my_dashboard</code>というディレクトリが作成されます。このディレクトリがダッシュボードのベースとなるので、以降の作業はすべて<code class="language-plaintext highlighter-rouge">my_dashboard</code>をrootディレクトリとして読んでください。</p>
+
+<p><a id="files_for_widget"></a></p>
+<h2 id="ウィジェットに必要なファイル-1">ウィジェットに必要なファイル</h2>
+<p>Dashingはフレームワークなので、ルール従って開発すれば簡単に自分のウィジェットを作成することができます。ルールの一つに必要なファイルを用意することと、Dashingの命名規則に従ってそれらのファイル/ディレクトリ名をつけることがあります。</p>
+
+<p>新たにウィジェットを作成するために必要なファイルは主に２つに分かれます。</p>
+
+<p>ひとつはウィジェットのメインとなるウィジェットファイルで<strong>/widgets</strong> ディレクトリ配下に作られます。</p>
+
+<p>もう一つはウィジェットにデータを渡すためのジョブファイルで、<strong>/jobs</strong>ディレクトリ配下に作られます。</p>
+
+<p>まずは、ウィジェットファイルを作成しましょう。</p>
+
+<h3 id="ウィジェットファイルを作成">ウィジェットファイルを作成</h3>
+<p>テンプレートとなるファイルをコマンドで作成します。</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ </span>dashing generate widget fizz_buzz
+      create  widgets
+      create  widgets/fizz_buzz/fizz_buzz.coffee
+      create  widgets/fizz_buzz/fizz_buzz.html
+      create  widgets/fizz_buzz/fizz_buzz.scss
+</code></pre></div></div>
+
+<p>簡単に各ファイルの役割を説明すると</p>
+
+<p><code class="language-plaintext highlighter-rouge">fizz_buzz.html</code> はウィジェットのhtmlそのものです。ジョブから渡されたデータをこのhtml内でレンダリングします。</p>
+
+<p><code class="language-plaintext highlighter-rouge">fizz_buzz.scss</code> はウィジェットのスタイルを書く場所です。</p>
+
+<p><code class="language-plaintext highlighter-rouge">fizz_buzz.coffee</code> はウィジェットで使うjavascriptを書くための場所です。ファイル名からもわかる通り、単なるJSファイルではなくcoffee script形式で書かないといけません。(私は普通のJSで書かせてほしいのですが、、、)</p>
+
+<p>ウィジェットの表示に効果をつけたり、ウィジェットの初期化動作などを書くことができます。</p>
+
+<p>このファイルは見た目のそこまでこだわらなければ、ほぼ空っぽでも構いません。これはDashingのいいところの一つだと思います。つまり、javascirptを全然知らなくても、それなりのウィジェットを作ることができるからです。</p>
+
+<p><a id="creating_job_file"></a></p>
+<h2 id="ジョブファイルを作成-1">ジョブファイルを作成</h2>
+<p>次にジョブファイルを作成します。</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ </span>dashing generate job fizz_buzz
+      create  <span class="nb">jobs
+      </span>create  <span class="nb">jobs</span>/fizz_buzz.rb
+</code></pre></div></div>
+
+<p><code class="language-plaintext highlighter-rouge">fizz_buzz.rb</code> はウィジェットに渡すためのデータを作るコードを書くファイルです。ジョブファイルの基本はcronのように定期的に実行される<a href="https://github.com/jmettraux/rufus-scheduler">Rufus Scheduler</a>で、
+メインのコードをrufusによっての定期実行されるブロックの中に書いていきます。</p>
+
+<div class="language-ruby highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="no">SCHEDULER</span><span class="p">.</span><span class="nf">every</span> <span class="s1">'2s'</span> <span class="k">do</span>
+  <span class="c1"># ここにメインのコードを書く</span>
+  <span class="c1"># 2sなのでウィジェットのデータが２秒毎に更新されることになる</span>
+<span class="k">end</span>
+</code></pre></div></div>
+
+<p><a id="writing_job_code"></a></p>
+<h2 id="ジョブのコードを書く-1">ジョブのコードを書く</h2>
+<p>まずはウィジェットにデータを提供するためのジョブのコーディングから始めましょう。以下のようなコードになります。</p>
+
+<p><strong>fizz_buzz.rb</strong> @ <a href="https://gist.github.com/kimh/8899670#file-fizz_buzz-rb">Gist</a></p>
+<div class="language-ruby highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">class</span> <span class="nc">FizzBuzz</span>
+  <span class="no">FIZZ</span><span class="o">=</span><span class="mi">3</span>
+  <span class="no">BUZZ</span><span class="o">=</span><span class="mi">5</span>
+
+  <span class="k">def</span> <span class="nf">initialize</span>
+    <span class="vi">@current_num</span> <span class="o">=</span> <span class="mi">1</span>
+  <span class="k">end</span>
+
+  <span class="k">def</span> <span class="nf">fizzbuzz</span>
+    <span class="k">if</span> <span class="n">fizzbuzz?</span>
+      <span class="n">out</span> <span class="o">=</span> <span class="s2">"fizzbuzz"</span>
+    <span class="k">elsif</span> <span class="n">fizz?</span>
+      <span class="n">out</span> <span class="o">=</span> <span class="s2">"fizz"</span>
+    <span class="k">elsif</span> <span class="n">buzz?</span>
+      <span class="n">out</span> <span class="o">=</span> <span class="s2">"buzz"</span>
+    <span class="k">else</span>
+      <span class="n">out</span> <span class="o">=</span> <span class="vi">@current_num</span>
+    <span class="k">end</span>
+    <span class="n">go_next</span>
+    <span class="n">out</span>
+  <span class="k">end</span>
+
+  <span class="kp">private</span>
+
+  <span class="k">def</span> <span class="nf">go_next</span>
+    <span class="vi">@current_num</span><span class="o">+=</span><span class="mi">1</span>
+  <span class="k">end</span>
+
+  <span class="k">def</span> <span class="nf">fizz?</span>
+    <span class="p">(</span><span class="vi">@current_num</span> <span class="o">%</span> <span class="mi">3</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span>
+  <span class="k">end</span>
+
+  <span class="k">def</span> <span class="nf">buzz?</span>
+    <span class="p">(</span><span class="vi">@current_num</span> <span class="o">%</span> <span class="mi">5</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span>
+  <span class="k">end</span>
+
+  <span class="k">def</span> <span class="nf">fizzbuzz?</span>
+    <span class="p">(</span><span class="vi">@current_num</span> <span class="o">%</span> <span class="p">(</span><span class="no">FIZZ</span><span class="o">*</span><span class="no">BUZZ</span><span class="p">))</span> <span class="o">==</span> <span class="mi">0</span>
+  <span class="k">end</span>
+
+<span class="k">end</span>
+
+<span class="n">fb</span> <span class="o">=</span> <span class="no">FizzBuzz</span><span class="p">.</span><span class="nf">new</span>
+
+<span class="no">SCHEDULER</span><span class="p">.</span><span class="nf">every</span> <span class="s1">'5s'</span><span class="p">,</span> <span class="ss">:first_in</span> <span class="o">=&gt;</span> <span class="mi">0</span> <span class="k">do</span>
+  <span class="n">send_event</span><span class="p">(</span><span class="s1">'fizz_buzz'</span><span class="p">,</span> <span class="p">{</span> <span class="ss">value: </span><span class="n">fb</span><span class="p">.</span><span class="nf">fizzbuzz</span> <span class="p">})</span>
+<span class="k">end</span>
+</code></pre></div></div>
+
+<p>1 ~ 43行は普通のRubyで書いたFizzBuzzクラスとそれのインスタンスを作っているだけです。これらのコードは、<code class="language-plaintext highlighter-rouge">SCHEDULER</code>の外に書かれているので定期実行はされず、<code class="language-plaintext highlighter-rouge">dashing start</code>で
+ダッシュボードを起動した時の一度だけ実行されるので一度だけ初期化したい処理 (例えば、ステータスを保存する変数とか)を書きます。</p>
+
+<p>46行目の<code class="language-plaintext highlighter-rouge">send_event</code>がジョブファイルのキモです。</p>
+
+<p><code class="language-plaintext highlighter-rouge">send_event</code>は一つ目の引数にウィジェットの名前を指定します。この名前は、後述するレイアウトファイルに書くウィジェットのhtmlの<code class="language-plaintext highlighter-rouge">data-id</code>属性で指定する名前とマッチしないといけません。</p>
+
+<p>二つめの引数には、ウィジェットに渡すデータをハッシュ形式で指定します。ハッシュのキーは<code class="language-plaintext highlighter-rouge">fizz_buzz.html</code>内の<code class="language-plaintext highlighter-rouge">data-bind</code>属性で指定している名前と同じにします。</p>
+
+<p><strong>fizz_buzz.html</strong></p>
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&lt;div data-bind="value"&gt;&lt;/div&gt;
+</code></pre></div></div>
+
+<p><code class="language-plaintext highlighter-rouge">send_event</code>で送ったデータは<code class="language-plaintext highlighter-rouge">data-bind="value"</code>属性をもっている<code class="language-plaintext highlighter-rouge">div</code>タグの内容として挿入されます。</p>
+
+<p>つまり、<code class="language-plaintext highlighter-rouge">send_event('fizz_buzz', { value: "fizzbuzz" })</code> とすると、<code class="language-plaintext highlighter-rouge">fizz_buzz.html</code> は以下のように自動で変更されます。</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&lt;div data-bind="value"&gt;fizzbuzz&lt;/div&gt;
+</code></pre></div></div>
+
+<p>この自動でhtmlの内容が更新される仕組みは<strong>batman.js</strong>の<a href="http://batmanjs.org/docs/api/batman.view_bindings.html">data binding</a>を使って実現しています。</p>
+
+<p><a id="writing_widget_code"></a></p>
+<h2 id="ウィジェットのコードを書く-1">ウィジェットのコードを書く</h2>
+<p>ジョブファイルでデータを更新できる準備は整ったので今度はそのデータをウィジェットとして表示するコードを書きます。</p>
+
+<p>まずは、ウィジェットそのもののhtmlを担当するファイルです。今回はチュートリアルなのでシンプルにしています。</p>
+
+<p><strong>fizz_buzz.html</strong> @ <a href="https://gist.github.com/kimh/8899670#file-fizz_buzz-html">Gist</a></p>
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&lt;h1 class="title" data-bind="title"&gt;&lt;/h1&gt;
+&lt;div data-bind="value"&gt;&lt;/div&gt;
+</code></pre></div></div>
+
+<p>。1行目はウィジェットのタイトルを表示します。このタイトルは後述するレイアウトファイルの<code class="language-plaintext highlighter-rouge">data-title</code>属性で指定した値が表示されます。</p>
+
+<p>2行目は前述したように、<code class="language-plaintext highlighter-rouge">send_event</code>から送られてくるデータを表示します。</p>
+
+<p>次にウィジェットのスタイルを担当するファイルです。</p>
+
+<p><strong>fizz_buzz.scss</strong> @ <a href="https://gist.github.com/kimh/8899670#file-fizz_buzz-scss">Gist</a></p>
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>.widget-fizz-buzz {
+  background-color: #444;
+}
+</code></pre></div></div>
+
+<p>ここでは、ウィジェットの背景色を指定しています。セレクタは<code class="language-plaintext highlighter-rouge">.widget</code>で始めてその後に自分のウィジェットの名前をつなげた名前にします。そして、ブロック内にそのウィジェットに関わるスタイルを書いていきます。</p>
+
+<p><strong>ここで少し命名規則に注意です。</strong> rubyのジョブファイルではウィジェットの名前はアンダースコア区切りの<code class="language-plaintext highlighter-rouge">fizz_buzz</code>でしたが、こっちはCSSファイルなので、ウィジェットの名前の単語をつなげるのは<code class="language-plaintext highlighter-rouge">-</code>にしないといけません。</p>
+
+<p>最後にウィジェットにエフェクトをつけるcoffee scriptです。何もエフェクトを使わなければここはテンプレートのままでも構いませんが、せっかくなので少しだけエフェクトをつけてみます。</p>
+
+<p><strong>fizz_buzz.coffee</strong> @ <a href="https://gist.github.com/kimh/8899670#file-fizz_buzz-coffee">Gist</a></p>
+
+<div class="language-ruby highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">class</span> <span class="nc">Dashing</span><span class="o">.</span><span class="no">FizzBuzz</span> <span class="n">extends</span> <span class="no">Dashing</span><span class="o">.</span><span class="no">Widget</span>
+
+  <span class="ss">ready: </span><span class="o">-&gt;</span>
+    <span class="c1"># ここは初期化時に実行したいエフェクトを書く</span>
+
+  <span class="ss">onData: </span><span class="p">(</span><span class="n">data</span><span class="p">)</span> <span class="o">-&gt;</span>
+    <span class="err">$</span><span class="p">(</span><span class="vi">@node</span><span class="p">).</span><span class="nf">fadeOut</span><span class="p">().</span><span class="nf">fadeIn</span><span class="p">()</span>
+</code></pre></div></div>
+
+<p><code class="language-plaintext highlighter-rouge">$(@node)</code>でウィジェット全体のDOMを取得することができるので、これでデータが更新される度にエフェクトが効きます。</p>
+
+<p><a id="using_widget"></a></p>
+<h2 id="ウィジェットを使ってみる">ウィジェットを使ってみる</h2>
+<p>これでFizzBuzzウィジェットは出来上がりました。あとはウィジェットを使うだけです。まずはレイアウトファイルを作成します。ここではレイアウトファイルの名前は<code class="language-plaintext highlighter-rouge">fizz_buzz_display</code>としましたが、なんでも構いません。</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ </span>dashing generate dashboard fizz_buzz_display
+      exist  dashboards
+      create  dashboards/fizz_buzz_display.erb
+</code></pre></div></div>
+
+<p>レイアウトファイルができたら以下のように編集します。</p>
+
+<p><strong>fizz_buzz_display.erb</strong> @ <a href="https://gist.github.com/kimh/8899670#file-fizz_buzz_display-erb">Gist</a></p>
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&lt;div class="gridster"&gt;
+  &lt;ul&gt;
+    &lt;li data-row="1" data-col="1" data-sizex="1" data-sizey="1"&gt;
+      &lt;div data-id="fizz_buzz" data-view="FizzBuzz" data-title="Fizz Buzz"&gt;&lt;/div&gt;
+    &lt;/li&gt;
+  &lt;/ul&gt;
+&lt;/div&gt;
+</code></pre></div></div>
+
+<p><code class="language-plaintext highlighter-rouge">data-id</code>属性が一番重要な部分です。ここで表示するウィジェットを指定しています。<code class="language-plaintext highlighter-rouge">fizz_buzz.rb</code>内の<code class="language-plaintext highlighter-rouge">send_event</code>の第一引数でデータを送るウィジェットを指定しましたが、それはここの名前を指定しています。</p>
+
+<p><code class="language-plaintext highlighter-rouge">data-view</code>属性はウィジェットのcoffee scriptのクラスと一致しないといけません。coffee scriptはマッチする<code class="language-plaintext highlighter-rouge">data-view</code>を<code class="language-plaintext highlighter-rouge">@node</code>にマップします。</p>
+
+<p><code class="language-plaintext highlighter-rouge">data-title</code>属性で指定したタイトルが<code class="language-plaintext highlighter-rouge">fizz_buzz.html</code>内の<code class="language-plaintext highlighter-rouge">data-bind="title"</code>を持つ要素の内容として表示されます。ここでは”Fizz Buzz”と指定しているので</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&lt;h1 class="title" data-bind="title"&gt;Fizz Buzz&lt;/h1&gt;
+</code></pre></div></div>
+<p>となります。</p>
+
+<p>これでFizzBuzzウィジェットが表示されるはずです。<code class="language-plaintext highlighter-rouge">dashing start</code>でダッシュボードを起動して、<code class="language-plaintext highlighter-rouge">http://localhost:3030/fizz_buzz_display</code>にアクセスしてみてください。ちゃんと表示されたでしょうか？</p>
+
+<p>今回は、チュートリアル用に個別で<code class="language-plaintext highlighter-rouge">fizz_buzz_display</code>を作りましたが、FizzBuzzウィジェットは他のダッシュボードでも使えます。使いたければ、</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&lt;li data-row="1" data-col="1" data-sizex="1" data-sizey="1"&gt;
+  &lt;div data-id="fizz_buzz" data-view="FizzBuzz" data-title="Fizz Buzz"&gt;&lt;/div&gt;
+&lt;/li&gt;
+</code></pre></div></div>
+
+<p>をレイアウトファイルに書くだけです。</p>
+
+<p><a id="publishing_widget"></a></p>
+<h2 id="ウィジェットを公開する-1">ウィジェットを公開する</h2>
+<p>最後に作成したウィジェットは<a href="https://github.com/Shopify/dashing/wiki/Additional-Widgets">公開して使ってもらいましょう。</a></p>
+
+<p>DashingはウィジェットをGistで管理しています。自分のGistページで新たにGistを作成して、ウィジェットに必要なファイル名と同じ名前でGistの内容に各ファイルのコードを書きます。</p>
+
+<p>今回で言えば、以下の４つのファイルを一つのGistに作成します。</p>
+
+<ul>
+  <li>fizz_buzz.html</li>
+  <li>fizz_buzz.css</li>
+  <li>fizz_buzz.coffee</li>
+  <li>fizz_buzz.rb</li>
+</ul>
+
+<p>Gistを作成したら、インストールできるか確認してください。</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ </span>dashing <span class="nb">install </span>GIST_ID
+</code></pre></div></div>
+
+<p><code class="language-plaintext highlighter-rouge">GIST_ID</code>は作成したGistのIDです。また必須ではありませんが、自分のウィジェットの使い方をGistにREADMEとして書いておくのが定番のようです。</p>
+
+<p>正しく動けば、<a href="https://github.com/Shopify/dashing/wiki/Additional-Widgets">Additional Widgets</a>のWikiを修正して登録するのを忘れずに。</p>

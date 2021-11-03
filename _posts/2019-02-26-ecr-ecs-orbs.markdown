@@ -10,14 +10,14 @@ categories:
 
 JAWS Days 2019でCircleCI Orbsを使ってAWSと連携されるネタで登壇してきました。当日の前日Twitterで公開することを約束しちゃったので、それならしっかりしたやつ作ろうということでブログ化しました。当日のスライドは[ここ](https://speakerdeck.com/kimh/orbswoshi-tuteawshejian-dan-depuroi)。
 
-![tweet](/images/ecr_ecs_tweet.png =450x300)
+![tweet](/assets/ecr_ecs_tweet.png)
 https://twitter.com/inokara/status/1098529153890963458
 
 # やりたいこと
 
 CircleCIとECR、ECSを連携させて変更が自動でデプロイされるようにする。めっちゃ雑だけど以下のような感じの構成。
 
-![diagram](/images/ecs_ecr_diagram.png =800x500)
+![diagram](/assets/ecs_ecr_diagram.png)
 
 流れとしては
 
@@ -170,7 +170,7 @@ workflows:
 
 これ以降はプッシュするたびに `build_and_push_image` で新しいイメージがECRへプッシュされ `deploy-service-update` がそのイメージを使った新しいTaskを生成してServiceでそのタスクを使うようにアップートしてくれる。すると、ECSとLoad Balancerが連携して新しいインスタンスを作って古いインスタンスをDrainすることでローリングアップデート完了！
 
-![rolling_update](/images/lb_draining.png)
+![rolling_update](/assets/lb_draining.png)
 
 登壇したスライドでも書いたんだけど、Orbsを使うことで `config.yml` を370行から20行まで圧縮できたのでOrbsの便利さが実感できる例になった。
 

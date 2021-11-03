@@ -1,0 +1,6 @@
+I"�<p><img src="/assets/construction.png" alt="" /></p>
+<h2 id="trusted-builds">Trusted Builds</h2>
+<p>Recently, <a href="http://index.docker.io/" title="index.docker.io">index.docker.io</a> released a new feature called “Trusted Builds”.
+Trusted Builds allows you to automatically builds a Docker container according to Dockerfile when you push to your Github repository.
+In this post, I will share how to use it and one pitfall that I experienced.</p>
+:ET

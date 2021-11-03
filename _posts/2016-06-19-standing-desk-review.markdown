@@ -40,11 +40,11 @@ categories:
 
 **Before: DIYスタンディングデスク**
 
-![overview](/images/standing-desk-before.jpg =360x640)
+![overview](/assets/standing-desk-before.jpg =360x640)
 
 **After: IKEA SKARSTA**
 
-![overview](/images/standing-desk-after.jpg =360x640)
+![overview](/assets/standing-desk-after.jpg =360x640)
 
 椅子とマットについては後述します。
 

@@ -1,0 +1,1126 @@
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="4.2.1">Jekyll</generator><link href="http://localhost:4000/feed.xml" rel="self" type="application/atom+xml" /><link href="http://localhost:4000/" rel="alternate" type="text/html" /><updated>2021-11-03T08:58:07+09:00</updated><id>http://localhost:4000/feed.xml</id><title type="html">Program Is Made At Night</title><subtitle>Write an awesome description for your new site here. You can edit this line in _config.yml. It will appear in your document head meta (for Google search results) and in your feed.xml site description.</subtitle><author><name>kim hirokuni</name></author><entry><title type="html">CircleCI Orbsを使ってECR/ECSへ自動デプロイする</title><link href="http://localhost:4000/blog/ecr-ecs-orbs/" rel="alternate" type="text/html" title="CircleCI Orbsを使ってECR/ECSへ自動デプロイする" /><published>2019-02-26T11:21:00+09:00</published><updated>2019-02-26T11:21:00+09:00</updated><id>http://localhost:4000/blog/ecr-ecs-orbs</id><content type="html" xml:base="http://localhost:4000/blog/ecr-ecs-orbs/">&lt;h1 id=&quot;モチベーション&quot;&gt;モチベーション&lt;/h1&gt;
+
+&lt;p&gt;JAWS Days 2019でCircleCI Orbsを使ってAWSと連携されるネタで登壇してきました。当日の前日Twitterで公開することを約束しちゃったので、それならしっかりしたやつ作ろうということでブログ化しました。当日のスライドは&lt;a href=&quot;https://speakerdeck.com/kimh/orbswoshi-tuteawshejian-dan-depuroi&quot;&gt;ここ&lt;/a&gt;。&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/ecr_ecs_tweet.png&quot; alt=&quot;tweet&quot; /&gt;
+https://twitter.com/inokara/status/1098529153890963458&lt;/p&gt;
+
+&lt;h1 id=&quot;やりたいこと&quot;&gt;やりたいこと&lt;/h1&gt;
+
+&lt;p&gt;CircleCIとECR、ECSを連携させて変更が自動でデプロイされるようにする。めっちゃ雑だけど以下のような感じの構成。&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/ecs_ecr_diagram.png&quot; alt=&quot;diagram&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;流れとしては&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;リポジトリのDockerイメージをアップデート&lt;/li&gt;
+  &lt;li&gt;GitHubへプッシュ&lt;/li&gt;
+  &lt;li&gt;CircleCIでイメージをビルドしてECRへプッシュ&lt;/li&gt;
+  &lt;li&gt;CircleCIで新しいイメージを使ってECSのタスク定義を更新してECSへプッシュ&lt;/li&gt;
+  &lt;li&gt;ブラザウから変更を確認&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;これをするためにECR/ECS側とCircleCI側の設定が必要になる。&lt;/p&gt;
+
+&lt;h1 id=&quot;ecr側の設定&quot;&gt;ECR側の設定&lt;/h1&gt;
+
+&lt;p&gt;まずはECR側の設定。普通にリポジトリをECRで作るだけなので特別説明が必要なところはない。ひとつあるとすると、この時に設定する &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Repository name&lt;/code&gt; と&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;URI (1234567.dkr.ecr.us-east-1.amazonaws.com/nginx みたいなやつ)&lt;/code&gt; はCircleCIの設定の時に必要になるくらい。&lt;/p&gt;
+
+&lt;h1 id=&quot;ecs側の設定&quot;&gt;ECS側の設定&lt;/h1&gt;
+
+&lt;p&gt;自分のAWS力が低すぐるってのもあるんだろうけど、ちょっとハマったのでこっちは詳しく解説してみようか。&lt;/p&gt;
+
+&lt;p&gt;ECSには大きく分けて3つのコンポーネントがあって、Cluster → Service → Task の順でより粒度が細かくなっていく。Taskには主に実行するコンテナに関する情報を、ServiceにはどのTaskを何個起動するかやLBと連携して負荷分散などの情報を、Clusterはそれらを実行するEC2インスタンスに関する情報をそれぞれ定義する。これらの理解については&lt;a href=&quot;https://qiita.com/NewGyu/items/9597ed2eda763bd504d7&quot;&gt;このQiitaの記事&lt;/a&gt;がわかりやすかった。&lt;/p&gt;
+
+&lt;h2 id=&quot;taskの作成&quot;&gt;Taskの作成&lt;/h2&gt;
+&lt;ul&gt;
+  &lt;li&gt;Create new Task Definition: EC2を選択 (Fargateよくわからん)&lt;/li&gt;
+  &lt;li&gt;Task Definition Name*: 適当な名前をつける。この記事では &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;kim-app-nginx&lt;/code&gt; にする&lt;/li&gt;
+  &lt;li&gt;Task Role: &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;ecsTaskRoleExecution&lt;/code&gt; を選択。&lt;/li&gt;
+  &lt;li&gt;Network Mode: &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;&amp;lt;default&amp;gt;&lt;/code&gt; を選択。&lt;/li&gt;
+  &lt;li&gt;Task execution role: &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;ecsTaskExecutionRole&lt;/code&gt; を選択。&lt;/li&gt;
+  &lt;li&gt;Task memory/ CPU: 適当に。&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;Add containerボタンを押してコンテナイメージを入力していく。&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Container name: 適当につける&lt;/li&gt;
+  &lt;li&gt;Image: ECRで作成したリポジトリを書く。&lt;strong&gt;注意するのはURI/リポジトリ:タグ&lt;/strong&gt; の形式で書く。この記事では例として &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;1234567.dkr.ecr.us-east-1.amazonaws.com/nginx:latest&lt;/code&gt; としておく。&lt;/li&gt;
+  &lt;li&gt;Port mappings: Host Portに0、Container PortにそのコンテナがListenするポートを書く。nginxの場合はContainer Portは80。&lt;strong&gt;Host Portを0をするところが重要。後述するけどこれをしないと複数のTaskを立てた時にポートがバッティングしてしまい自動デプロイに失敗する。&lt;/strong&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2 id=&quot;clusterの作成&quot;&gt;Clusterの作成&lt;/h2&gt;
+&lt;p&gt;Serviceを作る前にまずClusterを作成する。&lt;/p&gt;
+
+&lt;p&gt;Create Clusterから &lt;strong&gt;EC2 Linux + Networking&lt;/strong&gt; を選択。ここはあんまり迷うところないと思うけどContainer instance IAM roleには &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;ecsInstanceRole&lt;/code&gt; が選択されていることを確認。Cluster nameは適当につける。このブログでは &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;default-kim&lt;/code&gt; とする。&lt;/p&gt;
+
+&lt;p&gt;Clusterが作成してしばらくするとECS Instancesのところで新しいEC2インスタンスが起動される（はず。もし起動されなかったらScale ECS Instancesを押してみて）&lt;/p&gt;
+
+&lt;h2 id=&quot;load-balancerの作成&quot;&gt;Load Balancerの作成&lt;/h2&gt;
+
+&lt;p&gt;唐突にLBの話が出てきたけど、これにはちゃんと理由がある。本来であればClusterを作成したら紐づくServiceを作成する。自動デプロイなしでとりあえずECSを動かすだけならそれでいいんだけど今回はCircleCIから自動デプロイすることが最終ゴールで、これをするためにLBが必要になる。&lt;/p&gt;
+
+&lt;p&gt;まずは問題を説明しよう。LBなしでServiceを作って自動デプロイすると以下のようなログが出て新しいタスクが起動しなかった。&lt;/p&gt;
+
+&lt;p&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;service MYSERVICE was unable to place a task because no container instance met all of its requirements. The closest matching container-instance .... is already using a port required by your task&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;エラーメッセージにあるように、新しいタスクのポートが古いタスクとコンフリクトしてしまい、起動に失敗している。これを解決するにはコンテナがephemeralポートで起動するようするしないといけない。&lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&quot;https://stackoverflow.com/questions/48931823/i-cant-deploy-a-new-container-to-my-ecs-cluster-because-of-ports-in-use&quot;&gt;このSO&lt;/a&gt;を読むと&lt;a href=&quot;https://aws.amazon.com/jp/premiumsupport/knowledge-center/dynamic-port-mapping-ecs/&quot;&gt;動的ポートマッピング&lt;/a&gt;が必要でそれをするためにはLBを作成する必要があるらしい。&lt;/p&gt;
+
+&lt;p&gt;というわけで、一旦ECSの画面から離れてEC2のLoad Balancingのページに行く。Create Load BalancerからApplication Load Balancerを選択。ListenersのところでLoad Balancer ProtocolにHTTPを、Load Balancer Portは80 (nginxの待ち受けポート)を設定する。VPCはCluster作成の時に選択したVPCと同じものを選択。&lt;/p&gt;
+
+&lt;p&gt;次にConfigure Security GroupsでSecurity Groupを設定するんだけどここでも一つ重要ポイントが。&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;選択したSGでTCPの0-65535ポートを許可しないとLBからトラフィックがコンテナまで到達しないのでタスクがちゃんと起動してくれない。&lt;/strong&gt; これは&lt;a href=&quot;https://docs.aws.amazon.com/ja_jp/AmazonECS/latest/developerguide/create-application-load-balancer.html#alb-configure-security-groups&quot;&gt;公式のドキュメント&lt;/a&gt;にも書かれているので忘れずに実施。&lt;/p&gt;
+
+&lt;p&gt;最後にTargetを登録する。うまくいけばClusterを作成した時に立ち上がったECSインスタンスが表示されるはず(されない場合は間違ったVPCを選んでいる？)なのでこれを選択する。これでLBの設定は完了。&lt;/p&gt;
+
+&lt;h2 id=&quot;serviceの作成&quot;&gt;Serviceの作成&lt;/h2&gt;
+
+&lt;p&gt;LBが無事できたらようやくServiceを作成できる。事前に作成したClusterを選択するとServicesというタブがあるのでそこから新しいServiceを作成していく。&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Launch Type: &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;EC2&lt;/code&gt; (Fargateよくわからん)&lt;/li&gt;
+  &lt;li&gt;Task Definition: Familyに最初に作成したTaskを選択する。ここでは &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;kim-app-nginx&lt;/code&gt; 。RevisionというのがあるけどこれはTaskをアップデートした時のバージョニングとして使われる。&lt;/li&gt;
+  &lt;li&gt;Service name: TaskのFamilyと同じにしておくとCircleCI Orbs側で渡すパラメーターが少なくて少し楽になる。今回はTaskと合わせて &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;kim-app-nginx&lt;/code&gt; とする。&lt;/li&gt;
+  &lt;li&gt;Number Tasks: 今回は常時ひとつだけタスクが稼働しているようにするので &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;1&lt;/code&gt; と設定。&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;Minimum healthy percentとMaximum healthy percentに関しては自動デプロイと絡んで重要なので解説する。この2つの設定は起動するタスクの最低・最大数を設定する。実際の数は &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Number Tasks * percent&lt;/code&gt; で算出。Minで設定した数だけ常時タスクが起動して、デプロイした時にMaxで設定した数になるように旧・新タスクが平行稼働する。(新タスクが完全にデプロイされたらMinの数にまた収束する)&lt;/p&gt;
+
+&lt;p&gt;今回はNumber Tasks 1、Min 100、Max 200にする。こうすると常時1タスクが起動していて、デプロイした時は旧・新合わせて2つのタスクが起動することでローリングアップデートすることができるようになる。&lt;/p&gt;
+
+&lt;p&gt;これらを設定してNext StepをクリックするとLoad balancingが出てくるので、Application Load Balancerを選ぶ。すると、さっき作成したLBが出てくるので選択する。 &lt;strong&gt;もう一度言うけど、これをしないと自動デプロイできないので必ず先にLBを作成しましょう。&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;次にContainer to load balanceのところでAdd to load balancerを押すと確かnginxのコンテナが表示されるはずなので、Production listener port*に80を指定。Health check pathにはちゃんとコンテナが成功レスポンスを返すパスを指定することに注意。Service discoveryは今回必要ないので無効化にすればServiceの作成は完了。&lt;/p&gt;
+
+&lt;h1 id=&quot;aws側のまとめ&quot;&gt;AWS側のまとめ&lt;/h1&gt;
+
+&lt;p&gt;ここまででAWS側の設定は全部完了した。まとめると、ECRでリポジトリを作って、ECS側でTask, Service, Clusterと自動デプロイのためにLBも作成した。LBのURLにアクセスすればnginxのレスポンスが見えるはず。&lt;/p&gt;
+
+&lt;h1 id=&quot;circleciの設定&quot;&gt;CircleCIの設定&lt;/h1&gt;
+
+&lt;p&gt;これでようやくCircleCIの設定をすることができる。ただ、AWSに比べれば作業量ははるかに少ない。&lt;/p&gt;
+
+&lt;h2 id=&quot;環境変数の設定&quot;&gt;環境変数の設定&lt;/h2&gt;
+
+&lt;p&gt;センシティブな情報をconfig.ymlに直接書いてはまずいので環境変数に入れる。今回設定する環境変数は以下。&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;AWS_ACCESS_KEY_ID&lt;/strong&gt;
+AWSのアクセスキー&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;AWS_SECRET_ACCESS_KEY&lt;/strong&gt;
+AWSのシークレットキー&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;AWS_ECR_ACCOUNT_URL&lt;/strong&gt;
+ECRのアカウントのURL。数字で始まって &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;amazonaws.com&lt;/code&gt; で終わるところまで。今回の例だと &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;1234567.dkr.ecr.us-east-1.amazonaws.com&lt;/code&gt; がそれにあたる。&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;AWS_REGION&lt;/strong&gt;
+AWSのリージョン&lt;/p&gt;
+
+&lt;p&gt;これらの環境変数はOrbsのデフォルト値として設定されているので同じ名前の環境変数にすることに注意。&lt;/p&gt;
+
+&lt;h1 id=&quot;aws-ecsaws-ecr-orbsを使う&quot;&gt;aws-ecs/aws-ecr Orbsを使う&lt;/h1&gt;
+
+&lt;p&gt;記事が長くなってしまうので今回はOrbsそのものについては説明スキップ。すでに日本語で情報がたくさんあるのでそっちを見てください。以下の記事がおすすめ。&lt;/p&gt;
+
+&lt;p&gt;https://blog.tsub.me/post/introducing-to-circleci-orbs/&lt;/p&gt;
+
+&lt;p&gt;https://www.kaizenprogrammer.com/entry/2018/12/01/111145&lt;/p&gt;
+
+&lt;p&gt;https://github.com/sue445/circleci-user-community-meetup-01/blob/master/slides.md&lt;/p&gt;
+
+&lt;p&gt;今回は&lt;a href=&quot;https://circleci.com/orbs/registry/orb/circleci/aws-ecs&quot;&gt;aws-ecs&lt;/a&gt;と&lt;a href=&quot;https://circleci.com/orbs/registry/orb/circleci/aws-ecr&quot;&gt;aws-ecr&lt;/a&gt;というCircleCI自身がメンテしている公認Orbsを使う。&lt;/p&gt;
+
+&lt;p&gt;まずは &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;.circleci/config.yml&lt;/code&gt; の完成系を貼っておく。&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;version: 2.1
+orbs:
+  aws-ecr: circleci/aws-ecr@1.0.0 #(1)
+  aws-ecs: circleci/aws-ecs@0.0.6 #(2)
+workflows:
+  build-and-deploy:
+    jobs:
+      - aws-ecr/build_and_push_image: #(3)
+          account-url: AWS_ECR_ACCOUNT_URL
+          repo: 'nginx'
+          tag: '${CIRCLE_SHA1}'
+
+      - aws-ecs/deploy-service-update: #(4)
+                requires:
+                  - aws-ecr/build_and_push_image
+                family: 'kim-app-nginx'
+                cluster-name: 'default-kim5'
+                container-image-name-updates: 'container=nginx,image-and-tag=${AWS_ECR_ACCOUNT_URL}/nginx:${CIRCLE_SHA1}'
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;&lt;strong&gt;(1):&lt;/strong&gt; aws-ecr Orbをインポート&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;(2):&lt;/strong&gt; aws-ecs Orbをインポート&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;(3):&lt;/strong&gt; aws-ecrのOrbに &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;build_and_push_image&lt;/code&gt; というジョブがあらかじめ用意されていてユーザーはこれに必要なパラメータを渡すだけでECRにデプロイできる。注意点としては &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;tag&lt;/code&gt; のところで &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;${CIRCLE_SHA1}&lt;/code&gt; をつかっている。これにはGitのコミットのSHAが入っているのでデプロイするたびに新しいタグが自動的につく。&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;(4):&lt;/strong&gt; 同じくaws-ecsに事前定義されている &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;build_and_push_image&lt;/code&gt; というジョブにパラメーターを渡すだけでECSにデプロイできる。超便利。 &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;family&lt;/code&gt; にはTaskの名前を指定。 &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;container-image-name-updates&lt;/code&gt; にはアップデートするタスクのコンテナ名と使うイメージをカンマ区切りで渡す。重要なのは &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;image-and-tag&lt;/code&gt; のところで &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;${CIRCLE_SHA1}&lt;/code&gt; をタグとしてつかうことで &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;build_and_push_image&lt;/code&gt; でデプロイしたイメージを使っている。&lt;/p&gt;
+
+&lt;h1 id=&quot;circleciまとめ&quot;&gt;CircleCIまとめ&lt;/h1&gt;
+
+&lt;p&gt;これ以降はプッシュするたびに &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;build_and_push_image&lt;/code&gt; で新しいイメージがECRへプッシュされ &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;deploy-service-update&lt;/code&gt; がそのイメージを使った新しいTaskを生成してServiceでそのタスクを使うようにアップートしてくれる。すると、ECSとLoad Balancerが連携して新しいインスタンスを作って古いインスタンスをDrainすることでローリングアップデート完了！&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/lb_draining.png&quot; alt=&quot;rolling_update&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;登壇したスライドでも書いたんだけど、Orbsを使うことで &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;config.yml&lt;/code&gt; を370行から20行まで圧縮できたのでOrbsの便利さが実感できる例になった。&lt;/p&gt;
+
+&lt;h1 id=&quot;全体まとめ&quot;&gt;全体まとめ&lt;/h1&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;ECRとECSの設定はわりと簡単&lt;/li&gt;
+  &lt;li&gt;だけど、自動デプロイするにはLBが必要で少し手間が必要&lt;/li&gt;
+  &lt;li&gt;aws-ecs/aws-ecrのOrbsは超便利。これなしでスクラッチからconfig.ymlを書くとか吐き気がする。&lt;/li&gt;
+&lt;/ul&gt;</content><author><name>kim hirokuni</name></author><summary type="html">モチベーション</summary></entry><entry><title type="html">デブサミ2019のプレゼン作りの振り返り</title><link href="http://localhost:4000/blog/my-best-practice-presentation/" rel="alternate" type="text/html" title="デブサミ2019のプレゼン作りの振り返り" /><published>2019-02-18T14:55:00+09:00</published><updated>2019-02-18T14:55:00+09:00</updated><id>http://localhost:4000/blog/my-best-practice-presentation</id><content type="html" xml:base="http://localhost:4000/blog/my-best-practice-presentation/">&lt;h1 id=&quot;イントロ&quot;&gt;イントロ&lt;/h1&gt;
+
+&lt;p&gt;デブサミ2019に登壇した時のプレゼンを今までにないくらい時間かけてしっかり作った。理由は2つあって、1つは会社が大金を払って参加した機会なのでスリルと引き換えに給料分の仕事をしてやろうと思ったこと。
+もう一つは今自分の持てる限りで一度やってみることで、次回からのベースラインを作りたかったこと。&lt;/p&gt;
+
+&lt;p&gt;実際に発表したプレゼンは&lt;a href=&quot;https://speakerdeck.com/kimh/cdwoshi-idao-siteshu-duan-shang-falsesohutoueakai-fa-wosiyou&quot;&gt;ここ&lt;/a&gt;&lt;/p&gt;
+
+&lt;h1 id=&quot;注意した点&quot;&gt;注意した点&lt;/h1&gt;
+
+&lt;h2 id=&quot;アウトラインを作り込む&quot;&gt;アウトラインを作り込む&lt;/h2&gt;
+
+&lt;p&gt;プレゼンのアウトラインをDropbox Paper上でしっかり時間をかけて書いた。ここで何度も書いたり消したりして最終的にスライドへそのままコピペできるくらいまで内容を磨いた。&lt;/p&gt;
+
+&lt;h2 id=&quot;第３者のフィードバックをもらう&quot;&gt;第３者のフィードバックをもらう&lt;/h2&gt;
+
+&lt;p&gt;アウトラインがだいたいできた時点で、自分から結構絞り出したので途中からこれ以上でない、という状態になってしまった。そこで第３者のフィードバックを得て新しい視点を得ることする。たまたま友人がtwadaこと和田さんを知っていたので紹介してもらって
+雑談込みで昼ごはんを食べに行くことに。和田さんは2018年デブサミでベストスピーカー賞を獲得していてかつテストの第一人者なので彼の意見はめちゃくちゃ役にたった。和田さんのおかげでもっとアウトラインを掘り下げることができた。
+あと関係ないけど、キックボードをすごく気に入ってくれてあれがあるおかげで簡単に打ち解けることができた気がする。やはりキックボードの吸引力はハンパない。&lt;/p&gt;
+
+&lt;h2 id=&quot;スライドを作り始める&quot;&gt;スライドを作り始める&lt;/h2&gt;
+
+&lt;p&gt;この時点でやっとスライドを作り始める。昔はいきなりスライドを作ってしまうことが多かったけど、内容が固まってない時点でスライド作りすると色々他のことが気になって（フォントサイズや入れる画像とか）内容がおろそかになってしまうのでこれはやめたほうがいい。
+アウトラインをしっかりつくっているので基本この時点ではほとんどPaperからのコピペで完了。&lt;/p&gt;
+
+&lt;h2 id=&quot;もう一度第３者のフィードバックをもらう&quot;&gt;もう一度第３者のフィードバックをもらう&lt;/h2&gt;
+
+&lt;p&gt;スライドも一応できたのでここで再度フィードバックをもらうためにコミュニティー活動でお世話になっている小島さんにみてもらう。大体大丈夫だと思ってみてもらったけど後半まで見てもらうことができないくらいフィードバックがあり軽くあせる。
+もっとも問題だったのは、オーディエンスのことを考え抜けていない。きっとCI/CDのことを知らない人も一定数聞きにくるけど、今の内容だとその人たちを置いてけぼりにしてしまう。
+問題意識に対する同意がない!(なぜそれが問題なのかを説得しきれていない)、用語が揺らいでいる!、内容がジャンプしまくっている！、ゴラーーー！っていう感じでレビュー終了。自分だと当たり前のことを当然他人はそう思ってくれないことを改めて認識する。
+あとスライドは確かにひどかった。説明でカバーすればいいと思ってたからスライドをおろそかにしてのも問題だった。あとでspeakerdeckとかで見た人がわかるようためにもしっかりスライドも作らないといけないことを反省。&lt;/p&gt;
+
+&lt;h2 id=&quot;練習&quot;&gt;練習&lt;/h2&gt;
+
+&lt;p&gt;今までほとんど練習なしでプレゼン当日に望んでいたけど元から口がうまいことほうじゃないし、それじゃーうまくできるわけないわな、ということで今回は一人プレゼンもしっかりやった。時間をはかりながら何度もしゃべって自分に一番フィットする説明の仕方を
+各スライドで探っていき、それをそのままスピーカーノートに書いていく。ここで学んだことは、何回練習しても詰まる部分は余計なスライドだということ。結局自分がしっかり理解してないからつまるのであって、理解していないのなら説明するべきではない。
+練習の時点をこうゆうスライドを全部削った。これにより全体のしゃべりが滑らかになって、このdelete作業はかなり重要だったと思う。&lt;/p&gt;
+
+&lt;h2 id=&quot;本番&quot;&gt;本番&lt;/h2&gt;
+
+&lt;p&gt;あとはやるだけ。しっかり準備したのでいい感じの緊張で本番に臨ことができた。その場の空気の緊張感がいい感じにアドリブを作ってくれて練習の時よりも上手にしゃべることができた。&lt;/p&gt;
+
+&lt;h1 id=&quot;ふりかえり&quot;&gt;ふりかえり&lt;/h1&gt;
+
+&lt;p&gt;オーディエンスの設定とそれに合わせた内容をできたんじゃないかと思う。このツイートは自分のやったことが無駄じゃないと思えたのですごく嬉しかった。がんばったかいがあった！&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/devsumi_tweet.png&quot; alt=&quot;devsumi_tweet&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;https://twitter.com/devvosa/status/1096407370240909312&lt;/p&gt;
+
+&lt;p&gt;以下は反省とやり残したところ。&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;フィードバックをもっと早い時点でもらう&lt;/li&gt;
+  &lt;li&gt;スライドの質をあげる。どんなスライドが見やすいのかとかが未だにピンとこない&lt;/li&gt;
+  &lt;li&gt;しゃべりのテクニックについては全く勉強する時間がなかった&lt;/li&gt;
+  &lt;li&gt;他の人のプレゼンを見ていいプレゼンについて学ぶ&lt;/li&gt;
+&lt;/ul&gt;</content><author><name>kim hirokuni</name></author><summary type="html">イントロ</summary></entry><entry><title type="html">2018 Review</title><link href="http://localhost:4000/blog/2018-review/" rel="alternate" type="text/html" title="2018 Review" /><published>2018-12-31T14:25:00+09:00</published><updated>2018-12-31T14:25:00+09:00</updated><id>http://localhost:4000/blog/2018-review</id><content type="html" xml:base="http://localhost:4000/blog/2018-review/">&lt;h1 id=&quot;summary&quot;&gt;Summary&lt;/h1&gt;
+
+&lt;p&gt;2018年は充実した年だった。二人目の子供の誕生、CircleCI Japanの立ち上げ、電動キックボードとの出会い、など人生に大きな影響を与えるイベントが目白押しの一年だった。&lt;/p&gt;
+
+&lt;h1 id=&quot;works&quot;&gt;Works&lt;/h1&gt;
+
+&lt;p&gt;やはり一番大きいのは6月のCircleCI Japanの立ち上げがある。CircleCIに入った時は考えもしなかったJapanオフィスがこんなにも早く立ち上がるとは。すでにCircleCIという素晴らしいプロダクトがあるので”強くてニューゲーム”のようでチートっぽいけどスタートアップの立ち上げはとてもいい経験となった。この半年で本当にたくさんの新しいことができた。(というかまだ半年か！)&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;チームメンバーのHiring&lt;/li&gt;
+  &lt;li&gt;CodeZineでの連載寄稿&lt;/li&gt;
+  &lt;li&gt;ポッドキャスト収録&lt;/li&gt;
+  &lt;li&gt;マーケティングの勉強&lt;/li&gt;
+  &lt;li&gt;ローカライゼーション&lt;/li&gt;
+  &lt;li&gt;たくさんの人との出会い&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;次に大きなイベントは3月の出張先での電動キックボードとの出会い。最初に電動キックボードに乗った時、ハンマーで脳みそを叩かれるような衝撃を今でもよく覚えている。僕はこのユーザー体験をなんとしても日本でも広めたい。そのためにこの９ヶ月間で以下に注力してきた。&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;電動キックボードに関連する法律の調査と理解&lt;/li&gt;
+  &lt;li&gt;その法律を遵守するための現実解の模索&lt;/li&gt;
+  &lt;li&gt;ビジネスモデルの構築&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;2018年は選択肢を広げるために色々なアイデアをあえてふわふわした形でキープしておいた。2019年はこのアイデアを一気に凝縮して実際にサービスを立ち上げるのが目標。世界的に見ると日本は電動キックボードビジネスの真空地帯なんだけど、それでも最近少しずつ競合が出てきているのであんまりゆっくりもしていられない。&lt;/p&gt;
+
+&lt;h1 id=&quot;money&quot;&gt;Money&lt;/h1&gt;
+
+&lt;p&gt;今年はやることなすこと裏目に出るひどい年だった。具体的には原油先物、トルコリラ、日経平均ベアでぼろ負けた。敗因は世界経済の先行きに過度に悲観的になりすぎたこと。全ての判断が半年早く、もう少しこらえていれば挽回するチャンスがあっただけにとても残念だ。ただ、日経平均ベアはこれから自分の予想したように動きそうなので2019年に期待したい。&lt;/p&gt;
+
+&lt;h1 id=&quot;family&quot;&gt;Family&lt;/h1&gt;
+
+&lt;p&gt;なんといっても大きなイベントは二人目の男の子の誕生。もしかしたら子供ができないと思った時期からすれば健康な男の子を二人も授かったのは奇跡のよう。名前は”哲斗”と言う。僕が尊敬する気象学者の&lt;a href=&quot;https://en.wikipedia.org/wiki/Ted_Fujita&quot;&gt;藤田 Ted・哲也&lt;/a&gt;からいただいた。新生児の育児はどうしても奥さんの負担が大きくなってしまうので、もう少し落ち着いたら奥さんにも安心して買い物とか温泉とかいけるように下の子の育児にも貢献していきたい。&lt;/p&gt;
+
+&lt;p&gt;上の子ももうすぐ３歳になる。残念ながら僕の気が小さいところや引っ込み思案な性格をしっかり受け継いでしまっているんだけど、それを自分でもなんとか克服しようとしているのが日々の成長でわかるのが嬉しい。英語も日本語の７割くらいでしゃべれるようになっているみたいで子供の学習能力には感服する。&lt;/p&gt;
+
+&lt;h1 id=&quot;sad-things&quot;&gt;Sad Things&lt;/h1&gt;
+&lt;ul&gt;
+  &lt;li&gt;妻方のおばあさんが二人他界したこと。特に僕はそのうちの一人のおばあさんが大好きだったので(向こうも好きでいてくれたと思う)本当に悲しい。もう少し何か喜ばしてあげることができたんじゃないかといつも考えてしまう。&lt;/li&gt;
+  &lt;li&gt;日本経済がどう考えても破滅(に近い)の道を突き進んでいること。そして、それを問題視する人があまりにも少ないということ。本当に日本人というのは問題を見て見ぬ振りをするのが得意らしい。&lt;/li&gt;
+  &lt;li&gt;Mahmood AliがCircleCIを去ったこと。彼には本当にお世話になったし、たくさんのことを学んだ。もっと一緒に仕事がしたかった。&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h1 id=&quot;big-ideas&quot;&gt;Big Ideas&lt;/h1&gt;
+&lt;ul&gt;
+  &lt;li&gt;脳は大きく変わるということ。これは比喩でなく、成功体験やトレーニングで筋肉のように物理的構造が変わる。これは生まれつきの性格を変えることもできるということなので、子供と一緒に実践していきたい。&lt;/li&gt;
+  &lt;li&gt;ルールの外側、最強。電動キックボードを原付化している時にこのアイデアを得た。警察に怒られないために電動キックボードを原付化してルールを守ろうとすると、行動はそのルール内で制限されてしまい逆にちょっとルールを破っただけで怒られるようになってしまう。反対に素の電動キックボードには現在適用できるルールがないので大抵のことは注意で済まされる。だれもトランプ大統領の勢いを止めることができないのは彼がルールの外側で行動しているからだと思う。&lt;/li&gt;
+  &lt;li&gt;アウトプットファーストの重要性。上手にアウトプットすることで周りに影響を与えてさらにアウトプットするといういい循環ができる。&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h1 id=&quot;good-books&quot;&gt;Good Books&lt;/h1&gt;
+
+&lt;p&gt;今年は忙しくてあんまり読めなかったけど、まーそれでも気にいった本はいくつかあった。しかし、プログラミング系の本が少ない…&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;&lt;a href=&quot;https://www.amazon.co.jp/gp/product/B01GJOQSO2/ref=oh_aui_d_detailpage_o06_?ie=UTF8&amp;amp;psc=1&quot;&gt;意識はいつ生まれるのか - 脳の謎に挑む統合情報理論&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;https://www.amazon.co.jp/%E3%83%97%E3%83%AD%E3%82%B0%E3%83%A9%E3%83%9F%E3%83%B3%E3%82%B0%E3%81%AE%E3%81%9F%E3%82%81%E3%81%AE%E7%B7%9A%E5%BD%A2%E4%BB%A3%E6%95%B0-%E5%B9%B3%E5%B2%A1-%E5%92%8C%E5%B9%B8/dp/4274065782&quot;&gt;プログラミングのための線形代数&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;https://www.amazon.co.jp/The-Whole-Brain-Child/dp/1491514817/ref=sr_1_2?s=books&amp;amp;ie=UTF8&amp;amp;qid=1546232408&amp;amp;sr=1-2&amp;amp;keywords=whole+brain+child&quot;&gt;The Whole-Brain Child&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;https://www.amazon.co.jp/%E3%83%9B%E3%83%A2%E3%83%BB%E3%83%87%E3%82%A6%E3%82%B9-%E4%B8%8A-%E3%83%86%E3%82%AF%E3%83%8E%E3%83%AD%E3%82%B8%E3%83%BC%E3%81%A8%E3%82%B5%E3%83%94%E3%82%A8%E3%83%B3%E3%82%B9%E3%81%AE%E6%9C%AA%E6%9D%A5-%E3%83%A6%E3%83%B4%E3%82%A1%E3%83%AB%E3%83%BB%E3%83%8E%E3%82%A2%E3%83%BB%E3%83%8F%E3%83%A9%E3%83%AA/dp/4309227368/ref=sr_1_1?s=books&amp;amp;ie=UTF8&amp;amp;qid=1546232441&amp;amp;sr=1-1&amp;amp;keywords=%E3%83%9B%E3%83%A2%E3%83%87%E3%82%A6%E3%82%B9&quot;&gt;ホモ・デウス&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;https://www.amazon.co.jp/%E5%95%8F%E9%A1%8C%E8%A7%A3%E6%B1%BA%E3%83%A9%E3%83%9C%E2%80%95%E2%80%95%E3%80%8C%E3%81%82%E3%81%A3%E3%81%9F%E3%82%89%E3%81%84%E3%81%84%E3%81%AA%E3%80%8D%E3%82%92%E3%81%8B%E3%81%9F%E3%81%A1%E3%81%AB%E3%81%99%E3%82%8B%E3%80%8C%E3%81%B2%E3%82%89%E3%82%81%E3%81%8D%E3%80%8D%E3%81%AE%E6%8A%80%E8%A1%93-%E4%BD%90%E8%97%A4-%E3%82%AA%E3%82%AA%E3%82%AD/dp/4478028923/ref=sr_1_1?s=books&amp;amp;ie=UTF8&amp;amp;qid=1546232527&amp;amp;sr=1-1&amp;amp;keywords=%E4%BD%90%E8%97%A4%E3%82%AA%E3%82%AA%E3%82%AD&quot;&gt;問題解決ラボ――「あったらいいな」をかたちにする「ひらめき」の技術&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;</content><author><name>kim hirokuni</name></author><summary type="html">Summary</summary></entry><entry><title type="html">Regex Notes</title><link href="http://localhost:4000/blog/regex-notes/" rel="alternate" type="text/html" title="Regex Notes" /><published>2018-02-01T22:01:00+09:00</published><updated>2018-02-01T22:01:00+09:00</updated><id>http://localhost:4000/blog/regex-notes</id><content type="html" xml:base="http://localhost:4000/blog/regex-notes/">&lt;h2 id=&quot;基本動作&quot;&gt;基本動作&lt;/h2&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Regex Engine&lt;/li&gt;
+  &lt;li&gt;Regexデータ&lt;/li&gt;
+  &lt;li&gt;文字列データ&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;この三つがメインでEngineがRegexデータと文字列データをひとつずつチェックしていく。&lt;strong&gt;マッチ&lt;/strong&gt;というのはRegex全体で表現されるパターンが全体でマッチしている場合のことをいう。(ただ各Regexがマッチしている場合もマッチともいう)。わかりづらいので各Regexがマッチしていることは成功といいダメな時は失敗と呼ぶ。&lt;/p&gt;
+
+&lt;p&gt;以下はもっとも基本なマッチ。&lt;/p&gt;
+
+&lt;h2 id=&quot;regex基本原則&quot;&gt;Regex基本原則&lt;/h2&gt;
+
+&lt;p&gt;まずはRegexの基本原則を見てみる。しかし、これらの基本原則はオプションによって変化して、場合ごとに考え方を変えないといけないところにRegexの難しがあると思う。ただ、基本原則をしっかり理解しておけば、変化系にも対応しやすくなる。&lt;/p&gt;
+
+&lt;h3 id=&quot;左から一文字ずつマッチしていく&quot;&gt;左から一文字ずつマッチしていく&lt;/h3&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;/ab/
+ab
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;Regex: &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;a&lt;/code&gt; 文字列: &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;&quot;a&quot;&lt;/code&gt; =&amp;gt; 成功&lt;/li&gt;
+  &lt;li&gt;Regex: &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;b&lt;/code&gt; 文字列: &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;&quot;b&quot;&lt;/code&gt; =&amp;gt; 成功&lt;/li&gt;
+  &lt;li&gt;終了&lt;/li&gt;
+  &lt;li&gt;結果: &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;&quot;ab&quot;&lt;/code&gt;にマッチした。&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;Regex EngineはRegexデータ、文字列ともに現在のステップのポジションを覚えていて、ステップ毎にそれらのポジションをひとつずつずらしていく。ポジションは左から右に動いていく。&lt;/p&gt;
+
+&lt;h3 id=&quot;マッチした時点で終了&quot;&gt;マッチした時点で終了&lt;/h3&gt;
+
+&lt;p&gt;マッチが達成されたら、それ以降の文字列は無視する。これを貪欲でないマッチとか一般的には呼ぶが自分にはどうもわかりずらい。代わりに&lt;strong&gt;せっかちマッチ&lt;/strong&gt;と覚えている。せっかちなので一度マッチした時点で&lt;strong&gt;マッチしたよ！&lt;/strong&gt;と言って仕事を終わってしまう。&lt;/p&gt;
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;/ab/
+abab
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;Regex: &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;a&lt;/code&gt; 文字列: &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;&quot;a&quot;&lt;/code&gt; =&amp;gt; 成功&lt;/li&gt;
+  &lt;li&gt;Regex: &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;b&lt;/code&gt; 文字列: &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;&quot;b&quot;&lt;/code&gt; =&amp;gt; 成功&lt;/li&gt;
+  &lt;li&gt;主なEngineではデフォルトではLazy、つまりマッチが成功した時点で終わる&lt;/li&gt;
+  &lt;li&gt;終了&lt;/li&gt;
+  &lt;li&gt;結果: 最初の&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;&quot;ab&quot;&lt;/code&gt;だけにマッチした。&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;h3 id=&quot;マッチが成功するために全ての可能性を試す&quot;&gt;マッチが成功するために全ての可能性を試す&lt;/h3&gt;
+
+&lt;p&gt;Regexにとって一番大事な仕事はマッチする文字列を探すこと。それを達成するためにRegexは全ての可能性を試す。&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;/ab/
+acab
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;Regex: &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;a&lt;/code&gt; 文字列: &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;&quot;a&quot;&lt;/code&gt; =&amp;gt; 成功&lt;/li&gt;
+  &lt;li&gt;Regex: &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;b&lt;/code&gt; 文字列: &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;&quot;c&quot;&lt;/code&gt; =&amp;gt; 失敗&lt;/li&gt;
+  &lt;li&gt;失敗したのでRegexの最初に戻ってマッチさせようとする。これをBacktrackと呼ぶ。Backtrack == 巻き戻し と考えればいい&lt;/li&gt;
+  &lt;li&gt;Regex: &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;a&lt;/code&gt; 文字列: &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;&quot;a&quot;&lt;/code&gt; =&amp;gt; 成功&lt;/li&gt;
+  &lt;li&gt;Regex: &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;b&lt;/code&gt; 文字列: &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;&quot;b&quot;&lt;/code&gt; =&amp;gt; 成功&lt;/li&gt;
+  &lt;li&gt;終了&lt;/li&gt;
+  &lt;li&gt;結果: &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;&quot;ab&quot;&lt;/code&gt;にマッチした。&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;h2 id=&quot;よく使われる応用regex&quot;&gt;よく使われる応用Regex&lt;/h2&gt;
+
+&lt;p&gt;ここからは実際によく使うRegexを紹介。中には基本原則で紹介した動作を変えるものもあるので、場合ごとに動作がどう変わるかを把握しないといけない。&lt;/p&gt;
+
+&lt;h3 id=&quot;g-を使うと一度マッチしても続けてマッチさせようとする貪欲マッチ&quot;&gt;g を使うと一度マッチしても続けてマッチさせようとする（貪欲マッチ)&lt;/h3&gt;
+
+&lt;p&gt;Regexの最後に &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;g&lt;/code&gt; をつけると一度マッチしても終了せず続けてマッチさせようとする。&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;g&lt;/code&gt;を修飾子と呼びこの動作を貪欲マッチと呼ぶ。せっかちマッチの場合と同じでわかりにくいので&lt;strong&gt;熱心マッチ&lt;/strong&gt;と覚える。これは基本動作のせっかちマッチを変える。&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;/ab/g
+abab
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;Regex: &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;a&lt;/code&gt; 文字列: &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;&quot;a&quot;&lt;/code&gt; =&amp;gt; 成功&lt;/li&gt;
+  &lt;li&gt;Regex: &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;b&lt;/code&gt; 文字列: &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;&quot;b&quot;&lt;/code&gt; =&amp;gt; 成功&lt;/li&gt;
+  &lt;li&gt;熱心モードなので文字列がある残っている以上つづける。&lt;/li&gt;
+  &lt;li&gt;Regex: &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;a&lt;/code&gt; 文字列: &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;&quot;a&quot;&lt;/code&gt; =&amp;gt; 成功&lt;/li&gt;
+  &lt;li&gt;Regex: &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;b&lt;/code&gt; 文字列: &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;&quot;b&quot;&lt;/code&gt; =&amp;gt; 成功&lt;/li&gt;
+  &lt;li&gt;終了&lt;/li&gt;
+  &lt;li&gt;結果: &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;&quot;abab&quot;&lt;/code&gt;にマッチした。&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;h3 id=&quot;文字だけじゃなくその位置を含めて成功失敗を判定アンカー&quot;&gt;文字だけじゃなくその位置を含めて成功/失敗を判定（アンカー）&lt;/h3&gt;
+
+&lt;p&gt;今まで見てきたRegexは同じ文字かどうかを判定するものだった。例えば、&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;/ab/&lt;/code&gt;はaのあとにbが続く&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;&quot;ab&quot;&lt;/code&gt;にマッチする。言い換えれば、aのあとにbが続く限りそれがどこにあろうがマッチする。だから&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;&quot;1ab2&lt;/code&gt;はこの場合マッチする。&lt;/p&gt;
+
+&lt;p&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;^&lt;/code&gt;と&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;$&lt;/code&gt;がRegexの前につくと文字のマッチだけじゃなくその文字がある位置まで見る。こうゆう種類のRegexをアンカーと呼ぶ。&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;/^a/
+1a
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;Regex: &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;^a&lt;/code&gt; 文字列: &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;&quot;1&quot;&lt;/code&gt; =&amp;gt; 失敗&lt;/li&gt;
+  &lt;li&gt;BacktrackでRegexが最初に戻る。&lt;/li&gt;
+  &lt;li&gt;Regex: &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;^a&lt;/code&gt; 文字列: &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;&quot;a&quot;&lt;/code&gt; =&amp;gt; 失敗&lt;/li&gt;
+  &lt;li&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;&quot;a&quot;&lt;/code&gt;にはマッチしているが &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;^a&lt;/code&gt;は一番最初にある&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;&quot;a&quot;&lt;/code&gt;なので失敗。&lt;/li&gt;
+  &lt;li&gt;終了&lt;/li&gt;
+  &lt;li&gt;結果: マッチなし&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;h3 id=&quot;改行直後の文字は最初の文字列ではない&quot;&gt;改行直後の文字は最初の文字列ではない&lt;/h3&gt;
+
+&lt;p&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;^&lt;/code&gt;は文字列の最初の位置にマッチするが、改行直後の文字列は最初の文字とはならない。この動作が主なRegexエンジンのデフォルト。&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;/^a/
+
+# 複数行に渡る文字列
+1a
+a
+
+
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;Regex: &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;^a&lt;/code&gt; 文字列: &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;&quot;1&quot;&lt;/code&gt; =&amp;gt; 失敗&lt;/li&gt;
+  &lt;li&gt;BacktrackでRegexが最初に戻る。&lt;/li&gt;
+  &lt;li&gt;Regex: &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;^a&lt;/code&gt; 文字列: &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;&quot;a&quot;&lt;/code&gt; =&amp;gt; 失敗&lt;/li&gt;
+  &lt;li&gt;BacktrackでRegexが最初に戻る。&lt;/li&gt;
+  &lt;li&gt;Regex: &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;^a&lt;/code&gt; 文字列: &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;&quot;a&quot;&lt;/code&gt; =&amp;gt; 失敗&lt;/li&gt;
+  &lt;li&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;^a&lt;/code&gt;はあくまで文字列全体の最初にある&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;&quot;a&quot;&lt;/code&gt;。二つ目の&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;&quot;a&quot;&lt;/code&gt;は行の最初のaだが文字列全体の最初ではないのでマッチしない。&lt;/li&gt;
+  &lt;li&gt;終了&lt;/li&gt;
+  &lt;li&gt;結果: マッチなし&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;h3 id=&quot;mを使うと改行が入っていても最初の文字とみなす&quot;&gt;mを使うと改行が入っていても最初の文字とみなす&lt;/h3&gt;
+
+&lt;p&gt;上で例だと改行直後、二つ目の&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;&quot;a&quot;&lt;/code&gt;は&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;/^a/&lt;/code&gt;にはマッチしなかった。これをマッチさせるには&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;m&lt;/code&gt;修飾子を使う。すると、改行直後の文字でも文字列の最初とみなされる。&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;/^a/m
+
+# 複数行に渡る文字列
+1a
+a
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;Regex: &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;^a&lt;/code&gt; 文字列: &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;&quot;1&quot;&lt;/code&gt; =&amp;gt; 失敗&lt;/li&gt;
+  &lt;li&gt;BacktrackでRegexが最初に戻る。&lt;/li&gt;
+  &lt;li&gt;Regex: &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;^a&lt;/code&gt; 文字列: &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;&quot;a&quot;&lt;/code&gt; =&amp;gt; 成功&lt;/li&gt;
+  &lt;li&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;m&lt;/code&gt;修飾子があるので改行直後の&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;&quot;a&quot;&lt;/code&gt;は文字列の最初とみなされる。&lt;/li&gt;
+  &lt;li&gt;終了&lt;/li&gt;
+  &lt;li&gt;結果: 二つ目の&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;a&lt;/code&gt;にマッチ&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;m&lt;/code&gt;を使った時の動作をmulti-lineモードと呼ぶ。&lt;/p&gt;
+
+&lt;h3 id=&quot;ほぼどんな文字にもマッチする--ドット&quot;&gt;（ほぼ）どんな文字にもマッチする . (ドット)&lt;/h3&gt;
+
+&lt;p&gt;どんな文字にでもマッチするRegexに&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;.&lt;/code&gt;がある。&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;/.../
+1&amp;amp;!
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;Regex: &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;.&lt;/code&gt; 文字列: &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;&quot;1&quot;&lt;/code&gt; =&amp;gt; 成功&lt;/li&gt;
+  &lt;li&gt;Regex: &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;.&lt;/code&gt; 文字列: &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;&quot;&amp;amp;&quot;&lt;/code&gt; =&amp;gt; 成功&lt;/li&gt;
+  &lt;li&gt;Regex: &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;.&lt;/code&gt; 文字列: &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;&quot;!&quot;&lt;/code&gt; =&amp;gt; 成功&lt;/li&gt;
+  &lt;li&gt;終了&lt;/li&gt;
+  &lt;li&gt;結果: &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;1&amp;amp;!&lt;/code&gt;にマッチ&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;しかし&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;.&lt;/code&gt;にも例外はあり改行にはマッチしない。&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;/.../
+# 複数行に渡る文字列
+1
+2
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;Regex: &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;.&lt;/code&gt; 文字列: &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;&quot;1&quot;&lt;/code&gt; =&amp;gt; 成功&lt;/li&gt;
+  &lt;li&gt;Regex: &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;.&lt;/code&gt; 文字列: &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;\n&lt;/code&gt;  =&amp;gt; 失敗&lt;/li&gt;
+  &lt;li&gt;Backtrackで最初の &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;.&lt;/code&gt;に戻る&lt;/li&gt;
+  &lt;li&gt;Regex: &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;.&lt;/code&gt; 文字列: &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;&quot;2&quot;&lt;/code&gt; =&amp;gt; 成功&lt;/li&gt;
+  &lt;li&gt;Regex: &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;.&lt;/code&gt; 文字列: &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;\n&lt;/code&gt;  =&amp;gt; 失敗&lt;/li&gt;
+  &lt;li&gt;終了&lt;/li&gt;
+  &lt;li&gt;結果: マッチなし&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;h3 id=&quot;s-を使うと--ドットが改行にもマッチする&quot;&gt;s を使うと . (ドット)が改行にもマッチする&lt;/h3&gt;
+
+&lt;p&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;s&lt;/code&gt;修飾子を使うと&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;.&lt;/code&gt;が改行にもマッチするようになる。&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;/.../s
+# 複数行に渡る文字列
+1
+2
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;Regex: &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;.&lt;/code&gt; 文字列: &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;&quot;1&quot;&lt;/code&gt; =&amp;gt; 成功&lt;/li&gt;
+  &lt;li&gt;Regex: &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;.&lt;/code&gt; 文字列: &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;\n&lt;/code&gt;  =&amp;gt; 成功&lt;/li&gt;
+  &lt;li&gt;Regex: &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;.&lt;/code&gt; 文字列: &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;&quot;2&quot;&lt;/code&gt; =&amp;gt; 成功&lt;/li&gt;
+  &lt;li&gt;終了&lt;/li&gt;
+  &lt;li&gt;結果: &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;1\n2&lt;/code&gt;にマッチ&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;s&lt;/code&gt;を使った時の動作をsingle-lineモードと呼ぶ。注意するのは single-modeとmulti-lineモードは全く別物だということ。single-lineモードは&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;.&lt;/code&gt;が改行も含むようにすることに対して、multi-lineモードはアンカー (&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;^&lt;/code&gt;や&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;&amp;amp;&lt;/code&gt;)が改行を考慮するするようにすることなので、single-lineとmulti-lineは相反するモードではない。（両方指定可能)&lt;/p&gt;
+
+&lt;h3 id=&quot;パターンを繰り返す&quot;&gt;パターンを繰り返す&lt;/h3&gt;
+
+&lt;p&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;+&lt;/code&gt;や&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;*&lt;/code&gt;を使うとその直前のRegexを繰り返してマッチするようにできる。&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;+&lt;/code&gt;は直前のRegexの一回以上の繰り返し。&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;/a+/
+aaa
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;Regex: &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;a+&lt;/code&gt; 文字列: &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;&quot;a&quot;&lt;/code&gt; =&amp;gt; 成功&lt;/li&gt;
+  &lt;li&gt;Regex: &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;a+&lt;/code&gt; 文字列: &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;&quot;a&quot;&lt;/code&gt; =&amp;gt; 成功&lt;/li&gt;
+  &lt;li&gt;Regex: &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;a+&lt;/code&gt; 文字列: &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;&quot;a&quot;&lt;/code&gt; =&amp;gt; 成功&lt;/li&gt;
+  &lt;li&gt;終了&lt;/li&gt;
+  &lt;li&gt;結果: &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;&quot;aaa&quot;&lt;/code&gt;にマッチ&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;*&lt;/code&gt;は直前のRegexの0回以上に繰り返し。つまりマッチする文字がなくても成功になる。&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;/a*b/
+b
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;Regex: &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;a*&lt;/code&gt; 文字列: &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;&quot;b&quot;&lt;/code&gt; =&amp;gt; 成功&lt;/li&gt;
+  &lt;li&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;*&lt;/code&gt;は0回以上のaの繰り返せば成功、つまりaがなくても成功とみなす。&lt;/li&gt;
+  &lt;li&gt;Regex: &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;b&lt;/code&gt; 文字列: &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;&quot;b&quot;&lt;/code&gt; =&amp;gt; 成功&lt;/li&gt;
+  &lt;li&gt;終了&lt;/li&gt;
+  &lt;li&gt;結果: &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;&quot;b&quot;&lt;/code&gt;にマッチ&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;h3 id=&quot;regexの最後に行く前に文字が終わってしまったら文字を戻す&quot;&gt;Regexの最後に行く前に文字が終わってしまったら文字を戻す&lt;/h3&gt;
+
+&lt;p&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;.&lt;/code&gt;と&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;+&lt;/code&gt;や&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;*&lt;/code&gt;を組み合わせると任意の文字の無限の繰り返しを指定できるので文字列のほうが先に終わってしまうことがある。Regexが失敗したときはBacktrackして次の文字からまたやり直したが繰り返しを使うと文字の方を巻き戻す。普通のBacktrackと区別するために文字列Backtrackと呼ぶ。Regexがこうゆう動きをするのは、最初に書いた&lt;strong&gt;マッチが成功するために全ての可能性を試す&lt;/strong&gt;という基本原則があるから。&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;/a.+b/
+aab
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;ol&gt;
+  &lt;li&gt;Regex: &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;a&lt;/code&gt; 文字列: &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;&quot;a&quot;&lt;/code&gt; =&amp;gt; 成功&lt;/li&gt;
+  &lt;li&gt;Regex: &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;.+&lt;/code&gt; 文字列: &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;&quot;a&quot;&lt;/code&gt; =&amp;gt; 成功&lt;/li&gt;
+  &lt;li&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;.+&lt;/code&gt;は任意の文字の繰り返しなので次のRegexには進まない。&lt;/li&gt;
+  &lt;li&gt;Regex: &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;.+&lt;/code&gt; 文字列: &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;&quot;b&quot;&lt;/code&gt; =&amp;gt; 成功&lt;/li&gt;
+  &lt;li&gt;この時点で文字列が終わってしまったが、Regex側は&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;b&lt;/code&gt;がまだ残っている。&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;b&lt;/code&gt;まで成功しないとマッチではない。&lt;/li&gt;
+  &lt;li&gt;文字列をマッチするとわかっているところまでBacktrackする(この場合最初の&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;&quot;aa&quot;&lt;/code&gt;が&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;/a.+/&lt;/code&gt;でマッチするとわかっているのでここまで戻す。）&lt;/li&gt;
+  &lt;li&gt;Regex: &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;b&lt;/code&gt; 文字列: &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;&quot;b&quot;&lt;/code&gt;=&amp;gt; 成功&lt;/li&gt;
+  &lt;li&gt;終了&lt;/li&gt;
+  &lt;li&gt;結果: &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;&quot;aab&quot;&lt;/code&gt;にマッチ&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;h2 id=&quot;もし--ならマッチを試みる&quot;&gt;もし ~ ならマッチを試みる&lt;/h2&gt;
+
+&lt;p&gt;ここまで紹介したRegexではプログラミングでつかう&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;IF ~ then ~ END&lt;/code&gt;のようなことはできない。それをできるようにするのがLookahead。重要なポイントはLookaheadは条件をしていしるだけなのでそれ自体はマッチの結果には含まれない。&lt;/p&gt;
+
+&lt;h3 id=&quot;もしxにyがつづけばマッチ-positive-lookahead&quot;&gt;もしXにYがつづけばマッチ (Positive Lookahead)&lt;/h3&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;/a(?=b)/
+abd
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;Regex: &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;a&lt;/code&gt; 文字列: &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;&quot;a&quot;&lt;/code&gt; =&amp;gt; 成功&lt;/li&gt;
+  &lt;li&gt;Regex: &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;(?=b)&lt;/code&gt;の&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;b&lt;/code&gt;の部分 文字列: &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;&quot;b&quot;&lt;/code&gt; =&amp;gt; 成功&lt;/li&gt;
+  &lt;li&gt;Regex: &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;(?=b)&lt;/code&gt;の&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;?=&lt;/code&gt;の部分 上のステップで&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;b&lt;/code&gt;がマッチしたら成功 =&amp;gt; 成功&lt;/li&gt;
+  &lt;li&gt;終了&lt;/li&gt;
+  &lt;li&gt;結果: &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;&quot;a&quot;&lt;/code&gt;にマッチ。&lt;strong&gt;bはあくまで条件なのでb自体にはマッチしない&lt;/strong&gt;&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;この例ではあまり意味があるように思えないがLookaheadはXが続かないYを探す時に真価を発揮する。&lt;/p&gt;
+
+&lt;h3 id=&quot;もしxにyがつづかなければマッチ-negative-lookahead&quot;&gt;もしXにYがつづかなければマッチ (Negative Lookahead)&lt;/h3&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;q(?!u)
+aq
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;Regex: &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;q&lt;/code&gt; 文字列: &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;&quot;a&quot;&lt;/code&gt; =&amp;gt; 失敗&lt;/li&gt;
+  &lt;li&gt;Backtrack&lt;/li&gt;
+  &lt;li&gt;Regex: &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;q&lt;/code&gt; 文字列: &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;&quot;q&quot;&lt;/code&gt; =&amp;gt; 成功&lt;/li&gt;
+  &lt;li&gt;Regex: &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;(?!=u)&lt;/code&gt;の&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;u&lt;/code&gt;の部分 文字列: &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;&quot;u&quot;&lt;/code&gt; =&amp;gt; 失敗&lt;/li&gt;
+  &lt;li&gt;Regex: &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;(?!u)&lt;/code&gt;の&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;?!&lt;/code&gt;の部分 上のステップで&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;u&lt;/code&gt;がマッチしていないから成功 =&amp;gt; 成功&lt;/li&gt;
+  &lt;li&gt;終了&lt;/li&gt;
+  &lt;li&gt;結果: &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;&quot;q&quot;&lt;/code&gt;にマッチ&lt;/li&gt;
+&lt;/ol&gt;</content><author><name>kim hirokuni</name></author><summary type="html">基本動作</summary></entry><entry><title type="html">CollageとAnimationを使ってElmでアプリを作る</title><link href="http://localhost:4000/blog/make-elm-app/" rel="alternate" type="text/html" title="CollageとAnimationを使ってElmでアプリを作る" /><published>2017-12-11T21:48:00+09:00</published><updated>2017-12-11T21:48:00+09:00</updated><id>http://localhost:4000/blog/make-elm-app</id><content type="html" xml:base="http://localhost:4000/blog/make-elm-app/">&lt;p&gt;この記事はQiita Elm Adventcalendar 2017に投稿した記事です。&lt;/p&gt;
+
+&lt;h2 id=&quot;最初に&quot;&gt;最初に&lt;/h2&gt;
+
+&lt;p&gt;Functional Reactive Programmingを調べていて偶然Elmに出会いました。最新版のElm0.18ではElmはFRPの概念を完全に取り払いFRPとは関係なくなりましたが、
+実際にElmを触ってみるとどんどんその面白さに引き込まれて行きました。もっとElmで何か作りたくなったので自分の子供が遊べるようなToy Appを作ることにしました。 このアプリを作る際にはまった点や大事な点をできるだけ丁寧に解説してみたいと思います。&lt;/p&gt;
+
+&lt;h2 id=&quot;この記事の対象者&quot;&gt;この記事の対象者&lt;/h2&gt;
+
+&lt;p&gt;この記事ではElmについての基本知識があることを前提としています。Elmにはすでに素晴らしいチュートリアルがあるのでまだElmに触ったことがなければ https://guide.elm-lang.org/ と https://www.elm-tutorial.org/en/ をお勧めします。
+基本の文法はわかるけどいまいちSubscriptionやPortがわからないなーという人には楽しんでもらえると思います。&lt;/p&gt;
+
+&lt;h2 id=&quot;airplane-toy-app&quot;&gt;Airplane Toy App&lt;/h2&gt;
+
+&lt;p&gt;この記事で解説しているアプリは https://s3-ap-northeast-1.amazonaws.com/airplane-toy-app/index.html で公開しています。 (このアプリは音が出るので注意!!)
+コードは https://github.com/kimh/kids-toy-apps で公開しています。
+2歳になる自分の息子に作ったアプリなのでとても単純な仕様で、クリックした場所に飛行機がいかにも子供が好きそうな音を出して移動する、というだけのアプリです。
+しかしElmで実際にアプリを作るのに必要なことはほとんど使う必要があったのでとても勉強になりました。&lt;/p&gt;
+
+&lt;h2 id=&quot;イベントフロー&quot;&gt;イベントフロー&lt;/h2&gt;
+
+&lt;p&gt;このアプリでは以下のようなイベントフローで構成されています。&lt;/p&gt;
+
+&lt;p&gt;ページをロード -&amp;gt; Init関数が呼ばれModelが初期化される -&amp;gt; ユーザー (うちの息子) が画面のどこかをクリックする -&amp;gt; &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;MouseMsg&lt;/code&gt;メッセージが送信される -&amp;gt; Subscriptionを通じて、Update関数が呼ばれる。クリックされた座標を取得して、Modelにセットする。 -&amp;gt; Modelに新しい座標がセットされると飛行機が動く -&amp;gt; 同時に &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;PlaySound&lt;/code&gt; メッセージが送信される -&amp;gt; JavascriptにPortでメッセージを送信する -&amp;gt; Javascript側で &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;audio&lt;/code&gt; 要素の &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;play&lt;/code&gt; メソッドを呼ぶ&lt;/p&gt;
+
+&lt;h2 id=&quot;飛行機画像のレンダリング&quot;&gt;飛行機画像のレンダリング&lt;/h2&gt;
+
+&lt;p&gt;飛行機の画像を扱うのに Elm Collageを使っています。Collageのライブラリには主にhttps://github.com/evancz/elm-graphics と https://github.com/timjs/elm-collage がありますが、後者です。timjs/elm-collageはevancz/elm-graphisを置き換えるものだと考えているのでこれからアプリを作るのならtimjs/elm-collageを使うことぼをお勧めします。&lt;/p&gt;
+
+&lt;p&gt;重要となるポイントを説明していきます。&lt;/p&gt;
+
+&lt;p&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;image&lt;/code&gt; で飛行機の画像ファイルを読み込んで &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;shift&lt;/code&gt; で初期位置まで移動させます。 &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;pos&lt;/code&gt; は 渡されたModelから作成します。(後述)&lt;/p&gt;
+
+&lt;div class=&quot;language-haskell highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;n&quot;&gt;plane&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;image&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;500&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;500&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;images/airplane.svg&quot;&lt;/span&gt;
+    &lt;span class=&quot;o&quot;&gt;|&amp;gt;&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;shift&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;pos&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;spacer&lt;/code&gt; を使っている部分は少しわかりにくいです。timjs/elm-collageでは座標が絶対的ではなく他の要素からの相対的なCollageの位置を指定するので
+&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;plane&lt;/code&gt; だけを &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;shift&lt;/code&gt; しても画像が動いてくれませんでした。そこで &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;plane&lt;/code&gt; の前に透明な要素である &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;spacer&lt;/code&gt; を挟むことでうまく移動してくれるようにしました。（このあたりは自分の理解も曖昧なのでもっとうまい方法があるかも）&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;group&lt;/code&gt; は複数のCollageを並べてくれる関数です。&lt;/p&gt;
+
+&lt;p&gt;コメントアウトしている &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;debug&lt;/code&gt; は有効にするとCollageのボーダーとセンターを赤線で表示してくれるのでつまった時に便利なのでいつでも有効にできるように残しています。&lt;/p&gt;
+
+&lt;p&gt;最後に要素を &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Html Msg&lt;/code&gt; 型に &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;svg&lt;/code&gt; で変換しています。このパターンはCollageではいつも使うパターンです。&lt;/p&gt;
+
+&lt;div class=&quot;language-haskell highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;n&quot;&gt;group&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;
+  &lt;span class=&quot;n&quot;&gt;spacer&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;300&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;300&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+  &lt;span class=&quot;n&quot;&gt;plane&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt;
+    &lt;span class=&quot;c1&quot;&gt;-- |&amp;gt; Collage.Layout.debug&lt;/span&gt;
+    &lt;span class=&quot;o&quot;&gt;|&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;svg&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;|&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;h2 id=&quot;アニメーション&quot;&gt;アニメーション&lt;/h2&gt;
+
+&lt;p&gt;飛行機を任意の場所に移動するために &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;elm-animation&lt;/code&gt; を使っています。基本的な考え方はブラウザのフレーム更新毎に送られる &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Tick&lt;/code&gt; メッセージを捕まえてその中でモデルを更新します。&lt;/p&gt;
+
+&lt;p&gt;重要となるポイントを説明していきます。&lt;/p&gt;
+
+&lt;p&gt;モデルにはx座標、y座標、clockをもたせています。これらの値を &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Tick&lt;/code&gt; イベントの中で更新します。&lt;/p&gt;
+
+&lt;div class=&quot;language-haskell highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kr&quot;&gt;type&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;alias&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Model&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;x&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Animation&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;y&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Animation&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;clock&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Time&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+
+&lt;span class=&quot;n&quot;&gt;model&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Model&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;model&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;
+    &lt;span class=&quot;kt&quot;&gt;Model&lt;/span&gt;
+        &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;animation&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;|&amp;gt;&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;duration&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Time&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;second&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+        &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;animation&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;|&amp;gt;&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;duration&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Time&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;second&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+        &lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Tick&lt;/code&gt; メッセージは引数つきのメッセージで、引数にアニメーションの初期状態から差分の時刻が送られてきます。それをモデルの &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;clock&lt;/code&gt; にセットしています。&lt;/p&gt;
+
+&lt;div class=&quot;language-haskell highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;n&quot;&gt;update&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Msg&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Model&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;Model&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Cmd&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Msg&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;update&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;msg&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;model&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;
+    &lt;span class=&quot;kr&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;msg&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;of&lt;/span&gt;
+        &lt;span class=&quot;kt&quot;&gt;Tick&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;dt&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt;
+            &lt;span class=&quot;kr&quot;&gt;let&lt;/span&gt;
+                &lt;span class=&quot;n&quot;&gt;clock&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;model&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;clock&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;dt&lt;/span&gt;
+            &lt;span class=&quot;kr&quot;&gt;in&lt;/span&gt;
+                &lt;span class=&quot;p&quot;&gt;({&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;model&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;|&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;clock&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;clock&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;},&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Cmd&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;none&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;更新されたclockの値と飛行機のx,y座標を &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;animate&lt;/code&gt; に渡すとその時刻での飛行機の座標が返ってきます。 &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;shift pos&lt;/code&gt; をするとその座標に画像がレンダリングされます。これを各 &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Tick&lt;/code&gt; 毎に行うことで画像が移動していくように見えます。&lt;/p&gt;
+
+&lt;div class=&quot;language-haskell highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;n&quot;&gt;view&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;x&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;y&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;clock&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;
+    &lt;span class=&quot;kr&quot;&gt;let&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;pos&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;
+            &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;animate&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;clock&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;x&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;animate&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;clock&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;y&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+
+        &lt;span class=&quot;n&quot;&gt;plane&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;
+            &lt;span class=&quot;n&quot;&gt;image&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;500&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;500&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;images/airplane.svg&quot;&lt;/span&gt;
+            &lt;span class=&quot;o&quot;&gt;|&amp;gt;&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;shift&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;pos&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Tick&lt;/code&gt; メッセージはそのままでは送信されません。送信するためには &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Subscription&lt;/code&gt; で &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;animation-frame&lt;/code&gt; という別のライブラリを使って &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;AnimationFrame.diffs Tick&lt;/code&gt; を呼びます。Animationするためのライブラリ(&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;elm-animation&lt;/code&gt;) とフレーム遷移を扱うライブラリが別なのは面白いポイントです。&lt;/p&gt;
+
+&lt;div class=&quot;language-haskell highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;n&quot;&gt;subs&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;
+    &lt;span class=&quot;kt&quot;&gt;Sub&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;batch&lt;/span&gt;
+        &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;
+        &lt;span class=&quot;kt&quot;&gt;AnimationFrame&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;diffs&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Tick&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+        &lt;span class=&quot;kt&quot;&gt;Mouse&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;clicks&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;MouseMsg&lt;/span&gt;
+        &lt;span class=&quot;p&quot;&gt;]&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;h2 id=&quot;マウスイベント&quot;&gt;マウスイベント&lt;/h2&gt;
+
+&lt;p&gt;クリックされた場所まで飛行機を移動しないといけないのでマウスイベントを捕まえてクリックされた座標を取得します。&lt;/p&gt;
+
+&lt;p&gt;まずマウスイベントを捕まえるために &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Mouse.clicks MouseMsg&lt;/code&gt; をサブスクライブします。&lt;/p&gt;
+
+&lt;div class=&quot;language-haskell highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;n&quot;&gt;subs&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;
+    &lt;span class=&quot;kt&quot;&gt;Sub&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;batch&lt;/span&gt;
+        &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;
+        &lt;span class=&quot;kt&quot;&gt;AnimationFrame&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;diffs&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Tick&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+        &lt;span class=&quot;kt&quot;&gt;Mouse&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;clicks&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;MouseMsg&lt;/span&gt;
+        &lt;span class=&quot;p&quot;&gt;]&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;実際にマウスイベントを扱うには &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;MouseMsg&lt;/code&gt; を捕まえます。&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;MouseMsg&lt;/code&gt; は引数つきのメッセージで引数にはクリックされた座標が入っています。 このアプリ独自のロジックで &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;adjustment&lt;/code&gt; とかを使っていますが、重要なのはクリックされた座標をFloat型に変換して &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;retarget&lt;/code&gt; に渡すところです。&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;retarget&lt;/code&gt; は画像がどこまで動くかの値 &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;to&lt;/code&gt; を更新して座標で返すので、それをモデルの座標にセットします。こうすることでクリックされた位置が新しいアニメーションの &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;to&lt;/code&gt; になります。&lt;/p&gt;
+
+&lt;div class=&quot;language-haskell highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kt&quot;&gt;MouseMsg&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;position&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt;
+   &lt;span class=&quot;kr&quot;&gt;let&lt;/span&gt;
+       &lt;span class=&quot;c1&quot;&gt;-- We need this so that plan's center moves to the new postion&lt;/span&gt;
+       &lt;span class=&quot;n&quot;&gt;adjustment&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;150&lt;/span&gt;
+       &lt;span class=&quot;n&quot;&gt;posx&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;position&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;x&lt;/span&gt;
+              &lt;span class=&quot;o&quot;&gt;|&amp;gt;&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;toFloat&lt;/span&gt;
+              &lt;span class=&quot;o&quot;&gt;|&amp;gt;&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;+&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;adjustment&lt;/span&gt;
+       &lt;span class=&quot;n&quot;&gt;posy&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;position&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;y&lt;/span&gt;
+              &lt;span class=&quot;o&quot;&gt;|&amp;gt;&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;toFloat&lt;/span&gt;
+              &lt;span class=&quot;o&quot;&gt;|&amp;gt;&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;+&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;adjustment&lt;/span&gt;
+              &lt;span class=&quot;o&quot;&gt;|&amp;gt;&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;
+       &lt;span class=&quot;n&quot;&gt;newX&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;retarget&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;model&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;clock&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;posx&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;model&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;x&lt;/span&gt;
+       &lt;span class=&quot;n&quot;&gt;newY&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;retarget&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;model&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;clock&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;posy&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;model&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;y&lt;/span&gt;
+   &lt;span class=&quot;kr&quot;&gt;in&lt;/span&gt;
+       &lt;span class=&quot;p&quot;&gt;({&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;model&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;|&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;x&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;newX&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;y&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;newY&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;|&amp;gt;&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;update&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;PlaySound&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;h2 id=&quot;音を鳴らす&quot;&gt;音を鳴らす&lt;/h2&gt;
+
+&lt;p&gt;このアプリを作るときに一番わかりにくかったところはクリックされたときに音を鳴らす動作です。Javascriptだと &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;audio&lt;/code&gt; 要素を取得して &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;play&lt;/code&gt; 関数を呼ぶだけなんですが &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;play&lt;/code&gt; は副作用を及ぼす関数なので調べた限りではElmからは直接呼ぶことができませんでした。そこで &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Port&lt;/code&gt; の出番です。&lt;/p&gt;
+
+&lt;p&gt;Portの仕組みはとても簡単で、Javascript側でElmからのメッセージをサブスクライブして何か送られてきたら使いたいJavascriptのコードを実行するだけです。今回の例だと、Elmが音を鳴らしたいときにPortにメッセージを送り、Javascript側で &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;audio&lt;/code&gt; 要素を取得して &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;play&lt;/code&gt; を呼ぶだけです。&lt;/p&gt;
+
+&lt;p&gt;まずJavascript側から説明します。このコードは &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;index.html&lt;/code&gt; に書かれています。&lt;/p&gt;
+
+&lt;p&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;app.ports.play.subscribe(function(val){...})&lt;/code&gt; がElmからPortにメッセージが送られてきた時に呼ばれるコールバックです。単純に &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;audio&lt;/code&gt; 要素を取得して &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;play&lt;/code&gt; しているところがメインです。(一度 &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;pause&lt;/code&gt; しているのは音が終わる前にもう一度クリックされた時に最初から再生するためにです。)&lt;/p&gt;
+
+&lt;div class=&quot;language-html highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;nt&quot;&gt;&amp;lt;body&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;background=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;images/sky.jpg&quot;&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;&amp;gt;&lt;/span&gt;
+    &lt;span class=&quot;nt&quot;&gt;&amp;lt;audio&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;id=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;my-audio&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;src=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;audios/flee1.mp3&quot;&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;&amp;gt;&amp;lt;/audio&amp;gt;&lt;/span&gt;
+    &lt;span class=&quot;nt&quot;&gt;&amp;lt;script &lt;/span&gt;&lt;span class=&quot;na&quot;&gt;type=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;text/javascript&quot;&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;&amp;gt;&lt;/span&gt;
+     &lt;span class=&quot;kd&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;app&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;Elm&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;Main&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;fullscreen&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;();&lt;/span&gt;
+
+     &lt;span class=&quot;c1&quot;&gt;// Triggered from Elm&lt;/span&gt;
+     &lt;span class=&quot;nx&quot;&gt;app&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;ports&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;play&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;subscribe&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kd&quot;&gt;function&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;val&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;){&lt;/span&gt;
+         &lt;span class=&quot;kd&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;audio&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;document&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;getElementById&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;dl&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;my-audio&lt;/span&gt;&lt;span class=&quot;dl&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+         &lt;span class=&quot;nx&quot;&gt;audio&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;pause&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;();&lt;/span&gt;
+         &lt;span class=&quot;nx&quot;&gt;audio&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;currentTime&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+         &lt;span class=&quot;nx&quot;&gt;audio&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;play&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;();&lt;/span&gt;
+     &lt;span class=&quot;p&quot;&gt;});&lt;/span&gt;
+    &lt;span class=&quot;nt&quot;&gt;&amp;lt;/script&amp;gt;&lt;/span&gt;
+&lt;span class=&quot;nt&quot;&gt;&amp;lt;/body&amp;gt;&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;次にPortにメッセージを送る側のElmコードを見てみます。Updateの中で &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;PlaySound&lt;/code&gt; を捕まえます。 &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;PlaySound&lt;/code&gt; がどこからくるかというと &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;MouseMsg&lt;/code&gt; をハンドリングする際に戻り値で手動で &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;update&lt;/code&gt; を呼んで &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;PlaySound&lt;/code&gt; のコマンドを渡しています。&lt;/p&gt;
+
+&lt;div class=&quot;language-haskell highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;p&quot;&gt;({&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;model&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;|&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;x&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;newX&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;y&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;newY&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;|&amp;gt;&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;update&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;PlaySound&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;play 0&lt;/code&gt; と呼ぶとJavascript側でサブスクライブしているPortに &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;0&lt;/code&gt; という値が送られます。ここではJavascript側は何も値は必要ないのですが引数なしで送る方法がわからなかったので適当な値を渡しているだけです。&lt;/p&gt;
+
+&lt;div class=&quot;language-haskell highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kt&quot;&gt;PlaySound&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;model&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;play&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;h2 id=&quot;まとめ&quot;&gt;まとめ&lt;/h2&gt;
+
+&lt;p&gt;大事な点はだいたいカバーしたと思います。純粋関数言語からアニメーションを扱う考え方はとても面白かったです。はじめは少しとっつきにくいかもしれませんが、慣れれば他の似たようなライブラリも簡単に理解できるようになりました。&lt;/p&gt;
+
+&lt;p&gt;この記事を通してElmのファンが増えてくれれば嬉しいです!&lt;/p&gt;</content><author><name>kim hirokuni</name></author><summary type="html">この記事はQiita Elm Adventcalendar 2017に投稿した記事です。</summary></entry><entry><title type="html">My Investment Principles</title><link href="http://localhost:4000/blog/my-investment-principles/" rel="alternate" type="text/html" title="My Investment Principles" /><published>2017-11-24T11:34:00+09:00</published><updated>2017-11-24T11:34:00+09:00</updated><id>http://localhost:4000/blog/my-investment-principles</id><content type="html" xml:base="http://localhost:4000/blog/my-investment-principles/">&lt;p&gt;投資について考える時間ができたので今の時点で投資に関して自分が大事にしていることをまとめておく。&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Note to future self:&lt;/strong&gt; 時々見返して、適宜修正すること。&lt;/p&gt;
+
+&lt;h2 id=&quot;1-投資の収入に期待してはいけない&quot;&gt;1. 投資の収入に期待してはいけない&lt;/h2&gt;
+
+&lt;p&gt;投資を主な収入源にしている人たちにとっては大きなアンチテーゼだが、投資をする上での第一原則は投資の収入を大きく当てにしないこと。 理由は主に以下。&lt;/p&gt;
+
+&lt;p&gt;投資で儲けるためには時間かかる。そのため、これを当てにして生活プランを組むと無収入の期間が長く続いた時に精神的に辛い。追い詰められた時、人は大きなミスをしやすくなる。&lt;/p&gt;
+
+&lt;p&gt;できるだけ損切りしないというスタイルの場合 (後述)、評価損が逆転するまでに時間がかかる。同じくこの間は無収入になる。&lt;/p&gt;
+
+&lt;p&gt;また、投資を主な収入源にした場合、どうしても積極的になりがちで投資額が増えてしまうが、相場には時折破滅的な下落がある。資金に対して投資額が大きい時にそうゆう下落があった場合、最悪の場合資金を全て失う可能性がある。&lt;/p&gt;
+
+&lt;p&gt;我々は気楽な機関投資家とは違う。彼らは最悪の場合でも顧客の金を失うだけだが、こちらは資金の全て失うことがあることを常に覚えておかないといけない。&lt;/p&gt;
+
+&lt;h2 id=&quot;2-時間は見方&quot;&gt;2. 時間は見方&lt;/h2&gt;
+
+&lt;p&gt;1.の原則を守ることができれば二つ目の原則は自然と導かれる。アマチュア投資家の場合、いつまでに利益を出さないとかポートフォリオに評価損があったら
+困るとかいうことはほとんどない。(ないようにしないといけない)。判断を間違えて評価損が出てしまった場合は”時間は見方”と自分に言い聞かせよう。&lt;/p&gt;
+
+&lt;p&gt;可能な限り損切りはせずにしばらく証券会社のサイトにはアクセスせずにほったらかしておこう。しばらくすれば、情勢は変わっているはず。&lt;/p&gt;
+
+&lt;p&gt;ただ、諸刃の剣でもあることを覚えておこう。銘柄の中にはいくら待っても好転しないものも沢山ある。例えば、２０１７年に東芝の株は暴落したがこれは将来好転しそうもない。したとしてもとても時間がかかるのは間違いない。待ってる間に東芝が破綻する可能性の方が高い。&lt;/p&gt;
+
+&lt;p&gt;こうゆう事態を避けるために下落すればまた必ず上昇するタイプの銘柄にしか投資してはいけない。しかし、残念ながら今の自分にはそれを正確に見極める術はない。&lt;/p&gt;
+
+&lt;h2 id=&quot;3-相場は予想できない&quot;&gt;3. 相場は予想できない&lt;/h2&gt;
+
+&lt;p&gt;常識に反し、相場は予測できるようなものではないと考える。過去を遡ることでこの主張が正しいことを簡単にテストできる。試しに &lt;a href=&quot;https://jp.reuters.com&quot;&gt;ロイター&lt;/a&gt; で過去の記事を検索してみるといい。(検索キーワード例: ドル円 コラム) そうすればアナリストたちの主張がいかに場あたり的なものかがよくわかる。&lt;/p&gt;
+
+&lt;p&gt;また、一年前の予想など全く当たっていないこともわかる。例えば、一年前の記事を検索すると、2017/12月の時点でドル円相場に大きな影響を与えている北朝鮮問題について語っている人など一人もいない。もっとも予想が外れているといってアナリスト達を責めることはできない。様々な要素が複雑に絡みあう現実世界で１年後を予想するなんてことは土台、不可能なことなんだ。&lt;/p&gt;
+
+&lt;p&gt;未来の予想不可能性についてもっと詳しく知りたければ数学の複雑系を勉強することをお勧めする。また、不可能なのになぜそれでも人が予測をしたがるかはを知りたければ心理学や行動経済学をお勧めする。&lt;/p&gt;
+
+&lt;h2 id=&quot;4-乗り遅れた時こそ辛抱&quot;&gt;4. 乗り遅れた時こそ辛抱&lt;/h2&gt;
+
+&lt;p&gt;判断を間違えて投資のチャンスに乗り遅れた時は辛抱が大切になってくる。乗り遅れたことに気づいた時は大抵その相場に参加するにはもう遅い。
+上昇相場は加速度的に上昇 (上昇している相場はさらに上昇する) することが多いように思うが、その分下げの圧力も高くなっていることを忘れてはいけない。&lt;/p&gt;
+
+&lt;p&gt;もし、乗り遅れたあとに 上昇相場に参加する時は高まる下げ圧力のことを念頭におき、遅れた分を取り返そうなどとは考えず、あくまで少額投資にしておくこと。&lt;/p&gt;
+
+&lt;p&gt;2の原則を守っていれば時間はあなたの見方となる。相場の風向きが変わるまで辛抱すること。&lt;/p&gt;
+
+&lt;h2 id=&quot;5-分散しない&quot;&gt;5. 分散しない&lt;/h2&gt;
+
+&lt;p&gt;相場には &lt;strong&gt;すべての卵を一つのカゴに入れるな&lt;/strong&gt; という格言があるが、これはアマチュア投資家には当てはまらない。なるべく資金を分散せず少ない銘柄に注力すること。分散すると以下のような事態に陥る。&lt;/p&gt;
+
+&lt;p&gt;相場の動きが相反する複数の銘柄に投資した場合、値動きが両端の真ん中でくすぶってどっちつかずになることがある。そうなった場合、身動きできなくなってしまう。&lt;/p&gt;
+
+&lt;p&gt;世界経済が悪くなった時は分散している全ての銘柄が同時に下落する場合がある。山火事のことを考えてほしい。一つの場所の大きな火事なら対応はシンプルだが複数の場所が同時に火事になった場合、その対応は飛躍的に難しくなる。&lt;/p&gt;
+
+&lt;p&gt;常に自分のポートフォリオを確認して分散しすぎていないかをチェックすること。自分は３銘柄までと決めている。&lt;/p&gt;</content><author><name>kim hirokuni</name></author><summary type="html">投資について考える時間ができたので今の時点で投資に関して自分が大事にしていることをまとめておく。</summary></entry><entry><title type="html">Average Doesn’t Always Exist</title><link href="http://localhost:4000/blog/en/average-dne/" rel="alternate" type="text/html" title="Average Doesn’t Always Exist" /><published>2017-04-09T11:35:00+09:00</published><updated>2017-04-09T11:35:00+09:00</updated><id>http://localhost:4000/blog/en/average-dne</id><content type="html" xml:base="http://localhost:4000/blog/en/average-dne/">&lt;p&gt;Up until now, I thought average always exists. We are dealing with average very often in real life: the average height of Japanese, the average rate of divorcing in US, and the average salary in France, etc. It seemed to me that if I take enough number of sample data, I can get average that reflects the reality very well.&lt;/p&gt;
+
+&lt;p&gt;Today I learned that this is not always the case. Average doesn’t always exist. Because the idea is very interesting to me, let me share the idea with you.&lt;/p&gt;
+
+&lt;h2 id=&quot;average-in-coin-toss-game&quot;&gt;Average in Coin Toss Game&lt;/h2&gt;
+
+&lt;p&gt;Let’s being with the case when average exists. I’ll use a very simple coin toss game. You flip a coin and you win $1 if the result is head. You win $0 or nothing if the result is tail. Very simple.&lt;/p&gt;
+
+&lt;p&gt;When you toss the coin multiple times, what’s the average of dollar you will win? You can get the average very easily by the following formula:&lt;/p&gt;
+
+&lt;p&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;avg. = (total number of $ you won) / number of times you toss the coin&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;And you will see that the average is 0.5 because the chance of getting head is 1/2. But is it really so? Let’s confirm this by writing some code to simulate the game.&lt;/p&gt;
+
+&lt;p&gt;Here is a small Clojure code to simulate the game.&lt;/p&gt;
+
+&lt;div class=&quot;language-clojure highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;defn&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;n&quot;&gt;toss-coin&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[]&lt;/span&gt;&lt;span class=&quot;w&quot;&gt;
+  &lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;rand-int&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;2&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;))&lt;/span&gt;&lt;span class=&quot;w&quot;&gt;
+
+&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;defn&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;n&quot;&gt;do-coin-toss&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;ite&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt;&lt;span class=&quot;w&quot;&gt;
+  &lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;loop&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;n&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;n&quot;&gt;total&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;n&quot;&gt;avg&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[]]&lt;/span&gt;&lt;span class=&quot;w&quot;&gt;
+    &lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;if&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;&amp;gt;&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;n&quot;&gt;n&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;n&quot;&gt;ite&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;w&quot;&gt;
+      &lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;map&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;float&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;n&quot;&gt;avg&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;w&quot;&gt;
+      &lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;do&lt;/span&gt;&lt;span class=&quot;w&quot;&gt;
+        &lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;let&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;outcome&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;toss-coin&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)]&lt;/span&gt;&lt;span class=&quot;w&quot;&gt;
+          &lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;recur&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;+&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;n&quot;&gt;n&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;+&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;n&quot;&gt;total&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;n&quot;&gt;outcome&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;conj&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;n&quot;&gt;avg&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;n&quot;&gt;total&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;n&quot;&gt;n&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;))))))))&lt;/span&gt;&lt;span class=&quot;w&quot;&gt;
+
+&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;defn&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;n&quot;&gt;write-data&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;col&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt;&lt;span class=&quot;w&quot;&gt;
+  &lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;let&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;vec&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;map-indexed&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;fn&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;idx&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;n&quot;&gt;item&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt;&lt;span class=&quot;w&quot;&gt;
+                           &lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;str&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;n&quot;&gt;idx&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot; &quot;&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;n&quot;&gt;item&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;))&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;n&quot;&gt;col&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;w&quot;&gt;
+        &lt;/span&gt;&lt;span class=&quot;n&quot;&gt;data&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;clojure.string/join&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;\n&quot;&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;n&quot;&gt;vec&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;w&quot;&gt;
+        &lt;/span&gt;&lt;span class=&quot;n&quot;&gt;header&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;n avg\n&quot;&lt;/span&gt;&lt;span class=&quot;w&quot;&gt;
+        &lt;/span&gt;&lt;span class=&quot;n&quot;&gt;file&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;/tmp/coin-toss-result.txt&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt;&lt;span class=&quot;w&quot;&gt;
+    &lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;spit&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;n&quot;&gt;file&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;n&quot;&gt;header&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;w&quot;&gt;
+    &lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;spit&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;n&quot;&gt;file&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;n&quot;&gt;data&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;no&quot;&gt;:append&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;n&quot;&gt;true&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;w&quot;&gt;
+    &lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;spit&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;n&quot;&gt;file&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;\n&quot;&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;no&quot;&gt;:append&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;n&quot;&gt;true&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)))&lt;/span&gt;&lt;span class=&quot;w&quot;&gt;
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Here is R program &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;draw.R&lt;/code&gt; to draw a graph.&lt;/p&gt;
+
+&lt;div class=&quot;language-r highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;n&quot;&gt;ind&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;n&quot;&gt;commandArgs&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;trailingOnly&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;kc&quot;&gt;TRUE&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)[&lt;/span&gt;&lt;span class=&quot;m&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt;&lt;span class=&quot;w&quot;&gt;
+&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;file&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;coin-toss.png&quot;&lt;/span&gt;&lt;span class=&quot;w&quot;&gt;
+
+&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;x&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;lt;-&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;n&quot;&gt;read.table&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;/tmp/coin-toss-result.txt&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;n&quot;&gt;header&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;T&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;))&lt;/span&gt;&lt;span class=&quot;w&quot;&gt;
+&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;png&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;file&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;w&quot;&gt;
+&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;plot&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;x&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;$&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;avg&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;n&quot;&gt;type&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;l&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;w&quot;&gt;
+&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;dev.off&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;&lt;span class=&quot;w&quot;&gt;
+&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;browseURL&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;file&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;w&quot;&gt;
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;If you want to toss the coin 10 times and output the result to a text file, you can do &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;(write-data (do-coin-toss 10))&lt;/code&gt; from REPL and run&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;Rscript draw.R
+``` from your terminal.
+
+I'll denote n as the number of times you toss the coin for brevity from now on.
+
+Here is the graph of the average when n is **10**.
+
+![coin-toss-10](/assets/coin-toss-10.png)
+
+As you can see, the average is very quickly approaching to **0.5**. Let's do the same thing with larger n.
+
+When n is **1000**
+
+![coin-toss-1000](/assets/coin-toss-1000.png)
+
+When n is **10000**
+
+![coin-toss-10000](/assets/coin-toss-10000.png)
+
+By looking at these graphs, we can safely say that the average of dollar you win in this coin toss game is $0.5.
+
+## When Average Doesn't Exist.
+
+Now we are entering an interesting area where the average disappears. To illustrate this, we will make the coin toss game a bit more complicated.
+
+This time, you keep flipping the coin until you get head and you will get **2 ^ (number of times you flip the coin)**.
+
+For example, if your result is tail, tail, and then head, then you get **2 ^ 3** (because you flipped three times) which is $8. Let's call this game &quot;coin-toss-unti-head&quot; game.
+
+Here is a Clojure code to simulate the coin-toss-until-head game.
+
+```clojure
+(defn exp [x n]
+  (if (zero? n) 1
+      (* x (exp x (dec n)))))
+
+(defn toss-coin-until-head []
+  (loop [n 1]
+    (let [outcome (toss-coin)]
+      (if (= 0 (toss-coin))
+        (exp 2 n)
+        (recur (+ n 1))))))
+
+(defn do-coin-toss [ite]
+  (loop [n 1 total 0 avg []]
+    (if (&amp;gt; n ite)
+      (map float avg)
+      (do
+        (let [outcome (toss-coin)]
+          (recur (+ n 1) (+ total outcome) (conj avg (/ total n))))))))
+
+(defn write-data [col]
+  (let [vec (map-indexed (fn [idx item]
+                           (str idx &quot; &quot; item)) col)
+        data (clojure.string/join &quot;\n&quot; vec)
+        header &quot;n avg\n&quot;
+        file &quot;/tmp/coin-toss-result.txt&quot;]
+    (spit file header)
+    (spit file data :append true)
+    (spit file &quot;\n&quot; :append true)))
+
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;You can again run the code from REPL&lt;/p&gt;
+
+&lt;div class=&quot;language-clojure highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;write-data&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;do-coin-toss&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;10&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;n&quot;&gt;toss-coin-until-head&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;))&lt;/span&gt;&lt;span class=&quot;w&quot;&gt;
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;and plot graphs with&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;Rscript draw.R
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Let’s begin with &lt;strong&gt;n=10&lt;/strong&gt;.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/coin-toss-until-head-10.png&quot; alt=&quot;coin-toss-until-head-10&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;It looks like the average is approaching to somewhere around 2.5 but we are not fully sure yet. Let’s increase n and see if the average is really 2.5.&lt;/p&gt;
+
+&lt;p&gt;Here is the graph when n is 20 and you will probably be disappointed by looking at the graph: the average is approaching to 2.5 and  then suddenly there is a spike around &lt;strong&gt;n=20&lt;/strong&gt; which pushes the average a way higher! You will also discover the pattern after &lt;strong&gt;n=20&lt;/strong&gt;: the average is converging to a number but then you will see a spike shortly after the convergence.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/coin-toss-until-head-100.png&quot; alt=&quot;coin-toss-until-head-100&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;Maybe we just haven’t tossed the coin enough times. Let’s keep going a bit further.&lt;/p&gt;
+
+&lt;p&gt;Here is the graph when n is 10000. It looks like this time the average is approaching to somewhere around 12. Did we finally discover the average?&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/coin-toss-until-head-10000.png&quot; alt=&quot;coin-toss-until-head-10000&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;It turns out we didn’t! This is very clear when you increase n to 50000.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/coin-toss-until-head-50000.png&quot; alt=&quot;coin-toss-until-head-50000&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;Again, there is a spike around 30000 and we lost the average again. You can increase n as much as you want and you will never find a good average in this game.&lt;/p&gt;
+
+&lt;h2 id=&quot;why-average-doesnt-exist&quot;&gt;Why Average Doesn’t Exist?&lt;/h2&gt;
+
+&lt;p&gt;We can see why the average doesn’t exist with simple math.&lt;/p&gt;
+
+&lt;p&gt;You can calculate the average of normal coin-toss game with the following formula.&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;ave. = (probability of H) x $1 + (probably of T) x $0
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Because both the probability of getting head (H) and tail (T) is 0.5, the average of dollar you will win becomes $0.5 which is what we’ve seen in the previous simulations.&lt;/p&gt;
+
+&lt;p&gt;Let’s compute the average for the coin-toss-until-head game. One big difference from the normal coin toss game is that
+there are infinite numbers of different results of coin in this game. The result could be &lt;strong&gt;T H&lt;/strong&gt; or &lt;strong&gt;T T H&lt;/strong&gt; or &lt;strong&gt;T T T T T T H&lt;/strong&gt; or whatever.&lt;/p&gt;
+
+&lt;p&gt;So we need to calculate all the possibilities. You can express this with the following formula.&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;ave. = (probability of H) x 2^1 + (probability of TH) x 2^2 + (probably of TTH) x 2^3 ......
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;When you plugin the actual probability to the formula above, this will become the following.&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;ave. = (1/2) x 2^1 + (1/2 x 1/2) x 2^2 + (1/2 x 1/2 x 1/2) x 2^3 ......
+ave. = 1 + 1 + 1 ......
+ave. = ∞ (infinity)
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;The average that you got is ∞ (infinity). In other words, average doesn’t exist.&lt;/p&gt;
+
+&lt;p&gt;What’s the implication of the idea that average doesn’t always exist in real life?&lt;/p&gt;
+
+&lt;p&gt;Another way of interpreting these graphs without average is that sometimes a super extreme event could happen. Because the impact of the event is astronomical, it skews the average and make it useless. So, if the model that you are studying is similar to the coin-toss-until-head game, you will see the same pattern. In fact, this model is often used to study extreme events such as a sudden collapse in a stock market.&lt;/p&gt;
+
+&lt;h2 id=&quot;summary&quot;&gt;Summary&lt;/h2&gt;
+
+&lt;p&gt;Hopefully, you will find this interesting. Time is running out, so I’ll stop here, but if you want to learn more, you can search “St. Petersburg paradox” or “Power Laws” to dive into the area deeper.&lt;/p&gt;
+
+&lt;p&gt;You can find code I used here at https://github.com/kimh/coin-toss&lt;/p&gt;</content><author><name>kim hirokuni</name></author><category term="en" /><summary type="html">Up until now, I thought average always exists. We are dealing with average very often in real life: the average height of Japanese, the average rate of divorcing in US, and the average salary in France, etc. It seemed to me that if I take enough number of sample data, I can get average that reflects the reality very well.</summary></entry><entry><title type="html">(Backend) Engineer Principles</title><link href="http://localhost:4000/blog/being-backend-engineer/" rel="alternate" type="text/html" title="(Backend) Engineer Principles" /><published>2017-02-08T11:44:00+09:00</published><updated>2017-02-08T11:44:00+09:00</updated><id>http://localhost:4000/blog/being-backend-engineer</id><content type="html" xml:base="http://localhost:4000/blog/being-backend-engineer/">&lt;h2 id=&quot;security-first&quot;&gt;Security First&lt;/h2&gt;
+
+&lt;p&gt;Always remind yourself that security is the most important thing. It’s important because the impact of security breach is more severe than anything else.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Risks have to be measured by the impact when that happens, not how likely it happens&lt;/strong&gt;&lt;/p&gt;
+
+&lt;h2 id=&quot;dont-break-stuff&quot;&gt;Don’t break stuff&lt;/h2&gt;
+
+&lt;p&gt;When backend breaks, everything on top of it will also break. Always pay attention to keep the backward compatibility.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Backward compatibility for the win&lt;/strong&gt;&lt;/p&gt;
+
+&lt;h2 id=&quot;dont-merge-prs-at-late-night&quot;&gt;Don’t merge PRs at late night&lt;/h2&gt;
+
+&lt;p&gt;You have much weaker cognitive power than you believe at late night. Merging PRs with the weak cognitive power will likely break the principles noted here.
+This is also important because you can’t test the consequence of your changes until next morning.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Merging PRs at Friday night is a terrible thing to do&lt;/strong&gt;&lt;/p&gt;
+
+&lt;h2 id=&quot;never-drink-during-working&quot;&gt;Never drink during working&lt;/h2&gt;
+
+&lt;p&gt;This is too obvious to be warned :)&lt;/p&gt;</content><author><name>kim hirokuni</name></author><summary type="html">Security First</summary></entry><entry><title type="html">Fasting: what popular beliefs were (not) true for me</title><link href="http://localhost:4000/blog/fasting/" rel="alternate" type="text/html" title="Fasting: what popular beliefs were (not) true for me" /><published>2017-01-28T22:25:00+09:00</published><updated>2017-01-28T22:25:00+09:00</updated><id>http://localhost:4000/blog/fasting</id><content type="html" xml:base="http://localhost:4000/blog/fasting/">&lt;p&gt;I’m finishing my third fasting and I thought it’s good to write a blog about my experience with fasting. If you google fasting on the internet, there are many articles that talk about good things about fasting and I wanted to write what facts are true and not true in my experience.&lt;/p&gt;
+
+&lt;p&gt;There is also one more reason why I decided to write a blog about fasting: it seems that fasting is less common in Western societies than in Asian societies. When I talked about my experience about fasting, almost all people with Western background looked very puzzled and thought like I’m crazy. In contrast, fasting seems more popular idea in Asia and I think it’s probably because there is much stronger influence of Buddhism in Asian countries than in Western countries.&lt;/p&gt;
+
+&lt;p&gt;Fasting is not a crazy thing to do. It’s a well established health management method. Hopefully, this article helps people who are not familiar with fasting to see what fasting actually looks like and get interested in fasting.&lt;/p&gt;
+
+&lt;h2 id=&quot;my-fasting-experiences&quot;&gt;My fasting experiences&lt;/h2&gt;
+
+&lt;p&gt;Different people have different experiences in fasting. It’s very common that one effect of fasting works very well for one person but completely doesn’t work for other person. So, I should first mention about my normal diet and fasting experiences so far.&lt;/p&gt;
+
+&lt;p&gt;I’ve done fasting three times so far in my life. The longest fasting was four days mostly only with water.&lt;/p&gt;
+
+&lt;p&gt;I think of my self as a person who eats less than average male: I normally skip lunch and eat once or twice in a day. I don’t eat much carbs, either. I think it’s not inaccurate to say that I’m not a big fan of eating. I certainly appreciate easting good food, but it’s kind ok if I don’t eat. This type of diet probably made it easy to start fasting. So if you are a person who loves eating, then starting fasting is a little harder.&lt;/p&gt;
+
+&lt;p&gt;Anyway, that’s my fasting experiences and diet. Let me talk about what has happened to my body and brain during fasting.&lt;/p&gt;
+
+&lt;h4 id=&quot;day-1&quot;&gt;Day 1&lt;/h4&gt;
+
+&lt;p&gt;The first day of fasting is the toughest time for me, especially at night. I can’t stop thinking of fatty food such as ramen or hamburger. During this period, I also want to drink more than usual but this is probably because of my drinking habit that I have at every night.&lt;/p&gt;
+
+&lt;p&gt;I feel a bit dull and I would say that my body is operating under 70% ~ 80% level of normal time. It’s not that terrible but I don’t feel very conformable, either.&lt;/p&gt;
+
+&lt;p&gt;I also felt that my brain is operating under 60% ~ 70% of normal time. I can’t think difficult things and don’t feel like doing something creative. I can still read books, write blogs, and learn new things but it requires a bit more focus than usual.&lt;/p&gt;
+
+&lt;h4 id=&quot;day-2&quot;&gt;Day 2&lt;/h4&gt;
+
+&lt;p&gt;I still can’t stop thinking about food in the second day, but this time thoughts about sweets such as chocolate or ice cream is hunting me instead of fatty food. I think this is because of the decrease in the blood sugar level.&lt;/p&gt;
+
+&lt;p&gt;I still feel a bit dull but not much difference from the first day.&lt;/p&gt;
+
+&lt;p&gt;I feel my brain is having a harder time than the first day and things easily slip my attention. In my first fasting, I gave a small damage to my car in a parking lot in a way that I normally don’t. My wife told me that I was totally out of it when I was trying to park my car.&lt;/p&gt;
+
+&lt;p&gt;However, it’s interesting that I normally have a better outcome for performing a task with mental and cognitive load if I focus on the task. For example, when I was cooking, I could be into it more than usual and my dish was great. I also could have read books with more focus than usual.&lt;/p&gt;
+
+&lt;h4 id=&quot;day-3&quot;&gt;Day 3&lt;/h4&gt;
+
+&lt;p&gt;The third day is almost the same as the second day.&lt;/p&gt;
+
+&lt;h4 id=&quot;day-4&quot;&gt;Day 4&lt;/h4&gt;
+
+&lt;p&gt;The forth day is a surprising day. I almost forget that I haven’t eaten for the last three days. I don’t feel dull anymore and my brain works as usual.&lt;/p&gt;
+
+&lt;p&gt;I don’t have many things to talk about in the forth day except that my body and brain are functioning almost the same as normal time. This is the point where I started seeing an illusion that I can live without eating anything. I think the attainment of the strange feeling that your body and brain work just like usual without any food is one of the interesting experiences to have during fasting.&lt;/p&gt;
+
+&lt;h2 id=&quot;effects-that-match-popular-beliefs&quot;&gt;Effects that match popular beliefs&lt;/h2&gt;
+
+&lt;p&gt;Ok, so these are what happened to my body and brain during fasting. If you google fasting, people talk about many good things that happen during and after fasting. Let me talk about which one was true and which one was not in my experience.&lt;/p&gt;
+
+&lt;h4 id=&quot;weight-loss&quot;&gt;Weight loss&lt;/h4&gt;
+
+&lt;p&gt;Normally, I lose 2.5 ~ 3 kg. I haven’t rebounded my weight, neither, but this is probably due to my diet in normal time.&lt;/p&gt;
+
+&lt;h4 id=&quot;skin-regeneration&quot;&gt;Skin regeneration&lt;/h4&gt;
+
+&lt;p&gt;This is one of the most significant effect of fasting for me. Before fasting, my skin was dry and a bit damaged but it gets better and better as I keep fasting. And it lasts for a few days after fasting. Although this is not a direct benefit for me (why would I care the condition of my facial skin?) I think this is a good reason try fasting if you have skin problems.&lt;/p&gt;
+
+&lt;h4 id=&quot;increase-in-the-sense-of-taste-and-smell&quot;&gt;Increase in the sense of taste and smell&lt;/h4&gt;
+
+&lt;p&gt;There is a dramatic increase here. I could smell food that my wife was cooking in downstairs much more strongly than normal time.&lt;/p&gt;
+
+&lt;p&gt;I also felt the taste of food more strongly than normal time during fasting. One day I drunk vegetable juice and I felt it has never been more tasty than before.&lt;/p&gt;
+
+&lt;h2 id=&quot;effects-that-do-not-match-popular-beliefs&quot;&gt;Effects that do not match popular beliefs&lt;/h2&gt;
+
+&lt;p&gt;There are certain things and experiences that people bring up as effects of fasting but the followings didn’t happen to me.&lt;/p&gt;
+
+&lt;h4 id=&quot;amazing-recovery-meals&quot;&gt;Amazing recovery meals&lt;/h4&gt;
+
+&lt;p&gt;I should say that my experiences with recovery meals is not as dramatic as other people say. Recovery meals are meals that you take to go back to normal diet after fasting. They have to be easy to digest and shouldn’t have a strong flavor. Many people talk that how amazing your recovery meals would be and they could be life-changing taste or something.&lt;/p&gt;
+
+&lt;p&gt;The first recovery meal was indeed amazing. However, the special feeling doesn’t last very long. I didn’t didn’t have any special feeling even in the second recovery meal.&lt;/p&gt;
+
+&lt;p&gt;I understand effects of fasting varies among people but I personally think the effect is exaggerated to make you believe fasting is a good thing to do.&lt;/p&gt;
+
+&lt;h4 id=&quot;fecal-impaction&quot;&gt;Fecal impaction&lt;/h4&gt;
+
+&lt;p&gt;Many people talk fecal impaction would happen during fasting. However, this never happens to me. It may be because it needs longer period of fasting but at least it didn’t happen with four days of fasting.&lt;/p&gt;
+
+&lt;h4 id=&quot;detoxing&quot;&gt;Detoxing&lt;/h4&gt;
+
+&lt;p&gt;This is another thing that many people talk about as an effect of fasting, but I’m not sure if this is true. More accurately, I don’t have a way to measure if detoxing is happening or not. But as much as I can sense, detoxing is not happening in my body.&lt;/p&gt;
+
+&lt;h4 id=&quot;increased-creativity-and-thinking-power&quot;&gt;Increased creativity and thinking power&lt;/h4&gt;
+
+&lt;p&gt;Some people say your creativity and thinking power gain during fasting. In the end, I think I could do more creative stuff than usual during fasting. What I mean by creative stuff is things such as reading books to learn new ideas, writing computer programs, and doing some deep thinking, etc. However, I don’t think this is an direct effect of fasting. I felt my cognitive level definitely decreased. Nonetheless, I could do these creative stuff in fasting days than in normal days because I was motivated. I had some sort of determination to make fasting successful and this determination allows me to make more efforts deliberately than usual.&lt;/p&gt;
+
+&lt;h4 id=&quot;saving-time&quot;&gt;Saving time&lt;/h4&gt;
+
+&lt;p&gt;Although this is a bit off the topic, this is one of the most interesting findings that I’ve had during fasting. You will be surprised how much time you are spending for eating and drinking in everyday life if you stop eating. Because I don’t need to spend time for eating, I could use the time for other things such as playing with my baby or reading books.&lt;/p&gt;
+
+&lt;p&gt;I think the realization that how much I spend time for easting was a very unique effect of fasting not talked much among people.&lt;/p&gt;
+
+&lt;h2 id=&quot;conclusion&quot;&gt;Conclusion&lt;/h2&gt;
+
+&lt;p&gt;Is fasting interesting? Yes, it’s very interesting. I had many experiences that I could not have in normal time.&lt;/p&gt;
+
+&lt;p&gt;Did fasting bring much benefits to me? Not really. Most of benefits disappear only in a few days after fasting. The stress of not eating during fasting certainly doesn’t pay the benefits.&lt;/p&gt;
+
+&lt;p&gt;So, I think I’ll continue doing fasting occasionally but not as a health management but more like conducting experiments with my own body in order to sense something that I can’t during normal time.&lt;/p&gt;</content><author><name>kim hirokuni</name></author><summary type="html">I’m finishing my third fasting and I thought it’s good to write a blog about my experience with fasting. If you google fasting on the internet, there are many articles that talk about good things about fasting and I wanted to write what facts are true and not true in my experience.</summary></entry><entry><title type="html">Big ideas in 2017</title><link href="http://localhost:4000/blog/en/big-ideas-2017/" rel="alternate" type="text/html" title="Big ideas in 2017" /><published>2017-01-09T10:22:00+09:00</published><updated>2017-01-09T10:22:00+09:00</updated><id>http://localhost:4000/blog/en/big-ideas-2017</id><content type="html" xml:base="http://localhost:4000/blog/en/big-ideas-2017/">&lt;p&gt;Here is a list of big ideas that I learned in 2017.&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Time does not exist&lt;/li&gt;
+  &lt;li&gt;When you reach 30, there are more things NOT to do than to do&lt;/li&gt;
+&lt;/ul&gt;</content><author><name>kim hirokuni</name></author><category term="en" /><summary type="html">Here is a list of big ideas that I learned in 2017.</summary></entry></feed>

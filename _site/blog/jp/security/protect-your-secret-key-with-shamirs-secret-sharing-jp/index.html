@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.7.1 -->
+<title>シャミアの秘密分散法で秘密のデータを分割管理する | Program Is Made At Night</title>
+<meta name="generator" content="Jekyll v4.2.1" />
+<meta property="og:title" content="シャミアの秘密分散法で秘密のデータを分割管理する" />
+<meta name="author" content="kim hirokuni" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="Write an awesome description for your new site here. You can edit this line in _config.yml. It will appear in your document head meta (for Google search results) and in your feed.xml site description." />
+<meta property="og:description" content="Write an awesome description for your new site here. You can edit this line in _config.yml. It will appear in your document head meta (for Google search results) and in your feed.xml site description." />
+<link rel="canonical" href="http://localhost:4000/blog/jp/security/protect-your-secret-key-with-shamirs-secret-sharing-jp/" />
+<meta property="og:url" content="http://localhost:4000/blog/jp/security/protect-your-secret-key-with-shamirs-secret-sharing-jp/" />
+<meta property="og:site_name" content="Program Is Made At Night" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2014-05-03T22:07:00+09:00" />
+<meta name="twitter:card" content="summary" />
+<meta property="twitter:title" content="シャミアの秘密分散法で秘密のデータを分割管理する" />
+<script type="application/ld+json">
+{"url":"http://localhost:4000/blog/jp/security/protect-your-secret-key-with-shamirs-secret-sharing-jp/","headline":"シャミアの秘密分散法で秘密のデータを分割管理する","dateModified":"2014-05-03T22:07:00+09:00","datePublished":"2014-05-03T22:07:00+09:00","description":"Write an awesome description for your new site here. You can edit this line in _config.yml. It will appear in your document head meta (for Google search results) and in your feed.xml site description.","author":{"@type":"Person","name":"kim hirokuni"},"mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/blog/jp/security/protect-your-secret-key-with-shamirs-secret-sharing-jp/"},"@type":"BlogPosting","@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="http://localhost:4000/feed.xml" title="Program Is Made At Night" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">Program Is Made At Night</a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/about/">About</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">シャミアの秘密分散法で秘密のデータを分割管理する</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2014-05-03T22:07:00+09:00" itemprop="datePublished">May 3, 2014
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <p><img src="/assets/pieces.jpg" alt="" /></p>
+
+<p>つい最近<a href="https://github.com/PolyPassHash/PolyPassHash">PollyPassHash</a>という新しいパスワード管理手法を知りました。</p>
+
+<p>PolyPassHashingについては時間があれば別のポストで書きますが、要約すると、ある一定数の管理者の正しいパスワードが入力されないと暗号化されたパスワードデータベースを復号化できないようにするための仕組みです。</p>
+
+<p>このポストではPolyPassHashingの中核の暗号技術である <strong><em>シャミアの秘密分散法</em></strong> の紹介とそれを実現する数学的な仕組みを解説したいと思います。</p>
+
+<h2 id="この記事の内容">この記事の内容</h2>
+<h4 id="シャミアの秘密分散法とはなにか"><a href="#what_is_shamirs_secret_sharing">シャミアの秘密分散法とはなにか</a></h4>
+<h4 id="用語"><a href="#basic_terms">用語</a></h4>
+<h4 id="実際にやってみる-rubyでシャミアの秘密分散"><a href="#handson">実際にやってみる: Rubyでシャミアの秘密分散</a></h4>
+<h4 id="仕組み"><a href="#handson">仕組み</a></h4>
+<ul>
+  <li><a href="#share_computation">シェアの計算</a></li>
+  <li><a href="#secret_reconstruction">シークレットの復元</a></li>
+</ul>
+
+<p><a id="what_is_shamirs_secret_sharing"></a></p>
+<h2 id="シャミアの秘密分散法とはなにか-1">シャミアの秘密分散法とはなにか</h2>
+<p>名前からわかるとおり、シャミアの秘密分散法はRSAのアルゴリズムにも貢献した有名なイスラエル人の暗号研究者アディ・シャミアによって作られました。</p>
+
+<p>シャミアの秘密分散法は秘密のデータであるシークレットを複数のシェアに分割します。一定数のシェアを持ち寄ることで元のデータを復元することができます。</p>
+
+<p>何かデータを暗号化しなければいけないとしましょう。どんな暗号化方式を使ってもいいですが、暗号の鍵はあとで復号するためにどこかに保存しなければいけません。</p>
+
+<p>この鍵は安全な場所と方法で保管されないといけません。もし、この鍵が盗まれたら攻撃者は暗号化したデータを簡単に復号化できてしまいます。しかし、鍵を安全に保管するというのはとても難しい問題です。その鍵を誰かと共有する場合はもっと難しくなります。</p>
+
+<p>鍵の保管と共有は管理者にとって常に頭痛のタネです。</p>
+
+<p>しかし、シャミアの秘密分散法を使えば二つの問題をかなりの割合で解決することができます。</p>
+
+<p>まず、暗号の鍵を複数に分割してそれぞれを別々の管理者に渡します。各管理者は渡された鍵の断片を大切に保管しなければいけませんが、仮に一つの断片が盗まれたとしても元の鍵は復元することはできません。</p>
+
+<p>攻撃者は複数の管理者が持っている断片を盗まないといけないので、もとの鍵を盗むことは格段に難しくなります。</p>
+
+<p><a id="basic_terms"></a></p>
+<h2 id="用語-1">用語</h2>
+<p>詳細に行く前に使われる用語を明確にしておきましょう。</p>
+
+<h4 id="シークレット">シークレット</h4>
+<p>シークレットは攻撃者には知られてはいけないデータです。メッセージや数字の羅列の形を取り、用途は暗号の鍵だったり秘密にしたいメッセージだったりします。
+(英語だと<strong><em>Secret</em></strong>と簡潔に言えますが、日本語でピンとくる単語が見つからなかったのでカタカナにしました。)</p>
+
+<h4 id="シェア">シェア</h4>
+<p>シークレットを分割してできた各断片をシェアと呼びます。シェアはシークレットから計算して得られます。シークレットを復元するためには一定数のシェアがそろわないといけません。(シェアは英語だと<strong><em>share</em></strong>です。直訳すると<strong><em>割り符</em></strong>になりますが、これもなんかしっくりこないのでシェアと書くことにします。)</p>
+
+<h4 id="閾値">閾値</h4>
+<p>閾値はシークレットを復元するために最低必要なシェアの数です。閾値以上のシェアがそろっている場合のみ、もとのシークレットを復元することができます。</p>
+
+<p><a id="handson"></a></p>
+<h2 id="実際にやってみる-rubyでシャミアの秘密分散-1">実際にやってみる: Rubyでシャミアの秘密分散</h2>
+<p>そろそろシャミアの秘密分散が動くところを実際に見てみましょう。僕が書いた小さなRubyのライブラリを使ってデモします。このライブラリは<a href="https://github.com/PolyPassHash/PolyPassHash">PolyPassHash project</a>で使われているPythonで書かれたものをポートしたものです。Python版は<a href="https://github.com/JustinCappos">JustinCappos</a>によって書かれました。</p>
+
+<p>まず、コードを<a href="https://github.com/PolyPassHash/PolyPassHash-Ruby">PolyPassHash-Ruby</a>から落としてきて、<code class="language-plaintext highlighter-rouge">shamirsecret.rb</code>を<code class="language-plaintext highlighter-rouge">irb</code>セッションにロードします。</p>
+
+<div class="language-sh highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ </span>git clone https://github.com/PolyPassHash/PolyPassHash-Ruby
+<span class="nv">$ </span><span class="nb">cd </span>PolyPassHash-Ruby
+<span class="nv">$ </span>irb <span class="nt">-r</span> ./shamirsecret.rb
+</code></pre></div></div>
+
+<p>実際に秘密のメッセージ<code class="language-plaintext highlighter-rouge">In the name of Adi Shamir</code>を分割して、閾値の数のシェアを使うことで復元できることを見てみましょう。</p>
+
+<div class="language-ruby highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># まず、ShamirSecretクラスのインスタンスを作成しましょう</span>
+<span class="c1"># 第一引数に閾値の数を渡します。以下の場合だと2が閾値なので、2つ以上のシェアが必要ということになります</span>
+<span class="c1"># 第二引数には分割したいシークレットを渡します</span>
+<span class="n">shamirsecret</span> <span class="o">=</span> <span class="no">ShamirSecret</span><span class="p">.</span><span class="nf">new</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="s2">"In the name of Adi Shamir"</span><span class="p">)</span>
+
+<span class="c1"># 次に与えられたシークレットからシェアを計算します。ここでは３人にシェアを渡すことにしましょう。3つシェアを生成します</span>
+<span class="c1"># 引数にはシェア番号を渡します。シェア番号が何かは後で説明するので、ここでは一意な整数とだけ覚えておいてください</span>
+<span class="n">s1</span> <span class="o">=</span> <span class="n">shamirsecret</span><span class="p">.</span><span class="nf">compute_share</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">s2</span> <span class="o">=</span> <span class="n">shamirsecret</span><span class="p">.</span><span class="nf">compute_share</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+<span class="n">s3</span> <span class="o">=</span> <span class="n">shamirsecret</span><span class="p">.</span><span class="nf">compute_share</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+
+<span class="c1"># シェアを計算したら、シークレットは捨てます。シェアがそろえば復元できるので保管する必要はありません</span>
+<span class="n">shamirsecret</span> <span class="o">=</span> <span class="kp">nil</span>
+
+<span class="c1"># 今度は復元です。もう一度ShamirSecretクラスのインスタンスを作成します。今回は復元なのでシークレットは引数に渡しません</span>
+<span class="n">shamirsecret</span> <span class="o">=</span> <span class="no">ShamirSecret</span><span class="p">.</span><span class="nf">new</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+
+<span class="c1"># 閾値は2に設定したので2つのシェアがあればシークレットを復元できます</span>
+<span class="n">shamirsecret</span><span class="p">.</span><span class="nf">recover_secretdata</span><span class="p">([</span><span class="n">s1</span><span class="p">,</span><span class="n">s3</span><span class="p">])</span>
+<span class="o">=&gt;</span> <span class="s2">"In the name of Adi Shamir"</span>
+</code></pre></div></div>
+
+<p>今度は正しくないシェアを使ったらどうなるかを見てみましょう。</p>
+
+<div class="language-ruby highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># 同じようにインスタンスを作成してシェアを計算します</span>
+<span class="n">shamirsecret</span> <span class="o">=</span> <span class="no">ShamirSecret</span><span class="p">.</span><span class="nf">new</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="s2">"In the name of Adi Shamir"</span><span class="p">)</span>
+<span class="n">s1</span> <span class="o">=</span> <span class="n">shamirsecret</span><span class="p">.</span><span class="nf">compute_share</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">s2</span> <span class="o">=</span> <span class="n">shamirsecret</span><span class="p">.</span><span class="nf">compute_share</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+<span class="n">s3</span> <span class="o">=</span> <span class="n">shamirsecret</span><span class="p">.</span><span class="nf">compute_share</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+
+<span class="c1"># この時点ではシェアが正しいものであることを確認します</span>
+<span class="n">shamirsecret</span><span class="p">.</span><span class="nf">is_valid_share</span><span class="p">(</span><span class="n">s1</span><span class="p">)</span>
+<span class="o">=&gt;</span> <span class="kp">true</span>
+
+<span class="c1"># シェアの1バイトを変更します</span>
+<span class="n">s1</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">s1</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="mi">1</span> <span class="o">%</span> <span class="mi">256</span>
+
+<span class="c1"># このシェアはもう正しくありません</span>
+<span class="n">shamirsecret</span><span class="p">.</span><span class="nf">is_valid_share</span><span class="p">(</span><span class="n">s1</span><span class="p">)</span>
+<span class="o">=&gt;</span> <span class="kp">false</span>
+
+<span class="c1"># 正しくないシェアを使って復元されたシークレットは壊れています</span>
+<span class="n">shamirsecret</span> <span class="o">=</span> <span class="kp">nil</span>
+<span class="n">shamirsecret</span> <span class="o">=</span> <span class="no">ShamirSecret</span><span class="p">.</span><span class="nf">new</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+<span class="n">shamirsecret</span><span class="p">.</span><span class="nf">recover_secretdata</span><span class="p">([</span><span class="n">s1</span><span class="p">,</span><span class="n">s3</span><span class="p">])</span>
+<span class="o">=&gt;</span> <span class="s2">"</span><span class="se">\xC6</span><span class="s2">n the name of Adi Shamir"</span>
+</code></pre></div></div>
+
+<p><a id="how_this_works"></a></p>
+<h2 id="仕組み-1">仕組み</h2>
+<p>少しだけ数学を勉強しましょう。シャミアの秘密分散法は基礎的な多項式を使います。</p>
+
+<p>シャミアの秘密分散は２つのステップに分かれます: <strong>シェアの計算</strong>と<strong>シークレットの復号</strong>です。一つずつ見ていきましょう。</p>
+
+<p><a id="share_computation"></a></p>
+<h3 id="シェアの計算">シェアの計算</h3>
+<h4 id="ステップ1-シークレットを決める">ステップ1: シークレットを決める</h4>
+<p>まず最初にシークレットを決めます。説明を簡単にするために、ここではとてもシンプルなシークレットにしましょう。<code class="language-plaintext highlighter-rouge">3</code>という数字をシークレットにします。</p>
+
+<p>もちろんもっと複雑なシークレット、<em>I love you</em> とか <em>4b0649b1faf1c1ea7cb0e900</em> とかでも構いません。その場合は、数字として扱う必要があるので文字列をバイト配列に変換すればいいだけです。</p>
+
+<h4 id="ステップ2-閾値を決める">ステップ2: 閾値を決める</h4>
+<p>次に閾値を決めます。ここでは <code class="language-plaintext highlighter-rouge">3</code> を閾値にしましょう。閾値が3なのでシークレットを復元するために三つシークレットが必要ということになります。</p>
+
+<h4 id="ステップ3-多項式を生成する">ステップ3: 多項式を生成する</h4>
+<p>シェアを計算するための多項式を生成します。多項式とは<strong>y=3x+1</strong> や <strong>y=5x<sup>2</sup>+10x-3</strong>の形をした方程式のことです。
+多項式の係数は自由に決めて構いませんが、次数は<strong>閾値 - 1</strong>じゃないといけません。</p>
+
+<p>今回は閾値を<code class="language-plaintext highlighter-rouge">3</code>に設定したので、次数は<code class="language-plaintext highlighter-rouge">2</code>になります。次数が2の多項式は<strong>y=ax<sup>2</sup>+bx+c</strong>の形を取ります。係数はなんでもいいので<strong><em>a</em></strong>は<code class="language-plaintext highlighter-rouge">2</code>、<strong><em>b</em></strong>は<code class="language-plaintext highlighter-rouge">1</code>にしましょう。</p>
+
+<p><strong><em>c</em></strong>にはシークレットを使わないといけません。つまり、<strong><em>c</em></strong>は<code class="language-plaintext highlighter-rouge">3</code>ということになります。</p>
+
+<p>これで多項式ができました: <strong>y=2x<sup>2</sup>+x+3</strong></p>
+
+<p>準備は整いました。以下は上記の設定をまとめたものです。</p>
+
+<blockquote>
+  <p><strong>シークレット:</strong> 3</p>
+</blockquote>
+
+<blockquote>
+  <p><strong>閾値:</strong>  3</p>
+</blockquote>
+
+<blockquote>
+  <p><strong>多項式:</strong> y=2x<sup>2</sup>+x+3</p>
+</blockquote>
+
+<h4 id="ステップ4-グラフを書く">ステップ4: グラフを書く</h4>
+<p>このステップはシャミアの秘密分散の計算をするためには必ずしも必要ではありませんが、グラフを書くことで理解が簡単になります。</p>
+
+<p>多項式のグラフは以下のようになります。</p>
+
+<p><img src="/assets/polygraph0.jpg" alt="y=2x^2+x+3のグラフ" /></p>
+
+<h4 id="ステップ5-点をグラフに描画する">ステップ5: 点をグラフに描画する</h4>
+<p>三つの点をグラフの線上に書きます。</p>
+
+<p>例として、<strong>(x,y)(1, 6)</strong>, <strong>(x,y)(2,13)</strong>, <strong>(x,y)(-2, 9)</strong>をグラフ線上に書いてみましょう。</p>
+
+<p><img src="/assets/polygraph1.jpg" alt="点をグラフ線上に書く" /></p>
+
+<p>このそれぞれの点が<strong><em>シェア</em></strong>になります。<strong>x</strong>の値が前述した<em>シェア番号</em>になり<strong>y</strong>の値が<em>シェア</em>になります。</p>
+
+<p>閾値を<code class="language-plaintext highlighter-rouge">3</code>に設定したことを思い出してください。閾値が<code class="language-plaintext highlighter-rouge">3</code>なので、今回は三つの点を書きました。</p>
+
+<p>もっとシェアが必要であればさらに点を増やせばいいだけです。</p>
+
+<p>シェアが計算できたら、シェアと閾値以外はすべて忘れて構いません。多項式、グラフ、シークレットは捨ててしまいましょう。</p>
+
+<p>シェアと閾値を知っている限り他のすべてを復元することができます。</p>
+
+<p><a id="secret_reconstruction"></a></p>
+<h3 id="シークレットの復元">シークレットの復元</h3>
+<p>今、シェアと閾値以外は何も知らない状態ですが、ここから元のシークレットを復元することができます。</p>
+
+<p>わかりやすくするためにもう一度グラフを使いましょう。</p>
+
+<p><strong>(x,y)(1, 6)</strong>, <strong>(x,y)(2,13)</strong>, <strong>(x,y)(-2, 9)</strong> の点をグラフに書きます。</p>
+
+<p>次に、これらの点を線で結びます。これらの点は元の多項式から得た点なので線で結べばグラフを引くことができます。</p>
+
+<p><img src="/assets/polygraph4.jpg" alt="" /></p>
+
+<p>グラフはあくまで理解の助けをするためなので正確なグラフが書けなくても構いません。</p>
+
+<p>しかし、多項式の定義では<a href="http://en.wikipedia.org/wiki/Shamir's_Secret_Sharing#Shamir.27s_secret-sharing_scheme">直線には２点、放射線には３点さえあれば正確な線を引くことができます。</a> (Wikipedia)</p>
+
+<p>これにより、たとえ手で正確なグラフを書くことができなくても計算すれば正確なグラフを求めることができます。</p>
+
+<h4 id="多項式補間">多項式補間</h4>
+<p>閾値は<code class="language-plaintext highlighter-rouge">3</code>と知っているので、次数が<code class="language-plaintext highlighter-rouge">2</code> (次数は閾値 - 1) の<strong>y=ax<sup>2</sup>+bx+c</strong>の形の多項式に点を代入すれば元の多項式を得ることができます。</p>
+
+<p>３つの点を<strong>y=ax<sup>2</sup>+bx+c</strong>に代入します。</p>
+
+<blockquote>
+  <p><strong>(1)</strong> (1,6)  =&gt; <strong>c = a + b - 6</strong></p>
+</blockquote>
+
+<blockquote>
+  <p><strong>(2)</strong> (2,13) =&gt; <strong>c = 4a + 2b - 13</strong></p>
+</blockquote>
+
+<blockquote>
+  <p><strong>(3)</strong> (-2,9) =&gt; <strong>c = 4a - 2b - 9</strong></p>
+</blockquote>
+
+<p>次に<strong>(1)</strong>を<strong>(2)</strong>と<strong>(3)</strong>に代入して<strong>a</strong>を得ます。</p>
+
+<blockquote>
+  <p><strong>(4)</strong> <strong>(1)</strong>を<strong>(2)</strong>に代入します =&gt; <strong>b = -3a + 7</strong></p>
+</blockquote>
+
+<blockquote>
+  <p><strong>(5)</strong> <strong>(1)</strong>を<strong>(3)</strong>に代入します =&gt; <strong>3b = 3a -3</strong></p>
+</blockquote>
+
+<blockquote>
+  <p><strong>(6)</strong> <strong>(4)</strong>を<strong>(5)</strong>に代入します =&gt; <strong>a = 2</strong></p>
+</blockquote>
+
+<p>これで、<strong>a</strong>を得ることができました。今度は<strong>b</strong>を求めます。</p>
+
+<blockquote>
+  <p><strong>(7)</strong> <strong>a=2</strong>を<strong>(1)</strong>に代入します =&gt; <strong>c=b - 4</strong></p>
+</blockquote>
+
+<blockquote>
+  <p><strong>(8)</strong> <strong>a=2</strong>を<strong>(2)</strong>に代入します =&gt; <strong>c=2b - 5</strong></p>
+</blockquote>
+
+<blockquote>
+  <p><strong>(9)</strong> <strong>(7)</strong>を<strong>(8)</strong>に代入します =&gt; <strong>b = 1</strong></p>
+</blockquote>
+
+<p>これで<strong>a</strong>と<strong>b</strong>を得ることができました。最後に<strong>c</strong>を得ます。</p>
+
+<blockquote>
+  <p><strong>(10)</strong> <strong>a=2</strong>と<strong>b=1</strong>を<strong>(1)</strong>に代入します =&gt; <strong>c=3</strong></p>
+</blockquote>
+
+<p>これで終わりです。無事元の多項式である<strong>y=2x<sup>2</sup>+x+3</strong>を得ることができました。係数がない項がシークレットなので正しいシークレットである<strong>3</strong>を復元することができました。</p>
+
+  </div><a class="u-url" href="/blog/jp/security/protect-your-secret-key-with-shamirs-secret-sharing-jp/" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading">Program Is Made At Night</h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name">kim hirokuni</li><li><a class="u-email" href="mailto:yangkookkim@gmail.com">yangkookkim@gmail.com</a></li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"><li><a href="https://github.com/jekyll"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#github"></use></svg> <span class="username">jekyll</span></a></li><li><a href="https://www.twitter.com/jekyllrb"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#twitter"></use></svg> <span class="username">jekyllrb</span></a></li></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p>Write an awesome description for your new site here. You can edit this line in _config.yml. It will appear in your document head meta (for Google search results) and in your feed.xml site description.</p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>

@@ -1,0 +1,340 @@
+I"�p<h2 id="目次">目次</h2>
+<h4 id="なぜdockerfileを使うのか"><a href="#why_do_we_need_to_use_dockerfile">なぜDockerfileを使うのか？</a></h4>
+<h4 id="addとdockerfileにおいてのコンテキストを理解する"><a href="#add_and_understanding_context_in_dockerfile">ADDとDockerfileにおいてのコンテキストを理解する</a></h4>
+<h4 id="cmdでコンテナをバイナリのように扱う"><a href="#treat_your_container_like_a_binary_with_cmd">CMDでコンテナをバイナリのように扱う</a></h4>
+<h4 id="cmdとentrypointの違い"><a href="#difference_between_cmd_and_entrypoint">CMDとENTRYPOINTの違い</a></h4>
+<ul>
+  <li><a href="#exec_format_error">exec format error</a></li>
+</ul>
+
+<h4 id="ビルド時のキャッシュについて-キャッシュが有効なときと無効なとき"><a href="#build_caching_what_invalids_cache_and_not">ビルド時のキャッシュについて: キャッシュが有効なときと無効なとき</a></h4>
+<ul>
+  <li><a href="#cache_invalidation_at_one_instruction_invalids_cache_of_all_subsequent_instructions">ある一行でキャッシュが使われなかったらそれ以降のすべての行でキャッシュは使われない</a></li>
+  <li><a href="#cache_is_invalid_even_when_adding_commands_that_dont_do_anything">何もしないコマンドを追加してもキャッシュは無効になる</a></li>
+  <li><a href="#cache_is_invalid_when_you_add_spaces_between_command_and_arguments_inside_instruction">コマンドと引数の間に意味のないスペースの入れてもキャッシュは無効となる</a></li>
+  <li><a href="#cache_is_used_when_you_add_spaces_around_commands_inside_instruction">Dockerfileの行に意味のないスペースを入れてもキャッシュは有効</a></li>
+  <li><a href="#cache_is_used_for_non_idempotent_instructions">冪等ではない命令でもキャッシュは効いてしまう</a></li>
+  <li><a href="#instructions_after_add_never_cached_only_versions_prior_to_0.7.3">ADD以降にある命令はキャッシュされない (ただし、0.7.3以前のバージョンを使っている場合のみ)</a></li>
+</ul>
+
+<h4 id="-コンテナをバックグラウンドで動かすハック"><a href="#hack_to_run_container_in_the_background"> コンテナをバックグラウンドで動かすハック</a></h4>
+
+<p><a id="why_do_we_need_to_use_dockerfile"></a></p>
+<h2 id="なぜdockerfileを使うのか-1">なぜDockerfileを使うのか？</h2>
+<p>DockerfileはYet Anotherシェルではありません。Dockerfileは特別なミッションを持っています。それは、<em>Dockerイメージ作成の自動化</em>です。</p>
+
+<p>一度Dockerfileにイメージ作成の手順を記述すれば、それ以降は<code class="language-plaintext highlighter-rouge">docker build</code>コマンド一つで同じイメージを作ることができます。</p>
+
+<p>Dockerfileはコンテナが何をしているかを別の人の伝える手段でもあります。Dockerfileにはイメージを作って動かすまでのすべてが書かれているので、Dockerfileを読むだけでそのコンテナのやるべき仕事がすぐにわかります。こうすれば、コンテナが何をしているかを調べるためにわざわざログインしてpsコマンドを駆使しなくてもいいというわけです。</p>
+
+<p>簡単に述べましたが、これらの理由で、Dockerイメージを作るなら<strong>必ず</strong>Dockerfileを使ってください。しかし、Dockerfileを書くのは時々嫌になってしまうことがあるのも事実です。このポストではDockerfileを書く時に注意することわかりにくいことを解説します。この記事を読んでDockerfileに慣れてもらえればと思います。</p>
+
+<p><a id="add_and_understanding_context_in_dockerfile"></a></p>
+<h2 id="addとdockerfileにおいてのコンテキストを理解する-1">ADDとDockerfileにおいてのコンテキストを理解する</h2>
+<p><strong><em>ADD</em></strong> is the instruction to add local files to Docker image.  The basic usage is very simple. Suppose you want to add a local file called <em>myfile.txt</em> to /myfile.txt of image.
+<strong><em>ADD</em></strong>はローカルファイルシステムのファイルやディレクトリをDockerイメージにコピーするために使います。使い方は至って簡単。もし、ローカルにある<em>myfile.txt</em>をイメージの<em>/myfile.txt</em>にコピーしたい場合を説明します。</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ </span><span class="nb">ls
+</span>Dockerfile  mydir  myfile.txt
+</code></pre></div></div>
+
+<p>上記のようなディレクトリ構成の場合、Dockerfileは次のようになります。</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>ADD myfile.txt /
+</code></pre></div></div>
+
+<p>簡単ですね。しかし、<em>/home/vagrant/myfile.txt</em>を追加しようとすると失敗します。</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c"># 以下の行がDockerfileにあるとします</span>
+<span class="c"># ADD /home/vagrant/myfile.txt /</span>
+
+<span class="nv">$ </span>docker build <span class="nt">-t</span> blog <span class="nb">.</span>
+Uploading context 10240 bytes
+Step 1 : FROM ubuntu
+ <span class="nt">---</span><span class="o">&gt;</span> 8dbd9e392a96
+Step 2 : ADD /home/vagrant/myfile.txt /
+Error build: /home/vagrant/myfile.txt: no such file or directory
+</code></pre></div></div>
+
+<p><code class="language-plaintext highlighter-rouge">no such file or directory</code> と言われてしまいました。確かにファイルは存在するのになぜでしょうか？理由は <em>/home/vagrant/myfile.txt</em> がDockerfileのコンテキスト外だからです。DockerfileでのコンテキストとはDockerfile内の命令からアクセス可能なファイルやディレクトリの範囲のことです。そして、コンテキスト内のファイルとディレクトリしかイメージに追加することはできません。
+カレントディレクトリ配下のファイルとディレクトリは自動的にコンテキストに追加されます。これは <code class="language-plaintext highlighter-rouge">build</code> コマンドを実行した時に確認できます。</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>$ docker build -t blog .
+Uploading context 10240 bytes
+</code></pre></div></div>
+
+<p>ここで <code class="language-plaintext highlighter-rouge">build</code> コマンドが何をしているかというと、Dockerクライアントがカレントディレクトリ配下のファイルとディレクトリをtarballにまとめてDockerデーモンへ送信しています。なぜわざわざ送信する必要があるかというと、DockerクライアントとDockerデーモンは違うホストで動いている可能性があるからです。これが上記のコマンドを実行した時に <em>Uploading</em> と表示されている理由です。</p>
+
+<p>ひとつ落とし穴があります。Dockerは自動的にカレントディレクトリ配下のファイルとディレクトリをコンテキストに追加するので、もし巨大なファイルやディレクトリを間違っておいておくと使う必要もないのにそれらのtarballを作ろうとします。</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ </span><span class="nb">ls
+</span>Dockerfile  very_huge_file
+
+<span class="nv">$ </span>docker build <span class="nt">-t</span> blog <span class="nb">.</span>
+Uploading context xxxxxx bytes
+..... <span class="c"># すごく時間がかかる、、、</span>
+</code></pre></div></div>
+
+<p>ベストプラクティスとしては、イメージに追加したいファイルとディレクトリのみをbuildを実行するディレクトリに置くべきです。</p>
+
+<p><a id="treat_your_container_like_a_binary_with_cmd"></a></p>
+<h2 id="cmdでコンテナをバイナリのように扱う-1">CMDでコンテナをバイナリのように扱う</h2>
+<p>CMDをDockerfileで使うことで、コンテナを一つのバイナリのように扱うことができます。以下のようなDockerfileがあるとします。</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code># run.shがDockerfileと同じディレクトリにあるとします
+ADD run.sh /usr/local/bin/run.sh
+CMD ["/usr/local/bin/run.sh"]
+</code></pre></div></div>
+
+<p>このDockerfileからコンテナを作って、<code class="language-plaintext highlighter-rouge">docker run -i run_image</code>で起動すると<code class="language-plaintext highlighter-rouge">/usr/local/bin/run.sh</code>スクリプトを実行してコンテナは終了します。</p>
+
+<p>もし、<code class="language-plaintext highlighter-rouge">CMD</code>を使わなかった場合、毎回起動する度に、<code class="language-plaintext highlighter-rouge">docker run -i run_image /usr/local/bin/run.sh</code>とコマンドラインで指定しないといけません。</p>
+
+<p>これは、面倒なだけではなく、コンテナの運用の観点からもバッドプラクティスです。</p>
+
+<p>もし、<code class="language-plaintext highlighter-rouge">CMD</code>がDockerfileにあればそのコンテナが何をするのか明確になります。
+しかし、もしなかった場合コンテナを作った人以外の人がこのコンテナを正しく起動するためには外部のドキュメントに頼らなければいけません。</p>
+
+<p>なので一般的には常に<code class="language-plaintext highlighter-rouge">CMD</code>はDockerfileに指定すべきです。</p>
+
+<p><a id="difference_between_cmd_and_entrypoint"></a></p>
+<h2 id="cmdとentrypointの違い-1">CMDとENTRYPOINTの違い</h2>
+<pre><code class="language-CMD```と```ENTRYPOINT```はとても紛らわしいです。">
+コマンドラインから引数として渡されたものでも```CMD```から指定されたものでも、すべてのコマンドは```ENTRYPOINT```で指定されたバイナリの引数として渡されます。
+
+  ```/bin/sh -c``` はデフォルトのエントリーポイントです。もし、エントリーポイントなしで```CMD date```と書いた場合、Dockerはこれを```/bin/sh -c date```として実行します。
+
+エントリーポイントを使うことによってコンテナの挙動を実行時に変えることができるので、運用を柔軟にすることができます。
+
+</code></pre>
+<p>ENTRYPOINT [“/bin/date”]</p>
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+上記のようなエントリーポイントがあった場合、このコンテナは現在時刻を違うフォーマットで出力することができます。
+
+```bash
+$ docker run -i clock_container +"%s"
+1404214000
+
+$ docker run -i clock_container +"%F"
+2014-07-01
+</code></pre></div></div>
+
+<p><a id="exec_format_error"></a></p>
+<h3 id="exec-format-error">exec format error</h3>
+<p>デフォルトにエントリーポイントに関して、一つ注意することがあります。例えば以下のようなシェルスクリプトを実行したいとします。</p>
+
+<p><strong><em>/usr/local/bin/run.sh</em></strong></p>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nb">echo</span> <span class="s2">"hello, world"</span>
+</code></pre></div></div>
+
+<p><strong><em>Dockerfile</em></strong></p>
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>ADD run.sh /usr/local/bin/run.sh
+RUN chmod +x /usr/local/bin/run.sh
+CMD ["/usr/local/bin/run.sh"]
+</code></pre></div></div>
+
+<p>このコンテナを起動すると、<code class="language-plaintext highlighter-rouge">hello, world</code>と出力することをあなたは期待すると思いますが、実際は意味のわからないエラーになります。</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ </span>docker run <span class="nt">-i</span> hello_world_image
+2014/07/01 10:53:57 <span class="nb">exec </span>format error
+</code></pre></div></div>
+
+<p>これは、シェルスクリプトにシェバングを忘れたため、デフォルトのエントリーポイントである<code class="language-plaintext highlighter-rouge">/bin/sh -c</code>がどのようにしてスクリプトを実行したらいいわからないためエラーになりました。</p>
+
+<p>これを修正するには、単にシェバングを足すか、</p>
+
+<p><strong><em>/usr/local/bin/run.sh</em></strong></p>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c">#!/bin/bash</span>
+<span class="nb">echo</span> <span class="s2">"hello, world"</span>
+</code></pre></div></div>
+
+<p>またはコマンドラインから指定することができます。</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ </span>docker run <span class="nt">-entrypoint</span><span class="o">=</span><span class="s2">"/bin/bash"</span> <span class="nt">-i</span> hello_world_image
+</code></pre></div></div>
+
+<p><a id="build_caching_what_invalids_cache_and_not"></a></p>
+<h2 id="ビルド時のキャッシュについて-キャッシュが有効なときと無効なとき-1">ビルド時のキャッシュについて: キャッシュが有効なときと無効なとき</h2>
+<p>DockerはDockerfileの各一行毎にコミットを作成していきます。行の記述を変更しない限り、Dockerは新しいイメージを作る必要がないと判断してキャッシュを使って次の行の元になるイメージを作成します。
+これが初めて <code class="language-plaintext highlighter-rouge">docker build</code> を実行した時には時間がかかるのに、２回目からは一瞬でビルドが完了する理由です。</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ </span><span class="nb">time </span>docker build <span class="nt">-t</span> blog <span class="nb">.</span>
+Uploading context 10.24 kB
+Step 1 : FROM ubuntu
+ <span class="nt">---</span><span class="o">&gt;</span> 8dbd9e392a96
+Step 2 : RUN apt-get update
+ <span class="nt">---</span><span class="o">&gt;</span> Running <span class="k">in </span>15705b182387
+Ign http://archive.ubuntu.com precise InRelease
+Hit http://archive.ubuntu.com precise Release.gpg
+Hit http://archive.ubuntu.com precise Release
+Hit http://archive.ubuntu.com precise/main amd64 Packages
+Get:1 http://archive.ubuntu.com precise/main i386 Packages <span class="o">[</span>1641 kB]
+Get:2 http://archive.ubuntu.com precise/main TranslationIndex <span class="o">[</span>3706 B]
+Get:3 http://archive.ubuntu.com precise/main Translation-en <span class="o">[</span>893 kB]
+Fetched 2537 kB <span class="k">in </span>7s <span class="o">(</span>351 kB/s<span class="o">)</span>
+
+ <span class="nt">---</span><span class="o">&gt;</span> a8e9f7328cc4
+Successfully built a8e9f7328cc4
+
+real	0m8.589s
+user	0m0.008s
+sys	0m0.012s
+
+<span class="nv">$ </span><span class="nb">time </span>docker build <span class="nt">-t</span> blog <span class="nb">.</span>
+Uploading context 10.24 kB
+Step 1 : FROM ubuntu
+ <span class="nt">---</span><span class="o">&gt;</span> 8dbd9e392a96
+Step 2 : RUN apt-get update
+ <span class="nt">---</span><span class="o">&gt;</span> Using cache
+ <span class="nt">---</span><span class="o">&gt;</span> a8e9f7328cc4
+Successfully built a8e9f7328cc4
+
+real	0m0.067s
+user	0m0.012s
+sys	0m0.000s
+</code></pre></div></div>
+<p>しかし、いつキャッシュが使われていつキャッシュが使われないのかはあまり明確ではありません。ここでは、いくつかのケースを紹介します。</p>
+
+<p><a id="cache_invalidation_at_one_instruction_invalids_cache_of_all_subsequent_instructions"></a></p>
+<h4 id="ある一行でキャッシュが使われなかったらそれ以降のすべての行でキャッシュは使われない">ある一行でキャッシュが使われなかったらそれ以降のすべての行でキャッシュは使われない</h4>
+<p>これは一番基本のルールです。もし、Dockerfile内のある一行でキャッシュが使われない書き方をしていまうと、それ以降の行でキャッシュは全く使われなくなってしまいます。</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c"># Before</span>
+From ubuntu
+Run apt-get <span class="nb">install </span>ruby
+Run <span class="nb">echo </span><span class="k">done</span><span class="o">!</span>
+
+<span class="c"># After</span>
+From ubuntu
+Run apt-get update
+Run apt-get <span class="nb">install </span>ruby
+Run <span class="nb">echo </span><span class="k">done</span><span class="o">!</span>
+</code></pre></div></div>
+
+<p><em>Run apt-get update</em> という行を追加したことでベースのイメージを変更してしまったので、 それ以降の <strong>すべての</strong> 行で使うイメージも初めから作り直されないといけません。
+Dockerfileはひとつ前の行で作られたイメージをベースにして行に書かれている命令を実行するので、これは当然の挙動だと言えます。</p>
+
+<p><a id="cache_invalidation_at_one_instruction_invalids_cache_of_all_subsequent_instructions"></a></p>
+
+<h4 id="何もしないコマンドを追加してもキャッシュは無効になる">何もしないコマンドを追加してもキャッシュは無効になる</h4>
+<p><em>以下の例ではキャッシュは効きません。</em></p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c"># Before</span>
+Run apt-get update
+
+<span class="c"># After</span>
+Run apt-get update <span class="o">&amp;&amp;</span> <span class="nb">true</span>
+</code></pre></div></div>
+
+<p><code class="language-plaintext highlighter-rouge">true</code> コマンドは実際には何もしないコマンドですが、Dockerはキャッシュを使ってはくれません。</p>
+
+<p><a id="cache_is_invalid_when_you_add_spaces_between_command_and_arguments_inside_instruction"></a></p>
+
+<h4 id="コマンドと引数の間に意味のないスペースの入れてもキャッシュは無効となる">コマンドと引数の間に意味のないスペースの入れてもキャッシュは無効となる</h4>
+<p><em>以下の例ではキャッシュは効きません。</em></p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c"># Before</span>
+Run apt-get update
+
+<span class="c"># After</span>
+Run apt-get               update
+</code></pre></div></div>
+
+<p><a id="cache_is_used_when_you_add_spaces_around_commands_inside_instruction"></a></p>
+
+<h4 id="dockerfileの行に意味のないスペースを入れてもキャッシュは有効">Dockerfileの行に意味のないスペースを入れてもキャッシュは有効</h4>
+<p><em>以下の例ではキャッシュは有効になります。</em></p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c"># Before</span>
+Run apt-get update
+
+<span class="c"># After</span>
+Run                apt-get update
+</code></pre></div></div>
+
+<p><a id="cache_is_used_for_non_idempotent_instructions"></a></p>
+<h4 id="冪等ではない命令でもキャッシュは効いてしまう">冪等ではない命令でもキャッシュは効いてしまう</h4>
+<p>これはどちらかというとキャッシュの落とし穴についてです。 <em>冪等ではない命令</em> とは実行する度に結果が変わる可能性のあるコマンドを実行する行のことです。
+例えば、 <code class="language-plaintext highlighter-rouge">apt-get update</code> は実行する度にアップデートされる内容が変わる可能性があるので冪等ではありません。</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>From ubuntu
+Run apt-get update
+</code></pre></div></div>
+
+<p>上記のDockerfileを作ってイメージを作成したとします。３ヶ月後、Ubutnuがセキュリティアップデートをあるリポジトリにリリースしたので、同じDockerfileを使ってイメージの再作成をしたとします。(apt-get update がセキュリティアップデートを拾ってくれると思って)
+しかし、この方法でイメージを再作成してもセキュリティアップデートはインストールされません。Dockerfileの記述自体は全く変更されていないので、たとえ <code class="language-plaintext highlighter-rouge">apt-get update</code> の実行結果が変わっていたとしてもDockerはキャッシュを使うからです。</p>
+
+<p>もし、これ避けたければ、<code class="language-plaintext highlighter-rouge">-no-cache</code> オプションを使えます。</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ </span>docker build <span class="nt">-no-cache</span> <span class="nb">.</span>
+</code></pre></div></div>
+
+<p><a id="instructions_after_add_never_cached_only_versions_prior_to_0.7.3"></a></p>
+<h4 id="add以降にある命令はキャッシュされない-ただし073以前のバージョンを使っている場合のみ">ADD以降にある命令はキャッシュされない (ただし、0.7.3以前のバージョンを使っている場合のみ)</h4>
+<p>もし、0.7.3以前のバージョンを使っている場合、注意してください！</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>From ubuntu
+Add myfile /
+Run apt-get update
+Run apt-get <span class="nb">install </span>openssh-server
+</code></pre></div></div>
+
+<p>もしこのようなDockerfileだと、<strong><em>Run apt-get update</em></strong> と <strong><em>Run apt-get install openssh-server</em></strong> は絶対にキャッシュされません。</p>
+
+<p>この挙動は0.7.3で改善されました。ADD以降の行でも、ADDの書き方自身やADDする対象が変更されない限りキャッシュが使われます。</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ </span><span class="nb">echo</span> <span class="s2">"Jeff Beck"</span> <span class="o">&gt;</span> rock.you
+
+From ubuntu
+Add rock.you /
+Run add rock.you
+
+<span class="nv">$ </span><span class="nb">echo</span> <span class="s2">"Eric Clapton"</span> <span class="o">&gt;</span> rock.you
+
+From ubuntu
+Add rock.you /
+Run add rock.you
+</code></pre></div></div>
+
+<p>ここでは、<em>rock.you</em> ファイルの内容を変更したので、ADD以降の行ではキャッシュは使われません。</p>
+
+<p><a id="hack_to_run_container_in_the_background"></a></p>
+
+<h2 id="コンテナをバックグラウンドで動かすハック">コンテナをバックグラウンドで動かすハック</h2>
+<p>もし、コンテナの起動方法をシンプルにしたければ、<code class="language-plaintext highlighter-rouge">docker run -d image your-command</code> を使ってコンテナをバックグラウンドで起動するべきです。
+<code class="language-plaintext highlighter-rouge">docker run -i -t image your-command</code> の代わりに <code class="language-plaintext highlighter-rouge">-d</code> を使うことを勧める理由はコンテナの起動をたった一つのコマンドで行うことができ、かつ <code class="language-plaintext highlighter-rouge">Ctrl + P + Q</code> を入力してコンテナをターミナルから切り離す作業をしなくていいからです。</p>
+
+<p>しかし、<code class="language-plaintext highlighter-rouge">-d</code> オプションには問題があります。コマンドがフォアグラウンドで実行されていないとコンテナはすぐに終了してしまいます。</p>
+
+<p>apacheをサービスとして起動するコンテナを例に説明しましょう。直感的に次のようにやりたくなるでしょう。</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ </span>docker run <span class="nt">-d</span> apache-server apachectl start
+</code></pre></div></div>
+
+<p>しかし、これだとコンテナは起動した瞬間に終了します。これは、 <code class="language-plaintext highlighter-rouge">apachectl</code> がapacheをデーモン化した瞬間に自身は終了してしまうからです。</p>
+
+<p>Dockerはこのようなコマンドが嫌いです。Dockerはコマンドがフォアグラウンドで起動し続けることを期待しているからです。
+もしそうでなければ、Dockerはアプリケーションは終了したと考えてコンテナを終了してしまいます。</p>
+
+<p>この問題はapacheの実行バイナリを直接フォアグラウンドで動かすことで解決できます。</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ </span>docker run <span class="nt">-e</span> <span class="nv">APACHE_RUN_USER</span><span class="o">=</span>www-data <span class="se">\</span>
+                    <span class="nt">-e</span> <span class="nv">APACHE_RUN_GROUP</span><span class="o">=</span>www-data <span class="se">\</span>
+                    <span class="nt">-e</span> <span class="nv">APACHE_PID_FILE</span><span class="o">=</span>/var/run/apache2.pid <span class="se">\</span>
+                    <span class="nt">-e</span> <span class="nv">APACHE_RUN_DIR</span><span class="o">=</span>/var/run/apache2 <span class="se">\</span>
+                    <span class="nt">-e</span> <span class="nv">APACHE_LOCK_DIR</span><span class="o">=</span>/var/lock/apache2 <span class="se">\</span>
+                    <span class="nt">-e</span> <span class="nv">APACHE_LOG_DIR</span><span class="o">=</span>/var/log/apache2 <span class="se">\</span>
+                    <span class="nt">-d</span> apache-server /usr/sbin/apache2 <span class="nt">-D</span> NO_DETACH <span class="nt">-D</span> FOREGROUND
+</code></pre></div></div>
+
+<p>ここでしていることは、<code class="language-plaintext highlighter-rouge">apachectl</code> がやっていることを手動で行ってapacheを起動しています。このやり方だとapacheはフォアグラウンドで動き続けることができます。</p>
+
+<p>問題はアプリケーションによってはフォアグラウンドで起動する方法がない場合があることです。また、<code class="language-plaintext highlighter-rouge">apachectl</code> の例のようにヘルパープログラムがやってくれることを分解して手動でやらないといけないのは大変です。どうすればいいでしょう？</p>
+
+<p>このような場合、<code class="language-plaintext highlighter-rouge">tail -f /dev/null</code> を実行したいコマンドに追加すればコンテナはメインのコマンドがバックグラウンドで実行されても <code class="language-plaintext highlighter-rouge">tail</code> がフォアグラウンドで起動し続けてくれるので終了しません。このテクニックをさっきのapacheの例で使ってみましょう。</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ </span>docker run <span class="nt">-d</span> apache-server apachectl start <span class="o">&amp;&amp;</span> <span class="nb">tail</span> <span class="nt">-f</span> /dev/null
+</code></pre></div></div>
+
+<p>ずっと良くなりました。 <code class="language-plaintext highlighter-rouge">tail -f /dev/null</code> は無害なコマンドなのでこのテクニックはどんな場合にも使うことができるのでおすすめです。</p>
+:ET

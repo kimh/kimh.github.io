@@ -1,0 +1,374 @@
+<p>I am a programmer who can write decent Ruby and some Javascript.</p>
+
+<p>These two languages were all I know. I wanted to add Go to my list of programming language, so I started learning Go.</p>
+
+<p>It’s boring to read programming books to study programming languages, so I decided to learn Go by porting some programs written in Ruby.</p>
+
+<p>While I was porting Ruby program to Go, I came to think it is useful if there is a cheatsheet that I can loop up in order to convert idiomatic Ruby code to Go.</p>
+
+<p>Ruby and Go are totally different language, so sometimes it is impossible to simply translate Ruby code to Go.
+However, it is possible in most cases to write Go code that is sematically equivalant to Ruby code.</p>
+
+<p>So, here is a <strong><em>How can I do X in Ruby with Go?</em></strong> cheetsheet.</p>
+
+<p>I hope you find it useful.</p>
+
+<h2 id="contents-of-this-artcile">Contents of this artcile</h2>
+<h3 id="array-and-enumerable-operation">Array and Enumerable Operation</h3>
+<ul>
+  <li><a href="#create_array">Create array</a></li>
+  <li><a href="#append_an_element_to_array">Append element to array</a></li>
+  <li><a href="#concatenate_arrays">Concatenate arrays</a></li>
+  <li><a href="#create_multi_dimension_aray">Create multi dimension array</a></li>
+  <li><a href="#create_empty_array">Create empty array</a></li>
+  <li><a href="#iterate_on_an_array">Iterate on array</a></li>
+  <li><a href="#looping_n_times">Looping N times</a></li>
+  <li><a href="#clone_array">Clone array</a></li>
+  <li><a href="#accessing_elements_of_an_array_by_range">Accessing elements of array by range</a></li>
+  <li><a href="#compare_array">Compare array</a></li>
+  <li><a href="#check_if_array_includes_an_element">Check if array includes an element</a></li>
+</ul>
+
+<h3 id="method-definition">Method Definition</h3>
+<ul>
+  <li><a href="#define_a_method_with_optional_parameter">Define a method with optional parameter</a></li>
+  <li><a href="#define_a_method_with_variable_length_argument">Define a method with variable length arugment</a></li>
+</ul>
+
+<h3 id="mathematicoperation">MathematicOperation</h3>
+<ul>
+  <li><a href="#modular_of_negative_number">Modular of negative number</a></li>
+</ul>
+
+<h3 id="misc">Misc</h3>
+<ul>
+  <li><a href="#nil_checking">Nil checking</a></li>
+  <li><a href="#checking_the_class">Checking the class</a></li>
+</ul>
+
+<p><a id="array_and_enumerable_operation"></a></p>
+<h2 id="array-and-enumerable-operation-1">Array and Enumerable Operation</h2>
+<p>Array is very powerful data structure and enumerable is probably the most frequently used object in Ruby.</p>
+
+<p>In Go, we have two different enumerable data structures: <strong>array</strong> and <strong>slice</strong>.
+I don’t write about details about them since it is not the goal of this post, but array is low-level data structure that slice refers to.</p>
+
+<p><a id="create_array"></a></p>
+<h3 id="create-array">Create array</h3>
+<p><strong><em>Ruby:</em></strong></p>
+<div class="language-ruby highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">numbers</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">]</span>
+<span class="n">fruits</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"apple"</span><span class="p">,</span> <span class="s2">"banana"</span><span class="p">,</span> <span class="s2">"grape"</span><span class="p">]</span>
+</code></pre></div></div>
+
+<p><strong><em>Go:</em></strong></p>
+<div class="language-go highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">numbers</span> <span class="o">:=</span> <span class="p">[]</span><span class="kt">int</span><span class="p">{</span><span class="m">1</span><span class="p">,</span><span class="m">2</span><span class="p">,</span><span class="m">3</span><span class="p">}</span>
+<span class="n">fruits</span> <span class="o">:=</span> <span class="p">[]</span><span class="kt">string</span><span class="p">{</span><span class="s">"apple"</span><span class="p">,</span> <span class="s">"banana"</span><span class="p">,</span> <span class="s">"grape"</span><span class="p">}</span>
+</code></pre></div></div>
+<p>In the case of Go, <code class="language-plaintext highlighter-rouge">numbers</code> and <code class="language-plaintext highlighter-rouge">words</code> are <strong>slice</strong>, not <strong>array</strong>. Array is primitive data structure, not frequently used in Go code.
+If you want to archive similar things to Ruby array, slice should work for you.</p>
+
+<p><a id="append_an_element_to_array"></a></p>
+<h3 id="append-an-element-to-array">Append an element to array</h3>
+<p><strong><em>Ruby:</em></strong></p>
+<div class="language-ruby highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">numbers</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">]</span>
+<span class="n">numbers</span> <span class="o">&lt;&lt;</span> <span class="mi">4</span>
+</code></pre></div></div>
+
+<p><strong><em>Go:</em></strong></p>
+<div class="language-go highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">numbers</span> <span class="o">:=</span> <span class="p">[]</span><span class="kt">int</span><span class="p">{</span><span class="m">1</span><span class="p">,</span><span class="m">2</span><span class="p">,</span><span class="m">3</span><span class="p">}</span>
+<span class="n">numbers</span><span class="o">.</span><span class="nb">append</span><span class="p">(</span><span class="n">numbers</span><span class="p">,</span> <span class="m">4</span><span class="p">)</span>
+</code></pre></div></div>
+<p><strong>append</strong> adds elements to slice and <strong><em>return new slice</em></strong>. Therefore, you have to reassign to itself.</p>
+
+<p><a id="concatenate_arrays"></a></p>
+<h3 id="concatenate-arrays">Concatenate arrays</h3>
+<p><strong><em>Ruby:</em></strong></p>
+<div class="language-ruby highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">numbers1</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">]</span>
+<span class="n">numbers2</span> <span class="o">=</span> <span class="p">[</span><span class="mi">4</span><span class="p">,</span><span class="mi">5</span><span class="p">,</span><span class="mi">6</span><span class="p">]</span>
+<span class="n">numbers1</span> <span class="o">=</span> <span class="n">numbers1</span> <span class="o">+</span> <span class="n">numbers2</span>
+</code></pre></div></div>
+
+<p><strong><em>Go:</em></strong></p>
+<div class="language-go highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">numbers1</span> <span class="o">:=</span> <span class="p">[]</span><span class="kt">int</span><span class="p">{</span><span class="m">1</span><span class="p">,</span><span class="m">2</span><span class="p">,</span><span class="m">3</span><span class="p">}</span>
+<span class="n">numbers2</span> <span class="o">:=</span> <span class="p">[]</span><span class="kt">int</span><span class="p">{</span><span class="m">4</span><span class="p">,</span><span class="m">5</span><span class="p">,</span><span class="m">6</span><span class="p">}</span>
+<span class="n">numbers1</span> <span class="o">=</span> <span class="nb">append</span><span class="p">(</span><span class="n">numbers1</span><span class="p">,</span> <span class="n">numbers2</span><span class="o">...</span><span class="p">)</span>
+</code></pre></div></div>
+<p><code class="language-plaintext highlighter-rouge">...</code> suffix on the slice indicates that it should be passed as the variadic argument, expanded as each <code class="language-plaintext highlighter-rouge">int</code> elements inside <code class="language-plaintext highlighter-rouge">append</code>.
+Thus, this is equivalent to below:</p>
+
+<div class="language-go highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">numbers1</span> <span class="o">:=</span> <span class="p">[]</span><span class="kt">int</span><span class="p">{</span><span class="m">1</span><span class="p">,</span><span class="m">2</span><span class="p">,</span><span class="m">3</span><span class="p">}</span>
+<span class="n">numbers1</span> <span class="o">=</span> <span class="nb">append</span><span class="p">(</span><span class="n">numbers1</span><span class="p">,</span> <span class="m">4</span><span class="p">,</span> <span class="m">5</span><span class="p">,</span> <span class="m">6</span><span class="p">)</span>
+</code></pre></div></div>
+<p><a id="create_multi_dimension_aray"></a></p>
+<h3 id="create-multi-dimension-array">Create multi dimension array</h3>
+<p><strong><em>Ruby:</em></strong></p>
+<div class="language-ruby highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">multi_array</span> <span class="o">=</span> <span class="p">[[</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">],[</span><span class="mi">4</span><span class="p">,</span><span class="mi">5</span><span class="p">,</span><span class="mi">6</span><span class="p">]]</span>
+</code></pre></div></div>
+
+<p><strong><em>Go:</em></strong></p>
+<div class="language-go highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">var</span> <span class="n">mul</span> <span class="p">[][]</span><span class="kt">int</span> <span class="o">=</span> <span class="p">[][]</span><span class="kt">int</span><span class="p">{</span> <span class="p">{</span><span class="m">1</span><span class="p">,</span> <span class="m">2</span><span class="p">,</span> <span class="m">3</span><span class="p">},</span> <span class="p">{</span><span class="m">4</span><span class="p">,</span><span class="m">5</span><span class="p">,</span><span class="m">6</span><span class="p">}</span> <span class="p">}</span>
+</code></pre></div></div>
+<p><a id="create_empty_array"></a></p>
+<h3 id="create-empty-array">Create empty array</h3>
+<p><strong><em>Ruby:</em></strong></p>
+<div class="language-ruby highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">array</span> <span class="o">=</span> <span class="p">[]</span>
+</code></pre></div></div>
+
+<p><strong><em>Go:</em></strong></p>
+<div class="language-go highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">var</span> <span class="n">array</span> <span class="p">[]</span><span class="kt">int</span>
+</code></pre></div></div>
+<p>When slice is declared, but not initialised, the slice points to an array of size 0.</p>
+
+<p><a id="iterate_on_an_array"></a></p>
+<h3 id="iterate-on-array">Iterate on array</h3>
+<p><strong><em>Ruby:</em></strong></p>
+<div class="language-ruby highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">numbers</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">]</span>
+<span class="n">numbets</span><span class="p">.</span><span class="nf">each</span> <span class="p">{</span><span class="o">|</span><span class="n">num</span><span class="o">|</span> <span class="nb">puts</span> <span class="n">num</span> <span class="p">}</span>
+</code></pre></div></div>
+
+<p><strong><em>Go:</em></strong></p>
+<div class="language-go highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">numbers</span> <span class="o">:=</span> <span class="p">[]</span><span class="kt">int</span><span class="p">{</span><span class="m">1</span><span class="p">,</span><span class="m">2</span><span class="p">,</span><span class="m">3</span><span class="p">}</span>
+<span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">num</span> <span class="o">:=</span> <span class="k">range</span> <span class="n">numbers</span> <span class="p">{</span>
+  <span class="n">fmt</span><span class="o">.</span><span class="n">Println</span><span class="p">(</span><span class="n">num</span><span class="p">)</span>
+<span class="p">}</span>
+</code></pre></div></div>
+<p>If you want to access the index while iterating over the slice, replace <code class="language-plaintext highlighter-rouge">_</code> with other variable, for example, <code class="language-plaintext highlighter-rouge">i</code>.</p>
+<div class="language-go highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">numbers</span> <span class="o">:=</span> <span class="p">[]</span><span class="kt">int</span><span class="p">{</span><span class="m">1</span><span class="p">,</span><span class="m">2</span><span class="p">,</span><span class="m">3</span><span class="p">}</span>
+<span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">num</span> <span class="o">:=</span> <span class="k">range</span> <span class="n">numbers</span> <span class="p">{</span>
+  <span class="n">fmt</span><span class="o">.</span><span class="n">Println</span><span class="p">(</span><span class="s">"index: "</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="s">"number: "</span><span class="p">,</span> <span class="n">num</span><span class="p">)</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p><a id="looping_n_times"></a></p>
+<h3 id="looping-n-times">Looping N times</h3>
+<p><strong><em>Ruby:</em></strong></p>
+<div class="language-ruby highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="mi">5</span><span class="p">.</span><span class="nf">times</span> <span class="p">{</span><span class="o">|</span><span class="n">num</span><span class="o">|</span> <span class="nb">puts</span> <span class="n">num</span><span class="p">}</span>
+</code></pre></div></div>
+
+<p><strong><em>Go:</em></strong></p>
+<div class="language-go highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">for</span> <span class="n">num</span><span class="o">:=</span><span class="m">0</span><span class="p">;</span> <span class="n">num</span> <span class="o">&lt;</span><span class="m">5</span><span class="p">;</span> <span class="n">num</span><span class="o">++</span> <span class="p">{</span>
+  <span class="n">fmt</span><span class="o">.</span><span class="n">Println</span><span class="p">(</span><span class="n">num</span><span class="p">)</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p><a id="clone_array"></a></p>
+<h3 id="clone-array">Clone array</h3>
+<p><strong><em>Ruby:</em></strong></p>
+<div class="language-ruby highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">new_array</span> <span class="o">=</span> <span class="n">old_array</span><span class="p">.</span><span class="nf">clone</span>
+</code></pre></div></div>
+
+<p><strong><em>Go:</em></strong></p>
+<div class="language-go highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">new_array</span> <span class="o">:=</span> <span class="nb">make</span><span class="p">([]</span><span class="kt">int</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">old_array</span><span class="p">))</span>
+<span class="nb">copy</span><span class="p">(</span><span class="n">new_array</span><span class="p">,</span> <span class="n">old_array</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p><a id="accessing_elements_of_an_array_by_range"></a></p>
+<h3 id="accessing-elements-of-array-by-range">Accessing elements of array by range</h3>
+<p><strong><em>Ruby:</em></strong></p>
+<div class="language-ruby highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">numbers</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">,</span><span class="mi">4</span><span class="p">,</span><span class="mi">5</span><span class="p">]</span>
+<span class="n">numbers</span><span class="p">[</span><span class="mi">0</span><span class="o">..</span><span class="mi">3</span><span class="p">]</span>
+</code></pre></div></div>
+
+<p><strong><em>Go:</em></strong></p>
+<div class="language-go highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">ary</span> <span class="o">:=</span> <span class="p">[]</span><span class="kt">int</span><span class="p">{</span><span class="m">1</span><span class="p">,</span><span class="m">2</span><span class="p">,</span><span class="m">3</span><span class="p">,</span><span class="m">4</span><span class="p">,</span><span class="m">5</span><span class="p">}</span>
+<span class="n">ary</span><span class="p">[</span><span class="m">0</span><span class="o">:</span><span class="m">4</span><span class="p">]</span>
+</code></pre></div></div>
+<p>Note that, with <code class="language-plaintext highlighter-rouge">from:to</code>, <code class="language-plaintext highlighter-rouge">to</code> is the index where to end <strong>but not including the index itself</strong>.</p>
+
+<p><a id="compare_array"></a></p>
+<h3 id="compare-array">Compare array</h3>
+<p><strong><em>Ruby:</em></strong></p>
+<div class="language-ruby highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">if</span> <span class="n">ary1</span> <span class="o">==</span> <span class="n">ary2</span>
+  <span class="nb">puts</span> <span class="s2">"Same array"</span>
+<span class="k">end</span>
+</code></pre></div></div>
+
+<p><strong><em>Go:</em></strong></p>
+<div class="language-go highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">same</span> <span class="o">:=</span> <span class="no">true</span>
+<span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">elm</span><span class="o">:=</span> <span class="k">range</span> <span class="n">ary1</span> <span class="p">{</span>
+   <span class="k">if</span> <span class="n">ary2</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">!=</span> <span class="n">r</span> <span class="p">{</span> <span class="n">same</span> <span class="o">=</span> <span class="no">false</span> <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">if</span> <span class="n">same</span> <span class="o">==</span> <span class="no">true</span> <span class="p">{</span>
+  <span class="n">fmt</span><span class="o">.</span><span class="n">Println</span><span class="p">(</span><span class="s">"Same slice"</span><span class="p">)</span>
+<span class="p">}</span>
+</code></pre></div></div>
+<p>You cannot compare slice in Go. You will get <code class="language-plaintext highlighter-rouge">slice can only be compared to nil</code> error if you try to do that.</p>
+
+<p><a id="check_if_array_includes_an_element"></a></p>
+<h3 id="check-if-array-includes-an-element">Check if array includes an element</h3>
+<p><strong><em>Ruby:</em></strong></p>
+<div class="language-ruby highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">fruits</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"apple"</span><span class="p">,</span> <span class="s2">"banana"</span><span class="p">,</span> <span class="s2">"grape"</span><span class="p">]</span>
+
+<span class="k">if</span> <span class="n">fruits</span><span class="p">.</span><span class="nf">include?</span><span class="p">(</span><span class="s2">"apple"</span><span class="p">)</span>
+  <span class="nb">puts</span> <span class="s2">"include!"</span>
+<span class="k">end</span>
+</code></pre></div></div>
+
+<p><strong><em>Go:</em></strong></p>
+<div class="language-go highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">include</span> <span class="o">:=</span> <span class="no">false</span>
+<span class="n">fruits</span> <span class="o">:=</span> <span class="p">[]</span><span class="kt">string</span><span class="p">{</span><span class="s">"apple"</span><span class="p">,</span> <span class="s">"banana"</span><span class="p">,</span> <span class="s">"grape"</span><span class="p">}</span>
+<span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">elm</span> <span class="o">:=</span> <span class="k">range</span> <span class="n">fruits</span> <span class="p">{</span>
+  <span class="k">if</span> <span class="n">elm</span> <span class="o">==</span> <span class="s">"apple"</span> <span class="p">{</span>
+    <span class="n">include</span> <span class="o">=</span> <span class="no">true</span>
+    <span class="k">break</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">if</span> <span class="n">include</span> <span class="o">==</span> <span class="no">true</span> <span class="p">{</span>
+  <span class="n">fmt</span><span class="o">.</span><span class="n">Println</span><span class="p">(</span><span class="s">"include!"</span><span class="p">)</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<h2 id="method-definition-1">Method Definition</h2>
+<p>There are two things that are equivalant to Ruby’s method in Go: <strong>method</strong> and <strong>function</strong>.
+Method is a type of function but requires specific receiver.</p>
+
+<p><a id="define_a_method_with_optional_parameter"></a></p>
+<h3 id="define-a-method-with-optional-parameter">Define a method with optional parameter</h3>
+<p><strong><em>Ruby:</em></strong></p>
+<div class="language-ruby highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">def</span> <span class="nf">greeting</span><span class="p">(</span><span class="n">word</span><span class="o">=</span><span class="s2">"hello!"</span><span class="p">)</span>
+  <span class="nb">puts</span> <span class="n">word</span>
+<span class="k">end</span>
+</code></pre></div></div>
+
+<p><strong><em>Go:</em></strong></p>
+
+<p>This is not possbile in Go. Go does not support optional parameter in function or method definition.
+One workaround is using struct.</p>
+<div class="language-go highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">type</span> <span class="n">greetingArg</span> <span class="k">struct</span> <span class="p">{</span> <span class="n">word</span> <span class="kt">string</span> <span class="p">}</span>
+<span class="k">func</span> <span class="n">greeting</span><span class="p">(</span><span class="n">opt</span> <span class="n">greetingArg</span><span class="p">)</span> <span class="p">{</span>
+  <span class="n">word</span> <span class="o">:=</span> <span class="n">opt</span><span class="o">.</span><span class="n">word</span>
+  <span class="k">if</span> <span class="n">word</span> <span class="o">==</span> <span class="s">""</span> <span class="p">{</span>
+    <span class="n">fmt</span><span class="o">.</span><span class="n">Println</span><span class="p">(</span><span class="s">"hello!"</span><span class="p">)</span>
+  <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+    <span class="n">fmt</span><span class="o">.</span><span class="n">Println</span><span class="p">(</span><span class="n">word</span><span class="p">)</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="n">greeting</span><span class="p">(</span><span class="n">greetingArg</span><span class="p">{})</span>
+<span class="n">greeting</span><span class="p">(</span><span class="n">greetingArg</span><span class="p">{</span><span class="s">"bye!"</span><span class="p">})</span>
+</code></pre></div></div>
+
+<p><a id="define_a_method_with_variable_length_argument"></a></p>
+<h3 id="define-a-method-with-variable-length-argument">Define a method with variable length argument</h3>
+<p><strong><em>Ruby:</em></strong></p>
+<div class="language-ruby highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">def</span> <span class="nf">foo</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">)</span>
+  <span class="n">args</span><span class="p">.</span><span class="nf">each</span> <span class="p">{</span><span class="o">|</span><span class="n">arg</span><span class="o">|</span> <span class="nb">puts</span> <span class="n">arg</span><span class="p">}</span>
+<span class="k">end</span>
+</code></pre></div></div>
+
+<p><strong><em>Go:</em></strong></p>
+<div class="language-go highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">func</span> <span class="n">foo</span><span class="p">(</span><span class="n">arg</span> <span class="o">...</span><span class="kt">int</span><span class="p">)</span> <span class="p">{</span>
+  <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">arg</span> <span class="o">:=</span> <span class="k">range</span> <span class="n">arg</span> <span class="p">{</span>
+    <span class="n">fmt</span><span class="o">.</span><span class="n">Prinln</span><span class="p">(</span><span class="n">arg</span><span class="p">)</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<h2 id="mathematic-operation">Mathematic Operation</h2>
+
+<p><a id="modular_of_negative_number"></a></p>
+<h3 id="modular-of-negative-number">Modular of negative number</h3>
+<p>Both Ruby and Go supports modular of negative number. However, their behavior is different.</p>
+
+<p><strong><em>Ruby:</em></strong></p>
+<div class="language-ruby highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="o">-</span><span class="mi">5</span> <span class="o">%</span> <span class="mi">3</span> <span class="o">=&gt;</span> <span class="mi">1</span>
+</code></pre></div></div>
+
+<p><strong><em>Go:</em></strong></p>
+<div class="language-go highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="o">-</span><span class="m">5</span> <span class="o">%</span> <span class="m">3</span> <span class="o">=&gt;</span> <span class="o">-</span><span class="m">2</span>
+</code></pre></div></div>
+
+<p>Go follows <strong><em>truncated toward zero</em></strong> for the division of negative number.</p>
+
+<p>If you want to get the same value that Ruby returns, here is how to do this.</p>
+
+<p><strong><em>Go:</em></strong></p>
+<div class="language-go highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">divider</span> <span class="o">:=</span> <span class="m">3</span>
+<span class="n">mod</span> <span class="o">:=</span> <span class="o">-</span><span class="m">5</span> <span class="o">%</span> <span class="n">divider</span>
+<span class="k">if</span> <span class="n">mod</span> <span class="o">&lt;</span> <span class="m">0</span> <span class="p">{</span>
+	<span class="n">mod</span> <span class="o">=</span> <span class="n">mod</span> <span class="o">+</span> <span class="n">divider</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>Note that values returnd by Ruby and Go are both mathematically correct. It’s just there are two ways to define negative modulo.</p>
+
+<h2 id="misc-1">Misc</h2>
+<p><a id="nil_checking"></a></p>
+<h3 id="nil-checking">Nil checking</h3>
+<p><strong><em>Ruby:</em></strong></p>
+<div class="language-ruby highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">if</span> <span class="n">val</span><span class="p">.</span><span class="nf">nil?</span>
+  <span class="nb">puts</span> <span class="s2">"val is nil"</span>
+<span class="k">end</span>
+</code></pre></div></div>
+
+<p><strong><em>Go:</em></strong></p>
+<div class="language-go highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">var</span> <span class="n">str</span> <span class="kt">string</span>
+<span class="k">if</span> <span class="n">str</span> <span class="o">==</span><span class="s">""</span> <span class="p">{</span>
+  <span class="n">fmt</span><span class="o">.</span><span class="n">Println</span><span class="p">(</span><span class="s">"str is empty"</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="k">var</span> <span class="n">i</span> <span class="kt">int</span>
+<span class="k">if</span> <span class="n">i</span> <span class="o">==</span> <span class="m">0</span> <span class="p">{</span>
+  <span class="n">fmt</span><span class="o">.</span><span class="n">Println</span><span class="p">(</span><span class="s">"i is zero"</span><span class="p">)</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>When you declear a variable without intialization, the variable is set to zero value for its type.
+Below is default zero value for primitive types.</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Type</th>
+      <th style="text-align: center">Value</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>string</td>
+      <td style="text-align: center"><strong>’‘</strong></td>
+    </tr>
+    <tr>
+      <td>int</td>
+      <td style="text-align: center"><strong>0</strong></td>
+    </tr>
+    <tr>
+      <td>float</td>
+      <td style="text-align: center"><strong>0.0</strong></td>
+    </tr>
+    <tr>
+      <td>boolean</td>
+      <td style="text-align: center"><strong>false</strong></td>
+    </tr>
+    <tr>
+      <td>pointer</td>
+      <td style="text-align: center"><strong>nil</strong></td>
+    </tr>
+    <tr>
+      <td>interface</td>
+      <td style="text-align: center"><strong>nil</strong></td>
+    </tr>
+    <tr>
+      <td>slice</td>
+      <td style="text-align: center"><strong>nil</strong></td>
+    </tr>
+    <tr>
+      <td>map</td>
+      <td style="text-align: center"><strong>nil</strong></td>
+    </tr>
+  </tbody>
+</table>
+
+<p><a id="checking_the_class"></a></p>
+<h3 id="checking-the-class">Checking the class</h3>
+<p><strong><em>Ruby:</em></strong></p>
+<div class="language-ruby highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nb">puts</span> <span class="s2">"abc"</span><span class="p">.</span><span class="nf">class</span>
+</code></pre></div></div>
+
+<p><strong><em>Go:</em></strong></p>
+<div class="language-go highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="s">"reflect"</span>
+
+<span class="n">fmt</span><span class="o">.</span><span class="n">Println</span><span class="p">(</span><span class="n">reflect</span><span class="o">.</span><span class="n">TypeOf</span><span class="p">(</span><span class="s">"abc"</span><span class="p">))</span>
+</code></pre></div></div>

@@ -8,7 +8,7 @@ categories:
 - jp
 - security
 ---
-![](/images/keyblade.jpg)
+![](/assets/keyblade.jpg)
 
 ## SSL/TLSの問題
 ### なぜPFSが注目されているか

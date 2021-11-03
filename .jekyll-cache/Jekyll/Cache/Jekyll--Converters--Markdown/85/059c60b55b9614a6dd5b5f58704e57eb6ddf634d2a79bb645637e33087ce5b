@@ -1,0 +1,4 @@
+I"t<p><img src="/assets/homepage-docker-logo.png" alt="" /></p>
+<h2 id="dockerってなに">Dockerってなに？</h2>
+<p><a href="https://www.docker.io/">Docker</a> は一言で言えばLXCのラッパーです。Dockerを使うことですこし面倒なLXCをとても簡単に操作することができるようになります。それに加えて、Dockerは”Union File System”という機能があり、これのおかげでLXCコンテナのバージョン管理を_commit_や_push_など使い慣れたインターフェイスで操作することができます。まるでGitのLXC版のような感覚です。</p>
+:ET

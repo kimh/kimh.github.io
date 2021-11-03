@@ -1,0 +1,4 @@
+I"�<p><img src="/assets/homepage-docker-logo.png" alt="" /></p>
+<h2 id="what-is-docker">What is Docker?</h2>
+<p>You can think of <a href="https://www.docker.io/">Docker</a> as a wrapper to create and run Linux LXC very easily. In addition to that, Docker comes with very unique technology called “union file system” that allows you to manage the version of your containers with familiar command like <em>commit</em> or <em>push</em> just like you are using git.</p>
+:ET

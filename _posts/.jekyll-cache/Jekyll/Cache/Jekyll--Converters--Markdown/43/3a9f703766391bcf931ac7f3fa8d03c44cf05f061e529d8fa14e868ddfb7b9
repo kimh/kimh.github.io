@@ -1,0 +1,255 @@
+I"N<p>この記事ではカオスというアイデアをごく簡単な計算で解説します。</p>
+
+<h2 id="カオスとはなにか">カオスとはなにか</h2>
+
+<p>日本語でカオスというと混乱したとかめちゃくちゃとかいうイメージを思い浮かべるかもしれませんが、数学でのカオスは予測不可能なシステムのことを意味します。例でいうと、お湯を沸騰させた時に鍋の中にできる乱流、天気の変化、お互いに干渉しあう二つの振り子の軌道、などで日常にはカオスなシステムが溢れています。</p>
+
+<p>カオスは予測不能だと書きましたが、決してランダム（非決定的）という意味ではありません。カオスは決定的（インプットが同じであればアウトプットは予測できる）にもかかわらず実際に計算してみるとその動きは全くめちゃくちゃであたかも非決定的に見えてしまいます。決定的なのに非決定的に振る舞う：ここがカオスの不思議なところであり魅力でもあります。</p>
+
+<p>もう一つカオスの面白いところは、そうゆうめちゃくちゃに振る舞うシステムをごく簡単な計算で再現できることです。この記事ではそれを実際にやってみてカオスを体験してもらおうと思います。</p>
+
+<h2 id="カオスの特徴">カオスの特徴</h2>
+
+<p>後でこの話には戻ってきますが、先にカオスが持つ特徴を書いておきます。主に三つあり、</p>
+
+<ul>
+  <li>予測不可能</li>
+  <li><code class="language-plaintext highlighter-rouge">Xt+1 = F(Xt)</code></li>
+  <li>初期値に敏感</li>
+</ul>
+
+<p>ということが挙げられます。一つずつ説明してきます。</p>
+
+<h3 id="予測不可能">予測不可能</h3>
+
+<p>予測不可能は上に書いたので説明不要です。</p>
+
+<h3 id="xt1--fxt"><code class="language-plaintext highlighter-rouge">Xt+1 = F(Xt)</code></h3>
+
+<p><code class="language-plaintext highlighter-rouge">Xt+1 = F(Xt)</code> という式があった時</p>
+
+<p>tは時間を意味します。tは0から始まり、1,2,3,4…とどんどん増えていきます。なので、<code class="language-plaintext highlighter-rouge">X0</code> というと一番最初の<code class="language-plaintext highlighter-rouge">X</code>の値、<code class="language-plaintext highlighter-rouge">X1</code>というと２回目の<code class="language-plaintext highlighter-rouge">X</code>の値という意味になります。なので<code class="language-plaintext highlighter-rouge">Xt+1</code>というのは次の<code class="language-plaintext highlighter-rouge">t</code>の時の<code class="language-plaintext highlighter-rouge">X</code>の値という意味になります。F()というのは関数です。</p>
+
+<p>ここから、<code class="language-plaintext highlighter-rouge">Xt+1 = F(Xt)</code> というのは、何か<code class="language-plaintext highlighter-rouge">F()</code>という関数があって、インプット (<code class="language-plaintext highlighter-rouge">Xt</code>)を入れて計算した値がアウトプット(<code class="language-plaintext highlighter-rouge">Xt+1</code>)になり、<code class="language-plaintext highlighter-rouge">Xt+1</code>が次のインプットになって<code class="language-plaintext highlighter-rouge">Xt+2</code>のアウトプットが作ってそれがまた、、、ということをずっと続けていけることを意味します。</p>
+
+<h3 id="初期値に敏感">初期値に敏感</h3>
+
+<p>初期値というのは<code class="language-plaintext highlighter-rouge">t</code>が0のときの値、つまり<code class="language-plaintext highlighter-rouge">X0</code>です。<code class="language-plaintext highlighter-rouge">Xt+1 = F(Xt)</code>ではアウトプットが次のインプットになるので最初の値を何にするかによって<code class="language-plaintext highlighter-rouge">t</code>が増えるに従って結果が違っていきます。</p>
+
+<p>普通インプットが少し変わればアウトプットも少ししか変わらないと考えます。例えば、時速100kmで１時間走った場合、100km進めます。時速101kmで走ったら101km進めます。このように時速が少し増えたら距離も少ししか変わりません。これは初期値にも同じことが言えます。初期値が1の時と1.1の時では結果はちょっとしか変わらないと予想できます。</p>
+
+<p>カオスなシステムではこれがあてはまりません。例えば、初期値が1の時の結果が153だったのに、初期値を1.001にして計算してみたら結果が303になったりします。初期値は0.001しか変わっていないのに結果は２倍以上になっています。</p>
+
+<p>このように初期値をちょっと変えただけで、結果が全く変わってしまう、という特徴がカオスにはあります。</p>
+
+<h3 id="ロジスティック写像">ロジスティック写像</h3>
+
+<p>ロジスティック写像というのは生物の個体数の変化を単純な式で表したもので一番有名なカオスの例です。他の人も似たような発見を過去にしていましたが、ロバート・メイという生物学者の研究で有名になりました。以下の簡単な式で表されます。</p>
+
+<p><code class="language-plaintext highlighter-rouge">Xt+1 = aXt(1 - Xt); 0 &lt; x &lt; 1</code></p>
+
+<p><code class="language-plaintext highlighter-rouge">Xt</code>、<code class="language-plaintext highlighter-rouge">Xt+1</code> はさっき説明した通りです。<code class="language-plaintext highlighter-rouge">a</code>はパラメータで<code class="language-plaintext highlighter-rouge">Xt</code>にかかわらず独立して変更できる値です。<code class="language-plaintext highlighter-rouge">t</code>は世代、<code class="language-plaintext highlighter-rouge">Xt</code>はその世代の個体数、それがインプットになり、次の世代の個体数<code class="language-plaintext highlighter-rouge">Xt+1</code>を計算するということになります。<code class="language-plaintext highlighter-rouge">a</code>はその生物の繁殖力です(一回の出産で１匹産むか、３匹産むかとか)。<code class="language-plaintext highlighter-rouge">a</code>はフィードバックとも呼ばれアウトプットがどれだけインプットに影響されるかを示します。</p>
+
+<p>もちろん実際の生物の個体数の増減はこんな簡単な式で表せるものではありません。様々な要素に影響されるからです。この式は主に実験室の中で使われるものであり、完全に環境をコントロールできる場合個体数はこの式で予測することができます。現実では役に立たない式ですが、ロバート・メイは研究中にこの簡単な式が予測不能な動きをすることを発見して後にカオスと呼ばれるようになりました。</p>
+
+<p>それではこのロジスティック写像でどうやってカオスを作れるか実際にやってみます。まずは初期値<code class="language-plaintext highlighter-rouge">X0</code>を0.4に固定して<code class="language-plaintext highlighter-rouge">a</code>を変えて１５世代計算した時にどのように結果が違ってくるかみてみます。</p>
+
+<p>Clojureで書くとこんな感じになります。</p>
+
+<div class="language-clj highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">(</span><span class="k">def</span><span class="w"> </span><span class="n">max_iteration</span><span class="w"> </span><span class="mi">14</span><span class="p">)</span><span class="w">
+
+</span><span class="p">(</span><span class="k">defn</span><span class="w"> </span><span class="n">logistic</span><span class="w"> </span><span class="p">[</span><span class="n">x_0</span><span class="w"> </span><span class="n">feedback</span><span class="p">]</span><span class="w">
+  </span><span class="p">(</span><span class="nb">loop</span><span class="w"> </span><span class="p">[</span><span class="n">x_t</span><span class="w"> </span><span class="n">x_0</span><span class="w"> </span><span class="n">iteration</span><span class="w"> </span><span class="mi">0</span><span class="p">]</span><span class="w">
+    </span><span class="p">(</span><span class="nb">println</span><span class="w"> </span><span class="n">x_t</span><span class="p">)</span><span class="w">
+    </span><span class="p">(</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">=</span><span class="w"> </span><span class="n">iteration</span><span class="w"> </span><span class="n">max_iteration</span><span class="p">)</span><span class="w">
+      </span><span class="n">nil</span><span class="w">
+      </span><span class="p">(</span><span class="k">let</span><span class="w"> </span><span class="p">[</span><span class="n">x_t_1</span><span class="w">
+            </span><span class="p">(</span><span class="nf">-&gt;&gt;</span><span class="w"> </span><span class="n">x_t</span><span class="w">
+                 </span><span class="p">(</span><span class="nb">-</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="w">
+                 </span><span class="p">(</span><span class="nb">*</span><span class="w"> </span><span class="n">x_t</span><span class="p">)</span><span class="w">
+                 </span><span class="p">(</span><span class="nb">*</span><span class="w"> </span><span class="n">feedback</span><span class="p">))]</span><span class="w">
+        </span><span class="p">(</span><span class="nf">recur</span><span class="w"> </span><span class="n">x_t_1</span><span class="w"> </span><span class="p">(</span><span class="nb">+</span><span class="w"> </span><span class="n">iteration</span><span class="w"> </span><span class="mi">1</span><span class="p">))))))</span><span class="w">
+</span></code></pre></div></div>
+
+<p><strong>X0=0.4 a=2の時の結果</strong></p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>0.4
+0.48
+0.4992
+0.49999872
+0.4999999999967232
+0.5
+0.5
+0.5
+0.5
+0.5
+0.5
+0.5
+0.5
+0.5
+0.5
+</code></pre></div></div>
+
+<p><strong>X0=0.4 a=1+√5 (3.23606)の時の結果</strong></p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>0.4
+0.7766544
+0.5613345495612088
+0.7968411786098619
+0.523870591428241
+0.8071710763943982
+0.5036795676750128
+0.8089711862773091
+0.5000903765874327
+0.8090149735680964
+0.50000280899902
+0.809014999974466
+0.500002756186754
+0.8090149999754171
+0.5000027561848518
+</code></pre></div></div>
+
+<p><strong>X0=0.4 a=4の時の結果</strong></p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>0.4
+0.96
+0.15360000000000013
+0.5200281600000003
+0.9983954912280576
+0.006407737294172653
+0.02546671278776609
+0.09927263731020608
+0.3576703231667294
+0.918969052370147
+0.297859732624244
+0.8365572492210314
+0.5469168719870904
+0.9911952284917879
+0.034908990027601214
+</code></pre></div></div>
+
+<p><code class="language-plaintext highlighter-rouge">a=2</code>の時結果はすぐに0.5に収束します。<code class="language-plaintext highlighter-rouge">a=1+√5</code>の時は４世代までは上がったり下がったりしたあと５世代からは0.80と0.50の間を行ったり来たりします。こうゆう繰り返しが起こるとき、振幅するといいます。<code class="language-plaintext highlighter-rouge">a=4</code>の時は全くめちゃくちゃで収束したり振幅したりする感じが全然しません。</p>
+
+<p>これはまさに二つ目のカオスの特徴である予測不能、ということを示しています。先ほども書きましたが、<code class="language-plaintext highlighter-rouge">Xt+1 = aXt(1 - Xt)</code>の式は決定的な式なので決してランダムではありません。一つ一つ地道に計算していけば将来の値は予測できます。しかし、その見かけは全くの予測不能です。こんなに単純な式なのに、なぜ<code class="language-plaintext highlighter-rouge">a</code>を変えただけでこんなに結果が違ってしまうのか？<code class="language-plaintext highlighter-rouge">a=2</code>の時は収束したのに<code class="language-plaintext highlighter-rouge">a=4</code>の時にはなぜ結果がめちゃくちゃになってしまうのか？こうゆう疑問がカオスの魅力の一つです。</p>
+
+<p>次に<code class="language-plaintext highlighter-rouge">X0</code>も少し変えてどうゆう結果になるか見てみます。</p>
+
+<p><strong>X0=0.40001 a=2の時の結果</strong></p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>0.40001
+0.48000399979999997
+0.4992003199520032
+0.4999987210236417
+0.4999999999967285
+0.5
+0.5
+0.5
+0.5
+0.5
+0.5
+0.5
+0.5
+0.5
+0.5
+</code></pre></div></div>
+
+<p><strong>X0=0.40001 a=1+√5 (3.23606)の時の結果</strong></p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>0.40001
+0.776660871796394
+0.5613229614122776
+0.7968457782598055
+0.5238617545503489
+0.8071724413804047
+0.5036768540111918
+0.8089712508783068
+0.5000902474048949
+0.8090149736436049
+0.5000028088480044
+0.8090149999744687
+0.5000027561867487
+0.8090149999754171
+0.5000027561848518
+</code></pre></div></div>
+
+<p><strong>X0=0.40001 a=4の時の結果</strong></p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>0.40001
+0.9600079995999999
+0.15357056121602583
+0.5199465757752828
+0.9984085364593636
+0.006355723137741059
+0.02526131168454977
+0.09849271126610319
+0.3551675883742209
+0.9160942901706436
+0.307462166749553
+0.8517167310688923
+0.5051813643448498
+0.9998926138541037
+4.2949845644802873E-4
+</code></pre></div></div>
+
+<p><code class="language-plaintext highlighter-rouge">X0</code>が0.4のときと0.40001の時の結果を見比べてみると<code class="language-plaintext highlighter-rouge">a=2</code>と<code class="language-plaintext highlighter-rouge">a=1+√5 (3.23606)</code>の時は最初の方の世代の結果が違うだけですぐに同じ値になりますが、<code class="language-plaintext highlighter-rouge">a=4</code>の時は世代が増えるにつれて結果の誤差がどんどん大きくなっていきます。たった、0.00001しか初期値を変えていないのにその結果は大きく違っています。これがカオスの３番目の特徴である初期値に敏感といういうことです。</p>
+
+<h2 id="自己相違フラクタル">自己相違/フラクタル</h2>
+
+<p>tが増えるにつれて、<code class="language-plaintext highlighter-rouge">a=2</code>の時は0.5に、<code class="language-plaintext highlighter-rouge">a=1+√5</code>の時は0.5と0.8へと値が定まっていくことを先ほど見ました。ある値を繰り返すようになることを周期的といい、何回で同じ値に戻ってくるかをN周期といいます。<code class="language-plaintext highlighter-rouge">a=2</code>はずっと同じ値を繰り返す、つまり１回で次の値に戻る、ので１周期です。<code class="language-plaintext highlighter-rouge">a=1+√5</code>の場合は0.8へ行ったあと0.5へ戻るので２周期です。<code class="language-plaintext highlighter-rouge">a</code>の値を変えて行ったときどのように周期が変化するのかを示したのが次のグラフで分岐ダイアグラムとか周期倍分岐といいます。</p>
+
+<p><img src="/assets/bunki-diagram1.png =500x500" alt="bunki-diagram1" /></p>
+
+<p>このグラフにはとても面白い特徴がいくつもあります。まず一つ目に周期の増え方は、1、2、4、8…と２のベキ上で増えていくことです。二つ目は<code class="language-plaintext highlighter-rouge">a</code>の値が3.5699456に達すると分岐がカオスになるということです。三つ目は分岐がカオスになると自己相違という特徴が現れるということです。</p>
+
+<p>自己相違とは一部分が全体と同じ形をしているということです。マトリョーシカは自己相違のいい例です。どんなに人形が小さくなっても基本的に大きい人形と形が同じだからです。</p>
+
+<p>自己相違は自然にたくさんあります。次の写真を見てください。私のお気に入りの本のブラックスワン(下 p162)からお借りしました。レンズのフタが地面に落ちているように見えると思います。</p>
+
+<p><img src="/assets/surface_fractal2.jpg =700x500" alt="surface_fractal2" /></p>
+
+<p><br />
+<br />
+<br />
+<br />
+<br />
+<br />
+<br />
+<br />
+<br />
+<br />
+<br />
+<br />
+<br />
+<br />
+<br />
+<br />
+<br />
+<br />
+<br />
+<br />
+<br />
+<br />
+<br /></p>
+
+<p>しかし実際にはもっと遠いところから見た地面の写真でした。このように地表はフラクタルの一例です。</p>
+
+<p><img src="/assets/surface_fractal1.jpg =700x500" alt="surface_fractal1" /></p>
+
+<p>さっきの分岐ダイアグラムもフラクタルなっています。カオスになっているところを拡大していくとつねに二股の熊手のような構造が現れます。</p>
+
+<p>以下の写真は http://brain.cc.kogakuin.ac.jp/~kanamaru/Chaos/BifArea/ からダウンロードしたプログラムを走らせてスクリーンショットをとりました。プログラムをダウンロードして実際に拡大してみるとよくわかるので是非やってみてください。</p>
+
+<p><img src="/assets/bunki-diagram2.png =500x500" alt="bunki-diagram2" /></p>
+
+<p><img src="/assets/bunki-diagram3.png =500x500" alt="bunki-diagram3" /></p>
+
+<p>このように拡大しても常に熊手の構造が現れます。従ってロジスティック写像の分岐ダイアグラムはフラクタルだと言えます。</p>
+
+<h2 id="まとめ">まとめ</h2>
+
+<p>ものすごく駆け足でカオスを紹介しましたが、カオスの魅力を感じてもらえたでしょうか？私の理解もまだまだ不十分ななので間違っているところもあると思いますが、カオスの大まかなアイデアは理解してもらえたと思います。</p>
+
+<p>私がカオスを勉強し始めて学んだ一番重要なことは未来は予測不可能で、そのことは数学的に証明されているということです。ロジスティック写像のような極めて簡単な数式がカオスになりうるなら、様々な要素が複雑に関わりあう世の中の現象は基本的にすべてカオスだからです。将来の景気や、アメリカ大統領選の結果、来年何が流行るかなどをそれっぽい説明をつけて予想する人たちがいますがそれらはすべて当てずっぽうに過ぎません。初期値がほんの少し変わっただけで結果が大きく変わってしまうカオスの性質を思い出してください。これは例えば将来の景気を予想する時に出発地点の現在の景気の計測を0.001%間違っただけでまったく違う結果になってしまうということです。これはつまり、正確な景気の計測が不可能なので、将来の景気の予測もまた不可能ということになります。</p>
+
+<p>カオスの研究はまだまだわかっていないことが多い分野なので今後もどんどん面白い発見があることを願っています。</p>
+:ET

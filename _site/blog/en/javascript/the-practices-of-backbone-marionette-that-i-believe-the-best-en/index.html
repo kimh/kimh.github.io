@@ -1,0 +1,826 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.7.1 -->
+<title>The Practices of Backbone.Marionette That I believe The Best | Program Is Made At Night</title>
+<meta name="generator" content="Jekyll v4.2.1" />
+<meta property="og:title" content="The Practices of Backbone.Marionette That I believe The Best" />
+<meta name="author" content="kim hirokuni" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="On Marionette.Module" />
+<meta property="og:description" content="On Marionette.Module" />
+<link rel="canonical" href="http://localhost:4000/blog/en/javascript/the-practices-of-backbone-marionette-that-i-believe-the-best-en/" />
+<meta property="og:url" content="http://localhost:4000/blog/en/javascript/the-practices-of-backbone-marionette-that-i-believe-the-best-en/" />
+<meta property="og:site_name" content="Program Is Made At Night" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2014-12-12T14:08:00+09:00" />
+<meta name="twitter:card" content="summary" />
+<meta property="twitter:title" content="The Practices of Backbone.Marionette That I believe The Best" />
+<script type="application/ld+json">
+{"url":"http://localhost:4000/blog/en/javascript/the-practices-of-backbone-marionette-that-i-believe-the-best-en/","headline":"The Practices of Backbone.Marionette That I believe The Best","dateModified":"2014-12-12T14:08:00+09:00","datePublished":"2014-12-12T14:08:00+09:00","description":"On Marionette.Module","author":{"@type":"Person","name":"kim hirokuni"},"mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/blog/en/javascript/the-practices-of-backbone-marionette-that-i-believe-the-best-en/"},"@type":"BlogPosting","@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="http://localhost:4000/feed.xml" title="Program Is Made At Night" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">Program Is Made At Night</a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/about/">About</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">The Practices of Backbone.Marionette That I believe The Best</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2014-12-12T14:08:00+09:00" itemprop="datePublished">Dec 12, 2014
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <h1 id="on-marionettemodule">On Marionette.Module</h1>
+
+<h2 id="dividing-app-into-sub-modules">Dividing app into sub-modules</h2>
+<p>You can create sub-modules as many as you want inside one Marionette app. I higly enoucurage to take the advantage of sub-modules.</p>
+
+<p>You can also say that sub-module is sub-application. The easiest way to imagine is Gmail. Gmail has many features: email, chat, contacts list, etc. You can construct each component as sub-modules in Marionette.</p>
+
+<p>Let’s look at how we define sub-modules.</p>
+
+<div class="language-js highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">var</span> <span class="nx">MyApp</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">Backbone</span><span class="p">.</span><span class="nx">Marionette</span><span class="p">.</span><span class="nx">Application</span><span class="p">();</span>
+<span class="nx">MyApp</span><span class="p">.</span><span class="nx">module</span><span class="p">(</span><span class="dl">"</span><span class="s2">ModuleA</span><span class="dl">"</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">ModuleA</span><span class="p">,</span> <span class="nx">MyApp</span><span class="p">,</span> <span class="nx">Backbone</span><span class="p">,</span> <span class="nx">Marionette</span><span class="p">,</span> <span class="nx">$</span><span class="p">,</span> <span class="nx">_</span><span class="p">){</span>
+  <span class="c1">// your module code goes here //</span>
+<span class="p">})</span>
+</code></pre></div></div>
+
+<p>You may wonder about parameters in callback function. This is automatically passed in this order:</p>
+
+<ul>
+  <li>The module itself</li>
+  <li>The Application object</li>
+  <li>Backbone</li>
+  <li>Backbone.Marionette</li>
+  <li>jQuery</li>
+  <li>Underscore</li>
+</ul>
+
+<p>They are defined in local scope and only accessbile from the callback function.</p>
+
+<p>One of the benefits of using sub-modules is you can write codes of a module into separate files with ease.</p>
+
+<p>Let’s say you define a <code class="language-plaintext highlighter-rouge">ShoppingCart</code> module.</p>
+
+<div class="language-js highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">var</span> <span class="nx">MyApp</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">Backbone</span><span class="p">.</span><span class="nx">Marionette</span><span class="p">.</span><span class="nx">Application</span><span class="p">();</span>
+<span class="nx">MyApp</span><span class="p">.</span><span class="nx">module</span><span class="p">(</span><span class="dl">"</span><span class="s2">ShoppingCart</span><span class="dl">"</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">ModuleA</span><span class="p">,</span> <span class="nx">MyApp</span><span class="p">,</span> <span class="nx">Backbone</span><span class="p">,</span> <span class="nx">Marionette</span><span class="p">,</span> <span class="nx">$</span><span class="p">,</span> <span class="nx">_</span><span class="p">){</span>
+    <span class="c1">// your module code goes here //</span>
+<span class="p">})</span>
+</code></pre></div></div>
+
+<p>You can easily guess what the module does: it takes care everything about shopping cart feature in your app.</p>
+
+<p>One single <code class="language-plaintext highlighter-rouge">ShoppingCart</code> module is still too big to be written in a file. So, let’s divide them into separate files based on functionality: <code class="language-plaintext highlighter-rouge">Controller</code> and <code class="language-plaintext highlighter-rouge">View</code>.</p>
+
+<p><strong><em>shopping_cart_controller.js</em></strong></p>
+<div class="language-js highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nx">MyApp</span><span class="p">.</span><span class="nx">module</span><span class="p">(</span><span class="dl">"</span><span class="s2">ShoppingCart</span><span class="dl">"</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">ShoppingCart</span><span class="p">,</span> <span class="nx">MyApp</span><span class="p">,</span> <span class="nx">Backbone</span><span class="p">,</span> <span class="nx">Marionette</span><span class="p">,</span> <span class="nx">$</span><span class="p">,</span> <span class="nx">_</span><span class="p">){</span>
+    <span class="nx">ShoppingCart</span><span class="p">.</span><span class="nx">Controller</span> <span class="o">=</span> <span class="nx">Marionette</span><span class="p">.</span><span class="nx">Controller</span><span class="p">.</span><span class="nx">extend</span><span class="p">({</span>
+        <span class="c1">// controller implementation goes here</span>
+    <span class="p">});</span>
+<span class="p">})</span>
+</code></pre></div></div>
+
+<p><strong><em>shopping_cart_view.js</em></strong></p>
+<div class="language-js highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nx">MyApp</span><span class="p">.</span><span class="nx">module</span><span class="p">(</span><span class="dl">"</span><span class="s2">ShoppingCart</span><span class="dl">"</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">ShoppingCart</span><span class="p">,</span> <span class="nx">MyApp</span><span class="p">,</span> <span class="nx">Backbone</span><span class="p">,</span> <span class="nx">Marionette</span><span class="p">,</span> <span class="nx">$</span><span class="p">,</span> <span class="nx">_</span><span class="p">){</span>
+    <span class="nx">ShoppingCart</span><span class="p">.</span><span class="nx">View</span> <span class="o">=</span> <span class="nx">Marionette</span><span class="p">.</span><span class="nx">ItemView</span><span class="p">.</span><span class="nx">extend</span><span class="p">({</span>
+        <span class="c1">// view implementation goes here</span>
+    <span class="p">});</span>
+<span class="p">})</span>
+</code></pre></div></div>
+<p>When you create modules, you don’t have to worry whether your module is already defined or not. If not defined, Marionette defines for you. So, in the previous case, <code class="language-plaintext highlighter-rouge">ShoppingCart</code> module is defined in <strong><em>shopping_cart_controller.js</em></strong> and <strong><em>shopping_cart_view.js</em></strong> just adds things to the module.</p>
+
+<p>Maybe <code class="language-plaintext highlighter-rouge">ShoppingCart.View</code> still contains too many views to be in a single file such as <code class="language-plaintext highlighter-rouge">show_view</code> or <code class="language-plaintext highlighter-rouge">new_view</code>. You can further divide your <code class="language-plaintext highlighter-rouge">ShoppingCart</code> sub-module like this.</p>
+
+<p><strong><em>show/shopping_cart_view.js</em></strong></p>
+<div class="language-js highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nx">MyApp</span><span class="p">.</span><span class="nx">module</span><span class="p">(</span><span class="dl">"</span><span class="s2">ShoppingCart.View</span><span class="dl">"</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">View</span><span class="p">,</span> <span class="nx">MyApp</span><span class="p">,</span> <span class="nx">Backbone</span><span class="p">,</span> <span class="nx">Marionette</span><span class="p">,</span> <span class="nx">$</span><span class="p">,</span> <span class="nx">_</span><span class="p">){</span>
+    <span class="nx">View</span><span class="p">.</span><span class="nx">ShowView</span> <span class="o">=</span> <span class="nx">Marionette</span><span class="p">.</span><span class="nx">ItemView</span><span class="p">.</span><span class="nx">extend</span><span class="p">({</span>
+        <span class="c1">// show view implementation goes here</span>
+    <span class="p">});</span>
+<span class="p">})</span>
+</code></pre></div></div>
+
+<p><strong><em>new/shopping_cart_view.js</em></strong></p>
+<div class="language-js highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nx">MyApp</span><span class="p">.</span><span class="nx">module</span><span class="p">(</span><span class="dl">"</span><span class="s2">ShoppingCart.View</span><span class="dl">"</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">View</span><span class="p">,</span> <span class="nx">MyApp</span><span class="p">,</span> <span class="nx">Backbone</span><span class="p">,</span> <span class="nx">Marionette</span><span class="p">,</span> <span class="nx">$</span><span class="p">,</span> <span class="nx">_</span><span class="p">){</span>
+    <span class="nx">View</span><span class="p">.</span><span class="nx">NewView</span> <span class="o">=</span> <span class="nx">Marionette</span><span class="p">.</span><span class="nx">ItemView</span><span class="p">.</span><span class="nx">extend</span><span class="p">({</span>
+        <span class="c1">// new view implementation goes here</span>
+    <span class="p">});</span>
+<span class="p">})</span>
+</code></pre></div></div>
+
+<p>I create separate directories for <code class="language-plaintext highlighter-rouge">show</code> and <code class="language-plaintext highlighter-rouge">new</code> and put each file there. You can continue this process until you are satisfied.</p>
+
+<p>Probalby enough words are spoken to introduce sub-modules.</p>
+
+<p>So here is the pattern statement. <strong>Use sub-modules to seperate codes</strong></p>
+
+<!--
+Now, let's see the benifits of using sub-modules.
+
+### Encapsulation
+
+You can define public and private methods easily inside a module.
+
+```js
+var MyApp = new Backbone.Marionette.Application();
+
+MyApp.module("ModuleA", function(ModuleA, MyApp, Backbone, Marionette, $, _){
+  // Defining public method
+  ModuleA.publicMethod = function() {
+    return privateMethod();
+  }
+
+  // Defining private method
+  var privateMethod = function() {
+    return "some value"
+  }
+
+})
+```
+
+Now other sub-modules can access public method but not private one.
+
+```js
+MyApp.ModuleA.publicMethod() // => "some value"
+MyApp.ModuleA.privateMethod() // => "Uncaught TypeError: undefined is not a function"
+```
+-->
+
+<h2 id="starting-and-stopping-sub-modules">Starting and stopping sub-modules</h2>
+
+<p>You can start and stop your sub-modules individually. By default, sub-modules is automatically started when Marionette parent app is started. You can change this behavior by <code class="language-plaintext highlighter-rouge">startWithParent</code> option.</p>
+
+<div class="language-js highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nx">MyApp</span><span class="p">.</span><span class="nx">module</span><span class="p">(</span><span class="dl">"</span><span class="s2">ModuleA</span><span class="dl">"</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">ModuleA</span><span class="p">,</span> <span class="nx">MyApp</span><span class="p">,</span> <span class="nx">Backbone</span><span class="p">,</span> <span class="nx">Marionette</span><span class="p">,</span> <span class="nx">$</span><span class="p">,</span> <span class="nx">_</span><span class="p">){</span>
+    <span class="k">this</span><span class="p">.</span><span class="nx">startWithParent</span> <span class="o">=</span> <span class="kc">false</span><span class="p">;</span>
+<span class="p">})</span>
+
+<span class="nx">MyApp</span><span class="p">.</span><span class="nx">start</span><span class="p">()</span> <span class="c1">// this doesn't start ModuleA</span>
+<span class="nx">MyApp</span><span class="p">.</span><span class="nx">ModuleA</span><span class="p">.</span><span class="nx">start</span><span class="p">()</span> <span class="c1">// you have to start by yourself</span>
+
+</code></pre></div></div>
+
+<p>Why is this important? Because sometimes you want to execute some codes before starting other modules. Let’s say you need to load some resources from a remote server when user enters your app and other modules are dependent on that resources.</p>
+
+<div class="language-js highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nx">MyApp</span><span class="p">.</span><span class="nx">on</span><span class="p">(</span><span class="dl">"</span><span class="s2">start</span><span class="dl">"</span><span class="p">,</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+    <span class="c1">// Let's say deferredFetchihg grubs some data from remote server</span>
+    <span class="nx">$</span><span class="p">.</span><span class="nx">when</span><span class="p">(</span><span class="nx">deferredFetching</span><span class="p">()).</span><span class="nx">done</span><span class="p">(</span><span class="kd">function</span><span class="p">(</span><span class="nx">data</span><span class="p">)</span> <span class="p">{</span>
+        <span class="c1">// Set data to Module1</span>
+        <span class="nx">MyApp</span><span class="p">.</span><span class="nx">Module1</span><span class="p">.</span><span class="nx">setData</span><span class="p">(</span><span class="nx">data</span><span class="p">);</span>
+
+        <span class="c1">// Now Module1 is ready to start</span>
+        <span class="nx">MyApp</span><span class="p">.</span><span class="nx">Module1</span><span class="p">.</span><span class="nx">start</span><span class="p">()</span>
+    <span class="p">});</span>
+<span class="p">})</span>
+</code></pre></div></div>
+
+<p>How about <code class="language-plaintext highlighter-rouge">stop()</code>? I don’t think you need to use <code class="language-plaintext highlighter-rouge">stop()</code> unless your app is huge so that you need to pay careful attention to memory usage.</p>
+
+<p>However, <code class="language-plaintext highlighter-rouge">stop()</code> is very useful when it comes to testing. I will cover this in the following post.</p>
+
+<h2 id="organize-your-files-by-module-base">Organize your files by module base</h2>
+
+<p>There is no canonical way to organize your files in Backbone.Marionette. However, it is good to agree on a convetion for how to name and organize files in project if you are working in a team. This is the pattern that works for me.</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>project_root/
+    |
+    |---application.js
+    |
+    |---small_module/
+    |      |
+    |      |---small_module.js
+    |      |
+    |      |---small_module_controller.js
+    |      |
+    |      |---small_module_model.js
+    |      |
+    |      |---small_module_view.js
+    |      |
+    |      |---templates/
+    |              |
+    |              |---template1.hbs
+    |
+    |---big_module/
+           |
+           |---big_module.js
+           |
+           |---big_module_controller.js
+           |
+           |---big_module_model.js
+           |
+           |---new
+           |    |
+           |    |---big_module_new_view.js
+           |    |
+           |    |---templates/
+           |            |
+           |            |---template1.hbs
+           |            |---template2.hbs
+           |---edit
+           |    |
+           |    |---big_module_edit_view.js
+           |    |
+           |    |---templates/
+           |            |
+           |            |---template1.hbs
+           |            |---template2.hbs
+</code></pre></div></div>
+
+<p><code class="language-plaintext highlighter-rouge">application.js</code> is where you want to decalre global things of your app. This includes</p>
+
+<ul>
+  <li>App initialization code</li>
+  <li>App starting code (Ex: <code class="language-plaintext highlighter-rouge">App.start()</code>)</li>
+  <li>Route definition and initilalization</li>
+  <li>Useful global helper (Ex: <code class="language-plaintext highlighter-rouge">App.currentUser()</code>, <code class="language-plaintext highlighter-rouge">App.showSuccessNotification()</code>)</li>
+</ul>
+
+<p>I like module-based file hierarchy.</p>
+
+<p>In module based organization, files other than application.js goes under each module directory. If the module is big one, they are further broken down into seperate directories by action.</p>
+
+<p>The role of each file under module direclty is self-explanatory except <code class="language-plaintext highlighter-rouge">&lt;module_name&gt;.js</code>.</p>
+
+<p><code class="language-plaintext highlighter-rouge">&lt;module_name&gt;.js</code> is used to define basic things for the entier module. These includes:</p>
+
+<ul>
+  <li>module option (Ex. <code class="language-plaintext highlighter-rouge">this.startWithParent = false</code>)</li>
+  <li>module initilaization (Ex. <code class="language-plaintext highlighter-rouge">addInitializer({})</code> )</li>
+  <li>event listener (Ex. <code class="language-plaintext highlighter-rouge">Module1.on("event", function({}))</code>)</li>
+</ul>
+
+<p>Maybe it is fair to explain <code class="language-plaintext highlighter-rouge">&lt;module_name&gt;_controller.js</code> since it does not exist in Backbone as well.</p>
+
+<p><code class="language-plaintext highlighter-rouge">&lt;module_name&gt;_controller.js</code> holds methods that redpond to user entry to your app. One example of such method is something like <code class="language-plaintext highlighter-rouge">showItem()</code>. What <code class="language-plaintext highlighter-rouge">showItem()</code> does is that instantiate a view, fetch model, pass it to view, and call <code class="language-plaintext highlighter-rouge">render()</code> of view to display html. It is similar to what Rails ActionController does.</p>
+
+<p>At last, you may think it is redudant to prefix every files with module name, but this makes it easy to search files by module name. Not must to have, but it is useful once your project becomes bigger where you have many <code class="language-plaintext highlighter-rouge">controller.js</code> or <code class="language-plaintext highlighter-rouge">view.js</code>.</p>
+
+<h1 id="about-view">About View</h1>
+
+<h2 id="organizing-dom-with-ui">Organizing DOM with ui</h2>
+
+<p>This pattern is inspired by <a href="http://lxyuma.hatenablog.com/entry/2014/01/23/002644">the blog post</a>.</p>
+
+<p><a href="https://github.com/marionettejs/backbone.marionette/blob/master/docs/marionette.itemview.md#organizing-ui-elements">ui</a> is simple yet very powerful feature of Marionette. You can organize view’s DOM by using <code class="language-plaintext highlighter-rouge">ui</code>. Here is simple example. Say your have a template.</p>
+
+<div class="language-html highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nt">&lt;div</span> <span class="na">id=</span><span class="s">"edit_form"</span><span class="nt">&gt;</span>
+  <span class="nt">&lt;input</span> <span class="na">class=</span><span class="s">"name_input"</span><span class="nt">&gt;</span>Name
+  <span class="nt">&lt;input</span> <span class="na">class=</span><span class="s">"email_input"</span><span class="nt">&gt;</span>Name
+  <span class="nt">&lt;button</span> <span class="na">type=</span><span class="s">"submit"</span> <span class="na">class=</span><span class="s">"js-submit"</span><span class="nt">&gt;</span>Submit<span class="nt">&lt;/button&gt;</span>
+<span class="nt">&lt;/div&gt;</span>
+</code></pre></div></div>
+
+<p>And your view code looks like this.</p>
+
+<div class="language-js highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nx">MyView</span> <span class="o">=</span> <span class="nx">Marionette</span><span class="p">.</span><span class="nx">ItemView</span><span class="p">.</span><span class="nx">extend</span><span class="p">({</span>
+    <span class="na">template</span><span class="p">:</span> <span class="dl">"</span><span class="s2">#edit_form</span><span class="dl">"</span><span class="p">,</span>
+
+    <span class="na">ui</span><span class="p">:</span> <span class="p">{</span>
+        <span class="na">nameInput</span><span class="p">:</span> <span class="dl">"</span><span class="s2">input.name_input</span><span class="dl">"</span><span class="p">,</span>
+        <span class="na">emailInput</span><span class="p">:</span> <span class="dl">"</span><span class="s2">input.email_input</span><span class="dl">"</span><span class="p">,</span>
+        <span class="na">submitButton</span><span class="p">:</span> <span class="dl">"</span><span class="s2">button.js-submit</span><span class="dl">"</span>
+    <span class="p">}</span>
+<span class="p">});</span>
+</code></pre></div></div>
+
+<p>If you don’t have ui, you can access name input by using jQuery like this.</p>
+
+<div class="language-js highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">var</span> <span class="nx">myView</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">MyView</span><span class="p">()</span>
+<span class="kd">var</span> <span class="nx">input</span> <span class="o">=</span> <span class="nx">myView</span><span class="p">.</span><span class="nx">$el</span><span class="p">.</span><span class="nx">find</span><span class="p">(</span><span class="dl">"</span><span class="s2">input.name_input</span><span class="dl">"</span><span class="p">);</span>
+</code></pre></div></div>
+
+<p>By using <code class="language-plaintext highlighter-rouge">ui</code>, you can access this way.</p>
+
+<div class="language-js highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">var</span> <span class="nx">myView</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">MyView</span><span class="p">()</span>
+<span class="kd">var</span> <span class="nx">input</span> <span class="o">=</span> <span class="nx">myView</span><span class="p">.</span><span class="nx">ui</span><span class="p">.</span><span class="nx">nameInput</span><span class="p">;</span>
+</code></pre></div></div>
+
+<p>The difference is subtle, but later one is more maintainable. Here is why.</p>
+
+<p>Html markups are the subject of frequent changes. This is not an issue if the DOM is referenced from a single place. However, when multiple places look at a single DOM, it becomes difficult to maintain.</p>
+
+<p>Suppose one person changes the class name of a input field from <code class="language-plaintext highlighter-rouge">name_input</code> to <code class="language-plaintext highlighter-rouge">name_field</code>. Also suppose that many codes refer the DOM by using jQuery: <code class="language-plaintext highlighter-rouge">myView.$el.find("input.name_input")</code>. Now, you have to change every codes that uses jQuery to  access the DOM. If the DOM is referenced from tests codes, these tests all suddenly break  and updating every places is the nightmare.</p>
+
+<p><code class="language-plaintext highlighter-rouge">ui</code> solves the issue. If your codes refer the DOM by using <code class="language-plaintext highlighter-rouge">myView.ui.nameInput</code>, then the person who changes the html only needs to change <code class="language-plaintext highlighter-rouge">ui</code> object.</p>
+
+<div class="language-js highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nx">ui</span><span class="p">:</span> <span class="p">{</span>
+    <span class="nl">nameInput</span><span class="p">:</span> <span class="dl">"</span><span class="s2">input.name_field</span><span class="dl">"</span><span class="p">,</span>
+    <span class="c1">// edited for brevity //</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>And the rest of codes stay the same. Huge improvement.</p>
+
+<p>So here is the pattern statement. <strong>Avoid jQuery and always use ui to access view’s DOM</strong></p>
+
+<h2 id="using-layoutview-to-create-nested-sub-views">Using LayoutView to create nested sub-views</h2>
+
+<p>This pattern is inspired by <a href="http://lostechies.com/derickbailey/2012/03/22/managing-layouts-and-nested-views-with-backbone-marionette/">the blog post</a>.</p>
+
+<p>I saw different people use different ways to create nested views in vanilla Backbone app. Marionette however provides us a nice pattern to archive this.</p>
+
+<p>We will use Marionette <a href="https://github.com/marionettejs/backbone.marionette/blob/master/docs/marionette.layoutview.md#marionettelayoutview">LayoutView</a> and <a href="https://github.com/marionettejs/backbone.marionette/blob/master/docs/marionette.region.md#marionetteregion">Region</a>.</p>
+
+<p>Let’s take a example of creating shopping car page. The page contains two sub-views: item list view and pricing view.</p>
+
+<p><img src="/assets/shopping_cart1.png" alt="" /></p>
+
+<p>Here is our code that creates this shopping cart page. First we create a layout html and layout view.</p>
+
+<p><strong>shopping_cart_layout.html</strong></p>
+<div class="language-html highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nt">&lt;div</span> <span class="na">id=</span><span class="s">"shopping_cart_layout"</span><span class="nt">&gt;</span>
+  <span class="nt">&lt;div</span> <span class="na">id=</span><span class="s">"itemlist_region"</span><span class="nt">&gt;&lt;/div&gt;</span>
+  <span class="nt">&lt;div</span> <span class="na">id=</span><span class="s">"price_region"</span><span class="nt">&gt;&lt;/div&gt;</span>
+<span class="nt">&lt;/div&gt;</span>
+</code></pre></div></div>
+
+<p><strong>shopping_cart_layout_view.js</strong></p>
+<div class="language-js highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nx">ShoppingCartLayoutView</span> <span class="o">=</span> <span class="nx">Marionette</span><span class="p">.</span><span class="nx">LayoutView</span><span class="p">.</span><span class="nx">extend</span><span class="p">({</span>
+    <span class="na">template</span><span class="p">:</span> <span class="dl">"</span><span class="s2">#shopping_cart_layout</span><span class="dl">"</span><span class="p">,</span>
+
+    <span class="na">regions</span><span class="p">:</span> <span class="p">{</span>
+        <span class="na">itemListRegion</span><span class="p">:</span> <span class="dl">"</span><span class="s2">#itemlist_region</span><span class="dl">"</span><span class="p">,</span>
+        <span class="na">priceListRegion</span><span class="p">:</span> <span class="dl">"</span><span class="s2">#price_region</span><span class="dl">"</span><span class="p">,</span>
+    <span class="p">}</span>
+<span class="p">});</span>
+</code></pre></div></div>
+
+<p>Let’s talk briefly about what <code class="language-plaintext highlighter-rouge">LayoutView</code> is. According to <a href="https://github.com/marionettejs/backbone.marionette/blob/master/docs/marionette.layoutview.md#marionettelayoutview">official doc</a>,</p>
+
+<blockquote>
+  <p>A LayoutView is a hybrid of an ItemView and a collection of Region objects.</p>
+</blockquote>
+
+<p>So, it is simply extended from <code class="language-plaintext highlighter-rouge">ItemView</code> and add <code class="language-plaintext highlighter-rouge">Region</code> objects. Since it is extended from <code class="language-plaintext highlighter-rouge">ItemView</code>, you can attach template where you can speficy region container DOM. Layout can hold as many region objects as you want so they are suitable to create a parent view.</p>
+
+<p>Now, let’s quickly create our sub-views. The template for these views are not important at this subject so let’s imagine we have templates for them.</p>
+
+<p><strong>item_list_view.js</strong></p>
+<div class="language-js highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nx">ItemView</span> <span class="o">=</span> <span class="nx">Marionette</span><span class="p">.</span><span class="nx">ItemView</span><span class="p">.</span><span class="nx">extend</span><span class="p">({</span>
+    <span class="na">template</span><span class="p">:</span> <span class="nx">ItemTpl</span><span class="p">,</span>
+<span class="p">});</span>
+
+<span class="nx">ItemListView</span> <span class="o">=</span> <span class="nx">Marionette</span><span class="p">.</span><span class="nx">CollectionView</span><span class="p">.</span><span class="nx">extend</span><span class="p">({</span>
+    <span class="na">childView</span><span class="p">:</span> <span class="nx">ItemView</span>
+<span class="p">});</span>
+</code></pre></div></div>
+
+<p><strong>price_view.js</strong></p>
+<div class="language-js highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nx">PriceListView</span> <span class="o">=</span> <span class="nx">Marionette</span><span class="p">.</span><span class="nx">ItemView</span><span class="p">.</span><span class="nx">extend</span><span class="p">({</span>
+    <span class="na">template</span><span class="p">:</span> <span class="nx">PriceTpl</span><span class="p">,</span>
+<span class="p">});</span>
+</code></pre></div></div>
+
+<p>Now we are ready to put all things together. Here is the code that renders the shopping cart page. Again, model and collection are not important at this subject, so let’s assume we have <code class="language-plaintext highlighter-rouge">items</code> collections already.</p>
+
+<div class="language-js highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// Instantiate views</span>
+<span class="nx">layoutView</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">ShoppingCartLayoutView</span><span class="p">()</span>
+<span class="nx">itemListView</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">ItemListView</span><span class="p">({</span><span class="na">collections</span><span class="p">:</span> <span class="nx">items</span><span class="p">})</span> <span class="c1">// We assume that items is the collection</span>
+<span class="nx">priceListView</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">PriceListView</span><span class="p">()</span>
+
+<span class="c1">// Put them into layout regions</span>
+<span class="nx">layoutView</span><span class="p">.</span><span class="nx">itemListRegion</span><span class="p">.</span><span class="nx">show</span><span class="p">(</span><span class="nx">itemListView</span><span class="p">);</span>
+<span class="nx">layoutView</span><span class="p">.</span><span class="nx">priceListRegion</span><span class="p">.</span><span class="nx">show</span><span class="p">(</span><span class="nx">priceview</span><span class="p">);</span>
+</code></pre></div></div>
+
+<p>That’s it. Marionette region provides a convenient method called <code class="language-plaintext highlighter-rouge">show()</code> where you can pass any views to be rendered. <code class="language-plaintext highlighter-rouge">el</code> property of passed views are automatically provided by region. This is the reason why you don’t see <code class="language-plaintext highlighter-rouge">el</code> object often when using Marionette.</p>
+
+<p>Creating further nested sub-view is easy. Let’s say you want to divide <code class="language-plaintext highlighter-rouge">PriceListView</code> into <code class="language-plaintext highlighter-rouge">TotalPriceListView</code> and <code class="language-plaintext highlighter-rouge">SubTotalPriceListView</code>.</p>
+
+<p><img src="/assets/shopping_cart2.png" alt="" /></p>
+
+<p>What you have to do is extending <code class="language-plaintext highlighter-rouge">PriceListView</code> from <code class="language-plaintext highlighter-rouge">LayoutView</code> instead of <code class="language-plaintext highlighter-rouge">ItemView</code> and add region objects.</p>
+
+<p><strong>price_view.js</strong></p>
+<div class="language-js highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nx">PriceListView</span> <span class="o">=</span> <span class="nx">Marionette</span><span class="p">.</span><span class="nx">Layout</span><span class="p">.</span><span class="nx">extend</span><span class="p">({</span>
+    <span class="c1">// Let's assume the template has #total_price_region and #sub_total_price_region</span>
+    <span class="na">template</span><span class="p">:</span> <span class="nx">PriceTpl</span><span class="p">,</span>
+
+    <span class="na">regions</span><span class="p">:</span> <span class="p">{</span>
+        <span class="na">totalRegion</span><span class="p">:</span> <span class="dl">"</span><span class="s2">#total_price_region</span><span class="dl">"</span><span class="p">,</span>
+        <span class="na">subTotalRegion</span><span class="p">:</span> <span class="dl">"</span><span class="s2">#sub_total_price_region</span><span class="dl">"</span><span class="p">,</span>
+    <span class="p">}</span>
+<span class="p">});</span>
+
+<span class="nx">totalPriceListView</span> <span class="o">=</span> <span class="nx">Marionette</span><span class="p">.</span><span class="nx">ItemView</span><span class="p">.</span><span class="nx">extend</span><span class="p">({</span>
+    <span class="na">template</span><span class="p">:</span> <span class="nx">totalPriceTpl</span><span class="p">,</span>
+<span class="p">});</span>
+
+<span class="nx">subTotalPriceListView</span> <span class="o">=</span> <span class="nx">Marionette</span><span class="p">.</span><span class="nx">ItemView</span><span class="p">.</span><span class="nx">extend</span><span class="p">({</span>
+    <span class="na">template</span><span class="p">:</span> <span class="nx">subTotalPriceTpl</span><span class="p">,</span>
+<span class="p">});</span>
+</code></pre></div></div>
+
+<p>And put them together.</p>
+
+<div class="language-js highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nx">priceListView</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">PriceListView</span><span class="p">()</span>
+<span class="nx">totalPriceListView</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">TotalPriceListView</span><span class="p">()</span>
+<span class="nx">subTotalPriceListView</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">SubTotalPriceListView</span><span class="p">()</span>
+
+<span class="nx">priceListView</span><span class="p">.</span><span class="nx">totalRegion</span><span class="p">.</span><span class="nx">show</span><span class="p">(</span><span class="nx">totalPriceListView</span><span class="p">)</span>
+<span class="nx">priceListView</span><span class="p">.</span><span class="nx">subTotalRegion</span><span class="p">.</span><span class="nx">show</span><span class="p">(</span><span class="nx">subTotalPriceListView</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>It’s a piece of cake.</p>
+
+<p>Before closing this section, let me introduce how to access views rendered inside region because you will often use it.</p>
+
+<p>Let’s say you want to access <code class="language-plaintext highlighter-rouge">&lt;div id="total_price"&gt;$10000&lt;/div&gt;</code> DOM to get the total price of the shopping cart from your code. In this case, you will use <code class="language-plaintext highlighter-rouge">currentView()</code> API. The code looks like this:</p>
+
+<div class="language-js highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nx">layoutView</span><span class="p">.</span><span class="nx">priceListRegion</span><span class="p">.</span><span class="nx">currentView</span><span class="p">.</span><span class="nx">totalRegion</span><span class="p">.</span><span class="nx">currentView</span><span class="p">.</span><span class="nx">ui</span><span class="p">.</span><span class="nx">totalPrice</span>
+</code></pre></div></div>
+
+<p>As you can see, it’s easy to access the value of nested sub-views.</p>
+
+<p>So here is the pattern statement. <strong>Use LayoutView to create sub-views over simple ItemView.</strong></p>
+
+<h1 id="about-controller">About Controller</h1>
+
+<p>If you come from vanilla Backbone, you are not sure what the role of Controller in Marionette. Unforunately, official doc doesn’t help you either.</p>
+
+<p>Quoted from <a href="https://github.com/marionettejs/backbone.marionette/blob/master/docs/marionette.controller.md">here</a></p>
+<blockquote>
+  <p>Its name can be a cause for confusion, as it actually has nothing to do with the popular MVC architectural pattern. Instead, it’s better to think of the Controller as a base object from which you can build.</p>
+
+  <p>Controllers should be used when you have a task that you would like an object to be responsible for, but none of the other Marionette Classes quite make sense to do it. It’s a base object for you to use to create a new Class altogether.</p>
+</blockquote>
+
+<p>This makes you further puzzled. How should I use Controller?</p>
+
+<p>Here is how I use Controller.</p>
+
+<h2 id="use-controller-as-integrator">Use Controller as integrator</h2>
+<p>This pattern is inspired by <a href="https://leanpub.com/marionette-gentle-introduction">the book</a>.</p>
+
+<p>The role of Controller is to instantiate objects, access backend, and build complex vies: performs everything required to render a complete page in a browser.</p>
+
+<p>Let’s imagine that we want to render previous shopping cart page.</p>
+
+<p><img src="/assets/shopping_cart1.png" alt="" /></p>
+
+<p>To render the page, several things has to be done.</p>
+
+<ul>
+  <li>Instantiate views (layout views, item list views, etc)</li>
+  <li>Retrieve items and prices (ajax call to backend server)</li>
+  <li>Render views (call show() method of views)</li>
+  <li>Error handling (when ajax call fail )</li>
+</ul>
+
+<p>I will perform these things in a single method <code class="language-plaintext highlighter-rouge">showShoppingCart()</code> and this method goes to our imaginary ShoppingCart module.</p>
+
+<div class="language-js highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nx">MyApp</span><span class="p">.</span><span class="nx">module</span><span class="p">(</span><span class="dl">"</span><span class="s2">ShoppingCart</span><span class="dl">"</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">ShoppingCart</span><span class="p">,</span> <span class="nx">MyApp</span><span class="p">,</span> <span class="nx">Backbone</span><span class="p">,</span> <span class="nx">Marionette</span><span class="p">,</span> <span class="nx">$</span><span class="p">,</span> <span class="nx">_</span><span class="p">){</span>
+    <span class="nx">ShoppingCart</span><span class="p">.</span><span class="nx">Controller</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="na">showShoppingCart</span><span class="p">:</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+            <span class="c1">// implementation of this methods</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">})</span>
+</code></pre></div></div>
+
+<p>Inside the method, you write codes that perform things that I mentioned above.</p>
+
+<div class="language-js highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nx">MyApp</span><span class="p">.</span><span class="nx">module</span><span class="p">(</span><span class="dl">"</span><span class="s2">ShoppingCart</span><span class="dl">"</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">ShoppingCart</span><span class="p">,</span> <span class="nx">MyApp</span><span class="p">,</span> <span class="nx">Backbone</span><span class="p">,</span> <span class="nx">Marionette</span><span class="p">,</span> <span class="nx">$</span><span class="p">,</span> <span class="nx">_</span><span class="p">){</span>
+    <span class="nx">ShoppingCart</span><span class="p">.</span><span class="nx">Controller</span> <span class="o">=</span> <span class="nx">Marionette</span><span class="p">.</span><span class="nx">Controller</span><span class="p">.</span><span class="nx">extend</span><span class="p">({</span>
+        <span class="na">showShoppingCart</span><span class="p">:</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+            <span class="c1">// Let's suppose that items and its prices are saved in backend.</span>
+            <span class="c1">// So, we need to retrive them from backend server asynchronously.</span>
+            <span class="c1">// Imaginary MyApp.request("items") and MyApp.request("price")</span>
+            <span class="c1">// returns promise object that fetches items and prices respectively.</span>
+            <span class="kd">var</span> <span class="nx">fetchingItems</span> <span class="o">=</span> <span class="nx">MyApp</span><span class="p">.</span><span class="nx">request</span><span class="p">(</span><span class="dl">"</span><span class="s2">items</span><span class="dl">"</span><span class="p">);</span>
+            <span class="kd">var</span> <span class="nx">fetchingPrice</span> <span class="o">=</span> <span class="nx">MyApp</span><span class="p">.</span><span class="nx">request</span><span class="p">(</span><span class="dl">"</span><span class="s2">prices</span><span class="dl">"</span><span class="p">);</span>
+
+            <span class="c1">// Instantiate a layout view that provides regions</span>
+            <span class="kd">var</span> <span class="nx">layoutView</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">ShoppingCartLayoutView</span><span class="p">();</span>
+
+            <span class="nx">$</span><span class="p">.</span><span class="nx">when</span><span class="p">(</span><span class="nx">fetchingItems</span><span class="p">,</span> <span class="nx">fetchingPrice</span><span class="p">).</span><span class="nx">done</span><span class="p">(</span><span class="kd">function</span><span class="p">(</span><span class="nx">items</span><span class="p">,</span> <span class="nx">prices</span><span class="p">){</span>
+                <span class="c1">// Add callback method when ajax call is successfully done.</span>
+                <span class="c1">// First, we will build collections</span>
+                <span class="kd">var</span> <span class="nx">itemList</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">ItemList</span><span class="p">([</span><span class="nx">items</span><span class="p">]);</span>
+                <span class="kd">var</span> <span class="nx">priceList</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">PriceList</span><span class="p">([</span><span class="nx">prices</span><span class="p">]);</span>
+
+                <span class="c1">// Now we can instantiate views and pass colletion to them</span>
+                <span class="kd">var</span> <span class="nx">itemListView</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">ItemListView</span><span class="p">({</span><span class="na">collection</span><span class="p">:</span> <span class="nx">itemList</span><span class="p">});</span>
+                <span class="kd">var</span> <span class="nx">priceListView</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">PriceListView</span><span class="p">({</span><span class="na">collection</span><span class="p">:</span> <span class="nx">priceList</span><span class="p">});</span>
+
+                <span class="c1">// At this point we are ready to render a complete paga for user</span>
+                <span class="nx">layoutView</span><span class="p">.</span><span class="nx">itemListRegion</span><span class="p">.</span><span class="nx">show</span><span class="p">(</span><span class="nx">itemListView</span><span class="p">);</span>
+                <span class="nx">layoutView</span><span class="p">.</span><span class="nx">priceListRegion</span><span class="p">.</span><span class="nx">show</span><span class="p">(</span><span class="nx">priceListView</span><span class="p">);</span>
+            <span class="p">});</span>
+
+            <span class="c1">// We don't want user to see nasty error, so let's add error handling</span>
+            <span class="nx">$</span><span class="p">.</span><span class="nx">when</span><span class="p">(</span><span class="nx">fetchingItems</span><span class="p">,</span> <span class="nx">fetchingPrice</span><span class="p">).</span><span class="nx">fail</span><span class="p">(</span><span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+                <span class="c1">// OopsView will show error message to user</span>
+                <span class="kd">var</span> <span class="nx">oopsView</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">OopsView</span><span class="p">({</span><span class="na">error</span><span class="p">:</span> <span class="dl">"</span><span class="s2">oops, something went wrong</span><span class="dl">"</span><span class="p">});</span>
+                <span class="nx">layoutView</span><span class="p">.</span><span class="nx">render</span><span class="p">(</span><span class="nx">oopsView</span><span class="p">);</span>
+            <span class="p">});</span>
+        <span class="p">}</span>
+    <span class="p">});</span>
+<span class="p">})</span>
+</code></pre></div></div>
+
+<p>The example above is pseudo code so it doesn’t work, but should be easy enough to demonstrate my idea.</p>
+
+<p>As you can see, my <code class="language-plaintext highlighter-rouge">showShoppingCart()</code> method does everthing including error handling required to show a shopping cart page to user. Now, somebody must call the method. Who will it be?</p>
+
+<p>It is the responsibility of <code class="language-plaintext highlighter-rouge">Marionette.AppRouter</code>. Router is the first one that responds when user enters your app. It’s job is to look at url and call Controller’s methods. Here is how you can pass your <code class="language-plaintext highlighter-rouge">ShoppingCart.Controller</code> to router.</p>
+
+<div class="language-js highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// First we need to define router</span>
+<span class="nx">MyApp</span><span class="p">.</span><span class="nx">Router</span> <span class="o">=</span> <span class="nx">Marionette</span><span class="p">.</span><span class="nx">AppRouter</span><span class="p">.</span><span class="nx">extend</span><span class="p">({</span>
+    <span class="na">appRoutes</span><span class="p">:</span> <span class="p">{</span>
+        <span class="dl">"</span><span class="s2">shopping_cart</span><span class="dl">"</span><span class="p">:</span> <span class="dl">"</span><span class="s2">showShoppingCart</span><span class="dl">"</span><span class="p">,</span>
+    <span class="p">}</span>
+<span class="p">});</span>
+
+<span class="c1">// Instantiate controller object</span>
+<span class="kd">var</span> <span class="nx">shoppingCartController</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">ShoppingCat</span><span class="p">.</span><span class="nx">Controller</span><span class="p">();</span>
+
+<span class="c1">// Register controller</span>
+<span class="k">new</span> <span class="nx">MyApp</span><span class="p">.</span><span class="nx">Router</span><span class="p">({</span>
+    <span class="na">controller</span><span class="p">:</span> <span class="nx">shoppingCartController</span>
+<span class="p">});</span>
+</code></pre></div></div>
+
+<p>Now, if user accesses <code class="language-plaintext highlighter-rouge">/shopping_cart</code> page, router will call <code class="language-plaintext highlighter-rouge">showShoppingCart()</code> method of <code class="language-plaintext highlighter-rouge">ShoppingCat.Controller</code>.</p>
+
+<p>There is one implicit thing involved here. The object you pass to <code class="language-plaintext highlighter-rouge">controller</code> property of router must implement the method that you define in <code class="language-plaintext highlighter-rouge">appRoutes</code> objects.</p>
+
+<p>In this case, since you define <code class="language-plaintext highlighter-rouge">"shopping_cart": "showShoppingCart"</code> in routing, <code class="language-plaintext highlighter-rouge">shoppingCartController</code> object must implement <code class="language-plaintext highlighter-rouge">showShoppingCart()</code> method, which is exactly how we implemented our controller earlier.</p>
+
+<p>If you have experiences with server side MVC frameworks, like RoR, then you may notice that I am using the Marionette Controller like the way I use ActionController of Rails: called by router and does everything needed to render a view. Isn’t this contradictory to what [official doc](<a href="https://github.com/marionettejs/backbone.marionette/blob/master/docs/marionette.controller.md">here</a> says?</p>
+
+<p><strong><em>Yes and no</em></strong>. Yes, because it is used by router and both performs similar tasks. No, because the role of server side Controller is providing HTTP terminal point whereas client side Controller does not do this.</p>
+
+<p>Anyway, I am currently satisfied with the way I use Controller.</p>
+
+<p>So here is the pattern statement. <strong>Use Controller to provide public methods to router that integrates different componetns</strong></p>
+
+<h2 id="add-event-listener-on-view-inside-controller">Add event listener on view inside Controller</h2>
+<p>I often ask this question myself: <em>Is it ok that my View does ajax call?</em> Can you imagine what I am talking about? The View that makes ajax call looks like this.</p>
+
+<div class="language-js highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nx">FormView</span> <span class="o">=</span> <span class="nx">Marionette</span><span class="p">.</span><span class="nx">ItemView</span><span class="p">.</span><span class="nx">extend</span><span class="p">({</span>
+    <span class="na">events</span><span class="p">:</span> <span class="p">{</span>
+        <span class="dl">'</span><span class="s1">click button.submit</span><span class="dl">'</span><span class="p">:</span> <span class="dl">'</span><span class="s1">submitForm</span><span class="dl">'</span>
+    <span class="p">},</span>
+
+    <span class="na">submitForm</span><span class="p">:</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+        <span class="c1">// Get form data somehow//</span>
+        <span class="kd">var</span> <span class="nx">data</span> <span class="o">=</span> <span class="nx">getFormData</span><span class="p">();</span>
+
+        <span class="c1">// Model.save fires ajax call to remote server</span>
+        <span class="k">this</span><span class="p">.</span><span class="nx">model</span><span class="p">.</span><span class="nx">save</span><span class="p">(</span><span class="nx">data</span><span class="p">,</span> <span class="p">{</span>
+            <span class="na">success</span><span class="p">:</span> <span class="kd">function</span><span class="p">(){</span>
+                <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="dl">"</span><span class="s2">form is submitted</span><span class="dl">"</span><span class="p">);</span>
+            <span class="p">},</span>
+            <span class="na">error</span><span class="p">:</span> <span class="kd">function</span><span class="p">(){</span>
+                <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="dl">"</span><span class="s2">error</span><span class="dl">"</span><span class="p">);</span>
+            <span class="p">}</span>
+        <span class="p">});</span>
+    <span class="p">}</span>
+<span class="p">})</span>
+</code></pre></div></div>
+
+<p>So, the code above does:</p>
+
+<ul>
+  <li>Listens on <code class="language-plaintext highlighter-rouge">click</code> event and call <code class="language-plaintext highlighter-rouge">submitForm</code> method</li>
+  <li>Makes ajax call to save form data to backend server</li>
+  <li>Execute callbacks for ajax call</li>
+</ul>
+
+<p>This is perfectly valid code in Backbone. However, having Controller in Marionette now, I’d rather want to push this task to Controller and let View simply listening and triggering event.</p>
+
+<div class="language-js highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nx">FormView</span> <span class="o">=</span> <span class="nx">Marionette</span><span class="p">.</span><span class="nx">ItemView</span><span class="p">.</span><span class="nx">extend</span><span class="p">({</span>
+    <span class="na">events</span><span class="p">:</span> <span class="p">{</span>
+        <span class="dl">'</span><span class="s1">click button.submit</span><span class="dl">'</span><span class="p">:</span> <span class="dl">'</span><span class="s1">submitForm</span><span class="dl">'</span>
+    <span class="p">},</span>
+
+    <span class="na">submitForm</span><span class="p">:</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+        <span class="k">this</span><span class="p">.</span><span class="nx">trigger</span><span class="p">(</span><span class="dl">"</span><span class="s2">form:submit</span><span class="dl">"</span><span class="p">);</span>
+    <span class="p">}</span>
+<span class="p">});</span>
+
+<span class="nx">FormController</span> <span class="o">=</span> <span class="nx">Marionette</span><span class="p">.</span><span class="nx">Controller</span><span class="p">.</span><span class="nx">extend</span><span class="p">({</span>
+
+    <span class="na">showForm</span><span class="p">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">options</span><span class="p">){</span>
+        <span class="kd">var</span> <span class="nx">formView</span> <span class="o">=</span> <span class="nx">FormView</span><span class="p">.</span><span class="k">new</span><span class="p">();</span>
+
+        <span class="nx">formView</span><span class="p">.</span><span class="nx">on</span><span class="p">(</span><span class="dl">"</span><span class="s2">form:submit</span><span class="dl">"</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">data</span><span class="p">)</span> <span class="p">{</span>
+            <span class="nx">model</span><span class="p">.</span><span class="nx">save</span><span class="p">(</span><span class="nx">data</span><span class="p">,</span> <span class="p">{</span>
+                <span class="na">success</span><span class="p">:</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+                    <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="dl">"</span><span class="s2">form is submitted</span><span class="dl">"</span><span class="p">);</span>
+                <span class="p">},</span>
+
+                <span class="na">error</span><span class="p">:</span> <span class="kd">function</span><span class="p">(){</span>
+                    <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="dl">"</span><span class="s2">error</span><span class="dl">"</span><span class="p">);</span>
+                <span class="p">}</span>
+            <span class="p">})</span>
+        <span class="p">})</span>
+
+        <span class="nx">MyApp</span><span class="p">.</span><span class="nx">region</span><span class="p">.</span><span class="nx">show</span><span class="p">(</span><span class="nx">formView</span><span class="p">);</span>
+    <span class="p">},</span>
+<span class="p">});</span>
+</code></pre></div></div>
+
+<p>So, I simply move codes from View to Controller. What’s the benefits of doing this? One thing is that View code gets slimed and it can focus on the mapping of DOM and event.</p>
+
+<p>Our Controller instead gets messy but that’s the tradeoff. After all, that’s how Controller is designed to be used: <strong><em>put things that fit nowhere else</em></strong>.</p>
+
+<p>It also makes sense to put codes to Controller because Controller has more accesses to other components than a view. Imagine a case where you have to access other views inside the event listener.
+You can’t access other views directly from a view. Instead, you need to use App level event publishing to archive this.</p>
+
+<p>On the other hand, Controller has an access to everything needed to render the page so it can easily talk to other views.</p>
+
+<p>Before, finishing this section, let me slightly imporve the code above. We will use <a href="https://github.com/marionettejs/backbone.marionette/blob/master/docs/marionette.view.md#viewtriggers">View.triggers</a>.</p>
+
+<p>Here is the new version of View:</p>
+
+<div class="language-js highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nx">FormView</span> <span class="o">=</span> <span class="nx">Marionette</span><span class="p">.</span><span class="nx">ItemView</span><span class="p">.</span><span class="nx">extend</span><span class="p">({</span>
+    <span class="na">triggers</span><span class="p">:</span> <span class="p">{</span>
+        <span class="dl">'</span><span class="s1">click button.submit</span><span class="dl">'</span><span class="p">:</span> <span class="dl">'</span><span class="s1">form:submit</span><span class="dl">'</span>
+    <span class="p">}</span>
+<span class="p">});</span>
+</code></pre></div></div>
+
+<p>We removed <code class="language-plaintext highlighter-rouge">submitForm</code> method and <code class="language-plaintext highlighter-rouge">event</code> objects. Instead, we use <code class="language-plaintext highlighter-rouge">trigger</code> object that does the two thing at the same time: <em>listen on events</em> and <em>trigger events</em>. Now, our view is much cleaner than before!!</p>
+
+<p>So here is the pattern statement. <strong>Add event listener on Views inside Controller</strong></p>
+
+<!--
+## Responsibility of MVC Components
+
+Marionette brings consistency to your Backbone app. However, this is not enough if you are working in a team. Marionette still allows developrs to write codes whatever they want which rapidly makes your project spaghetti. It's important to understand your codes must go where. To understand this, let's clarify the role of MVC components in Marionette.
+
+### M
+The responsibility of model is clearer than other components, so I will go quickly.
+
+#### Business logic
+Just like model of server side, this is the place where you write code for business logic.
+
+**Ex.** Calculate and return total price by adding tax to sub-total.
+
+#### Ajax ####
+When modle is mapped to external resource, it fetches resource from external servers.
+
+#### Validation ####
+Before modle is saved into exteranl database, it needs to validate data. When validation fails, it must notifies by using event. View must respond to validation event and notifies user.
+
+### V
+This is the place which easily becomes chaotic because vanilla Backbone puts much burden to View.
+
+#### Render html
+When you define View, you will speficy which template to use. Template value is fetched by a model that View holds and rendered as html document.
+
+#### Define mapping of DOM and event
+You can define what action of user for DOM elements do what in View. This is done by `events` propety. I don't want to go detail about this since implementation is not the the subject of post, but just briefly showing an example.
+
+```js
+var MyView = Marionette.ItemView.extend({
+    ui: {
+        paragraph: 'p',
+        button: '.my-button'
+    },
+
+    events: {
+        'click ui.button': 'clickedButton'
+    },
+
+    clickedButton: function() {
+        console.log('I clicked the button!');
+    }
+});
+```
+
+View listens on click event of `ui.button` and trigger clickedButton() event. Notice `ui` propety. This does not exist in Backbone. You can pass a object that mappes properties and jQuery DOM. You can access the DOM like this.
+
+```js
+ MyView.ui.paragraph
+```
+
+This is simple yet very powerful feature. I will write more about this in subsequent post.
+
+#### Listens on Model/Collection change event
+Most of Views are passed model or collection. Whenever there are changes to model/collection (Ex. setting new value to the field of model / model is removed from collection ), View responds to the event, changes its $el, and modifies its own html.
+
+### C
+Controller is loosely defined even in official doc.
+
+Quoted from [here](https://github.com/marionettejs/backbone.marionette/blob/master/docs/marionette.controller.md)
+> Its name can be a cause for confusion, as it actually has nothing to do with the popular MVC architectural pattern. Instead, it's better to think of the Controller as a base object from which you can build.
+>
+> Controllers should be used when you have a task that you would like an object to be responsible for, but none of the other Marionette Classes quite make sense to do it. It's a base object for you to use to create a new Class altogether.
+
+So, as the doc says, Controller is the place where you can put things that fit nowhere else.
+
+But, what exactly are they?
+
+#### Executing action for router
+When user enters your app, router will invoke controller actions. Let's assume you have controller like so:
+
+```js
+MyApp.module("ModuleA", function(ModuleA, MyApp, Backbone, Marionette, $, _){
+    ModuleA.Controller = Marionette.Controller.extend({
+        listItem: function() {
+            // Some codes to show item here
+        }
+    })
+
+    return ModuleA
+})
+```
+
+Now you can pass your controller to `controller` property of router.
+```js
+MyApp.module("ModuleA", function(ModuleA, MyApp, Backbone, Marionette, $, _){
+    var controller = new ModuleA.Controller();
+
+    ModuleA.Router = Marionette.AppRouter.extend({
+        controller: controller,
+        appRoutes: {
+            "items": "listItem"
+        },
+    });
+})
+
+```
+Then when user enters your app from `/items`, router will execute `controller.listItem()` method which is defined at `ModuleA.Controller`.
+
+So, as you can see, I am using Controller pretty much like the way I use Rails ActionController. I don't see no reason why this is wrong even if doc says it is nothing to do with server side MVC.
+
+#### Assemble things together
+You saw how router invokes Controller methods. Now, let's look at `listItem()` method. The method looks something like this:
+
+```js
+listItem: function() {
+    var deferredFetch = MyApp.request("items")
+    var collectionView = new ItemCollectionView()
+
+    // Let's assume you have Spinner class.
+    // This will show loading spinner until items are fetched from server.
+    MyApp.mainRegion.show(new Spinner())
+
+    $.when(deferredFetch).done(function(items) {
+        var collectionView = new ItemCollectionView({collection: items});
+
+        // Once fetching is done, show items
+        MyApp.mainRegion.show(collectionView)
+    })/
+
+    $.when(deferredFetch).fail(function() {
+        // Let's assume you have OopsView.
+        // This will show "oops, something went wrong" when fethcing fails
+        var oopsView = new OopsView()
+    });
+```
+
+As you can see, `listItem()` method interacts many things. It also takes care of showing loading spinner as well as error handling. This is the main responsibility of Controller. It assemble many parts defined in different modules and control the flow of action.
+
+-->
+
+  </div><a class="u-url" href="/blog/en/javascript/the-practices-of-backbone-marionette-that-i-believe-the-best-en/" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading">Program Is Made At Night</h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name">kim hirokuni</li><li><a class="u-email" href="mailto:yangkookkim@gmail.com">yangkookkim@gmail.com</a></li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"><li><a href="https://github.com/jekyll"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#github"></use></svg> <span class="username">jekyll</span></a></li><li><a href="https://www.twitter.com/jekyllrb"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#twitter"></use></svg> <span class="username">jekyllrb</span></a></li></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p>Write an awesome description for your new site here. You can edit this line in _config.yml. It will appear in your document head meta (for Google search results) and in your feed.xml site description.</p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>

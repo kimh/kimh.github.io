@@ -1,0 +1,207 @@
+I"�:<p><img src="/assets/criu.jpeg" alt="" /></p>
+
+<h3 id="tldr-you-cannot-suspendresume-docker-container-as-of-jun-2014-and-this-article-ends-with-a-bit-disappointed-result-but-you-can-still-find-criu-is-cool-thing">TL;DR: You CANNOT suspend/resume Docker container as of Jun 2014 and this article ends with a bit disappointed result, but you can still find CRIU is cool thing.</h3>
+
+<p>With the rapid emergence of Docker, everybody knows many advantages of using LXC over virtual machines like VMWare or Xen.</p>
+
+<p>However, there is one thing that LXC is missing: suspend/resume containers.</p>
+
+<p>This is where <a href="http://criu.org/Main_Page">CRIU</a> comes in.</p>
+
+<p>CRIU is so called CR (checkpoint/restart) tool. It suspends a running process and save the memory state into files which can be resumed at anytime.</p>
+
+<p>And since LXC container is a process, we should be able to suspend/resume containers. But does it really work?</p>
+
+<p>In this article, we will install CRIU and see whether we can suspend/resume a Docker container.</p>
+
+<p><strong>Note:</strong>
+You may say that LXC already has <a href="http://lxc.sourceforge.net/man/lxc-checkpoint.html">C/R feature</a>. My impression with the tool is not good from the past experience. So, I really didn’t try this time.</p>
+
+<h2 id="installing-criu">Installing CRIU</h2>
+
+<h3 id="building-kernel">Building Kernel</h3>
+<p>To get the fully functional CRIU, you need to have a kernel with certain options are enabled. We use Vagrant box as LXC host machine, but I couldn’t find a box with kernel that meets the requirement of CRIU.</p>
+
+<p>So, we need to rebeild kernel. Don’t worry, building kernel is not difficult as it sounds.</p>
+
+<p>We will use <a href="https://cloud-images.ubuntu.com/vagrant/trusty/current/trusty-server-cloudimg-amd64-vagrant-disk1.box">official Ubuntu14.04 cloud image</a>.</p>
+
+<p>First you need to add the box.</p>
+
+<div class="language-sh highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ </span>vagrant box add ubuntu14.04 https://cloud-images.ubuntu.com/vagrant/trusty/current/trusty-server-cloudimg-amd64-vagrant-disk1.box
+<span class="nv">$ </span>vagrant init ubuntu14.04
+</code></pre></div></div>
+
+<p>Before hit <code class="language-plaintext highlighter-rouge">vagrant up</code> command, let’s increase CPU cores and memory of the box. Otherwise, it takes a few hours to build kernel. It really depends, but 2 cores with 2048M RAM would be enough.</p>
+
+<p>Open <code class="language-plaintext highlighter-rouge">Vagrantfile</code> and add the following lines.</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>config.vm.provider :virtualbox do |vb|
+  vb.customize ["modifyvm", :id, "--memory", "2048"]
+  vb.customize ["modifyvm", :id, "--cpus", 2]
+end
+</code></pre></div></div>
+
+<p>Once you increase cpu and memory, do <code class="language-plaintext highlighter-rouge">vagrant up &amp;&amp; vagrant ssh</code> and ssh into the box. Become root user and install necessary packages to rebuild kernel.</p>
+
+<div class="language-sh highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ </span>apt-get <span class="nt">-y</span> update
+<span class="nv">$ </span>apt-get <span class="nt">-y</span> <span class="nb">install </span>libncurses-dev build-essential libncurses-dev build-essential fakeroot kernel-package linux-source bc
+</code></pre></div></div>
+
+<p>After installing these, you should have <code class="language-plaintext highlighter-rouge">/usr/src/linux-source-&lt;kernel version&gt;</code> directory. Go into the directory and untar the source files.</p>
+
+<div class="language-sh highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ </span><span class="nb">cd</span> /usr/src/linux-source-&lt;kernel version&gt;
+<span class="nv">$ </span><span class="nb">tar </span>xvjf linux-source-&lt;kernel version&gt;.tar.bz2
+<span class="nv">$ </span><span class="nb">cd</span> ./linux-source-&lt;kernel version&gt;
+</code></pre></div></div>
+
+<p>Now you need to prepare a kernel configuration <em>.config</em> file which enables certain options for CRIU.</p>
+
+<p>I uploaded the one to save your time into gist. Just run this command. (Make sure to change current directory to kernel source directory where you just untared.)</p>
+
+<div class="language-sh highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ </span>curl https://gist.githubusercontent.com/kimh/c93f42981d14a33c63c0/raw/a73af0f7f745c2538253ef153a62a8ba1a2d97be/.config <span class="nt">-o</span> .config
+</code></pre></div></div>
+
+<p>If you want to know which kernel options should be enabled, the list is <a href="http://criu.org/Installation#Kernel_configuration">here</a>.</p>
+
+<p>Once you put <code class="language-plaintext highlighter-rouge">.config</code> file, you are ready to build kernel.</p>
+
+<p><strong>Once again, make sure you increased cpu and memory in the previous seteps before start building kernel.</strong></p>
+
+<div class="language-sh highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ </span><span class="nb">export </span><span class="nv">LC_CTYPE</span><span class="o">=</span>C
+<span class="nv">$ </span>make-kpkg clean
+<span class="nv">$ CONCURRENCY_LEVEL</span><span class="o">=</span>4 make-kpkg <span class="nt">--rootcmd</span> fakeroot <span class="nt">--initrd</span> <span class="nt">--revision</span><span class="o">=</span><span class="sb">`</span><span class="nb">date</span> +%Y%m%d<span class="sb">`</span> kernel_image kernel_headers
+</code></pre></div></div>
+
+<p>Once the kernel build is done, you should have <code class="language-plaintext highlighter-rouge">linux-headers-&lt;kernel version&gt;_amd64.deb</code> and <code class="language-plaintext highlighter-rouge">linux-image-&lt;kernel version&gt;_amd64.deb</code> under <code class="language-plaintext highlighter-rouge">/usr/src/</code> directory.</p>
+
+<p>Now, let’s install them.</p>
+
+<div class="language-sh highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ </span>dpkg <span class="nt">-i</span> linux-headers-&lt;kernel version&gt;_amd64.deb
+<span class="nv">$ </span>dpkg <span class="nt">-i</span> linux-image-&lt;kernel version&gt;_amd64.deb
+<span class="nv">$ </span>reboot
+</code></pre></div></div>
+
+<p>Done! Now You are running the kernel that works well with CRIU.</p>
+
+<h3 id="compile-criu-from-source">Compile CRIU from source</h3>
+<p>Let’s install CRIU now. Ubuntu doesn’t provide up-to-date debian package of CRIU, so we need to build from source.</p>
+
+<div class="language-sh highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ </span>apt-get <span class="nb">install </span>git bsdmainutils build-essential libprotobuf-dev libprotobuf-c0-dev protobuf-c-compiler protobuf-compiler python-protobuf xmlto asciidoc
+<span class="nv">$ </span>git clone https://github.com/xemul/criu
+<span class="nv">$ </span><span class="nb">cd </span>criu/
+<span class="nv">$ </span>make
+<span class="nv">$ </span><span class="nb">sudo </span>make <span class="nb">install</span>
+</code></pre></div></div>
+
+<p>Now CRIU is installed. Let’s try if it works. CRIU provides a command for this.</p>
+
+<div class="language-sh highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ </span>criu check <span class="nt">--ms</span>
+Warn  <span class="o">(</span>tun.c:55<span class="o">)</span>: Skipping tun support check
+Warn  <span class="o">(</span>cr-check.c:259<span class="o">)</span>: Skipping mnt_id support check
+Looks good.
+</code></pre></div></div>
+
+<p>Did you get <code class="language-plaintext highlighter-rouge">Looks good.</code> message? You may get some warnings, but you can ignore them.
+Before doing our experiment with containers, let’s checkpoint and restore normal Linux process with CRIU. The example comes from <a href="http://criu.org/Simple_loop">one of CRIU HOWTO pages</a>.</p>
+
+<p>First, we need to create a simple loop script.</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>$ cat &gt; test.sh &lt;&lt;-EOF
+#!/bin/sh
+while true; do
+ date
+ sleep 1
+done
+EOF
+
+$ chmod +x test.sh
+$ ./test.sh
+</code></pre></div></div>
+
+<p>We can suspend with <code class="language-plaintext highlighter-rouge">criu dump</code> command.</p>
+
+<div class="language-sh highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c"># Need to be root to run criu</span>
+<span class="nv">$ </span><span class="nb">sudo</span> <span class="nt">-s</span>
+<span class="nv">$ </span><span class="nb">export </span><span class="nv">PID</span><span class="o">=</span><span class="sb">`</span>pgrep <span class="nt">-f</span> test.sh<span class="sb">`</span>
+<span class="nv">$ </span><span class="nb">mkdir</span> /tmp/test
+<span class="nv">$ </span>criu dump <span class="nt">-t</span> <span class="nv">$PID</span> <span class="nt">--images-dir</span> /tmp/test <span class="nt">--shell-job</span>
+</code></pre></div></div>
+
+<p>If the dump succeeds, you should have many files under <code class="language-plaintext highlighter-rouge">/tmp/test</code> directory.</p>
+
+<div class="language-sh highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ </span><span class="nb">ls</span> /tmp/test
+cgroup.img         fanotify-mark.img   fs-4898.img     netlinksk.img     pstree.img         signalfd.img
+core-4521.img      fanotify.img        ids-4521.img    ns-files.img      reg-files.img      sk-queues.img
+core-4898.img      fdinfo-2.img        ids-4898.img    packetsk.img      remap-fpath.img    stats-dump
+creds-4521.img     fdinfo-3.img        inetsk.img      pagemap-4521.img  sigacts-4521.img   tty-info.img
+creds-4898.img     fifo-data.img       inotify-wd.img  pagemap-4898.img  sigacts-4898.img   tty.img
+eventfd.img        fifo.img            inotify.img     pages-1.img       signal-p-4521.img  tunfile.img
+eventpoll-tfd.img  filelocks-4521.img  inventory.img   pages-2.img       signal-p-4898.img  unixsk.img
+eventpoll.img      filelocks-4898.img  mm-4521.img     pipes-data.img    signal-s-4521.img
+ext-files.img      fs-4521.img         mm-4898.img     pipes.img         signal-s-4898.img
+</code></pre></div></div>
+
+<p>Let’s resume the process with <code class="language-plaintext highlighter-rouge">criu restore</code> command.</p>
+
+<div class="language-sh highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ </span>criu restore <span class="nt">-t</span> <span class="nv">$PID</span> <span class="nt">--images-dir</span> /tmp/test  <span class="nt">--shell-job</span>
+</code></pre></div></div>
+
+<p>If the process is successfully resumed, <code class="language-plaintext highlighter-rouge">test.sh</code> starts printing the output of <code class="language-plaintext highlighter-rouge">date</code> command to your terminal.</p>
+
+<h2 id="trying-criu-with-containers">Trying CRIU with containers</h2>
+<p>So far so good? Now, we will try to suspend and resume Docker containers. Docker is not installed on your vagrant box, so let’s install.</p>
+
+<div class="language-sh highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ </span>apt-get <span class="nb">install </span>docker.io jq
+<span class="nv">$ </span><span class="nb">ln</span> <span class="nt">-sf</span> /usr/bin/docker.io /usr/local/bin/docker
+<span class="nv">$ </span><span class="nb">sed</span> <span class="nt">-i</span> <span class="s1">'$acomplete -F _docker docker'</span> /etc/bash_completion.d/docker.io
+</code></pre></div></div>
+
+<p>And run a Ubuntu container executing a simple command.</p>
+
+<div class="language-sh highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ </span>docker run <span class="nt">-t</span> <span class="nt">-i</span> ubuntu /bin/bash
+</code></pre></div></div>
+
+<p>To suspend the container, we need to know the pid of the container.</p>
+
+<div class="language-sh highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ ID</span><span class="o">=</span><span class="sb">`</span>docker ps <span class="nt">-l</span> <span class="nt">-q</span><span class="sb">`</span>
+<span class="nv">$ PID</span><span class="o">=</span><span class="sb">`</span>docker inspect <span class="nv">$ID</span> | jq <span class="s1">'.[0].State.Pid'</span><span class="sb">`</span>
+</code></pre></div></div>
+
+<p>Ok, our long journey is almost done. Let’s suspend the container!!</p>
+
+<div class="language-sh highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ </span>criu dump <span class="nt">-t</span> <span class="nv">$PID</span> <span class="nt">--images-dir</span> /tmp/docker
+Error <span class="o">(</span>mount.c:449<span class="o">)</span>: 102:./dev/console doesn<span class="s1">'t have a proper root mount
+Error (cr-dump.c:1882): Dumping FAILED.
+</span></code></pre></div></div>
+
+<p>CRIU said dumping failed. After googling the error message, I found this discussion.</p>
+
+<p><a href="https://lists.linuxcontainers.org/pipermail/lxc-devel/2013-November/006326.html">[lxc-devel] [CRIU] LXC live migrate</a></p>
+<blockquote>
+  <p>That’s container’s console which is a bind mounted tty from
+the host. And since this is an external connection, CRIU doesn’t dump one.</p>
+</blockquote>
+
+<p>What?! But, <a href="http://criu.org/LXC">this page</a> says CRIU supports LXC checkpoint/restart. Docker uses LXC under the hood, so how come it doesn’t work?</p>
+
+<p>In the same thread of the discussion, I also found this.</p>
+
+<p><a href="https://lists.linuxcontainers.org/pipermail/lxc-devel/2013-November/006326.html">[lxc-devel] [CRIU] LXC live migrate</a></p>
+<blockquote>
+  <p>AFAIK cgroups are used <em>inside</em> containers only with recent guest templates.
+In OpenVZ we use more old ones (and more stable) so haven’t meet this yet.
+And yes, cgroups are in plans for the nearest future :)</p>
+</blockquote>
+
+<p>So, it seems CRIU does not support cgroup at the time of writing this (Jun 2014). However Docker uses LXC template that uses cgroups. Therefore, CRIU doesn’t work with Docker containers.</p>
+
+<p>Sigh…</p>
+
+<h2 id="conclusion">Conclusion</h2>
+<p>With this experiment, I found that we cannot checkpoint/resume Docker container with CRIU v1.3 because it does not support cgroups.</p>
+
+<p>The result turned out to be a bit disappointed. However, I’m sure now you know that CRIU is extremely exciting project.</p>
+
+<p>In contrast to its potential impact to LXC ecosystem, I believe the project is not receiving enough attention, so give a star and start watching their <a href="https://github.com/xemul/criu">Github repo</a> now!! I will definitely cover more things about CRIU on this blog, too.</p>
+:ET

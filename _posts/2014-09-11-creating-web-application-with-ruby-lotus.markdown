@@ -9,7 +9,7 @@ categories:
 - lotus
 ---
 
-![](/images/lotus.jpeg)
+![](/assets/lotus.jpeg)
 
 ***WARNING***  This is not your article if you are looking for information about the collaboration software made by IBM.
 Instead, this article is about [Lotus](http://lotusrb.org/), a new web framework written in Ruby.

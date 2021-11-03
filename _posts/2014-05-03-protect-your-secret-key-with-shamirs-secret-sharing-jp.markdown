@@ -9,7 +9,7 @@ categories:
 - security
 ---
 
-![](/images/pieces.jpg)
+![](/assets/pieces.jpg)
 
 つい最近[PollyPassHash](https://github.com/PolyPassHash/PolyPassHash)という新しいパスワード管理手法を知りました。
 
@@ -160,14 +160,14 @@ shamirsecret.recover_secretdata([s1,s3])
 
 多項式のグラフは以下のようになります。
 
-![y=2x^2+x+3のグラフ](/images/polygraph0.jpg)
+![y=2x^2+x+3のグラフ](/assets/polygraph0.jpg)
 
 #### ステップ5: 点をグラフに描画する
 三つの点をグラフの線上に書きます。
 
 例として、**(x,y)(1, 6)**, **(x,y)(2,13)**, **(x,y)(-2, 9)**をグラフ線上に書いてみましょう。
 
-![点をグラフ線上に書く](/images/polygraph1.jpg)
+![点をグラフ線上に書く](/assets/polygraph1.jpg)
 
 このそれぞれの点が***シェア***になります。**x**の値が前述した*シェア番号*になり**y**の値が*シェア*になります。
 
@@ -189,7 +189,7 @@ shamirsecret.recover_secretdata([s1,s3])
 
 次に、これらの点を線で結びます。これらの点は元の多項式から得た点なので線で結べばグラフを引くことができます。
 
-![](/images/polygraph4.jpg)
+![](/assets/polygraph4.jpg)
 
 グラフはあくまで理解の助けをするためなので正確なグラフが書けなくても構いません。
 

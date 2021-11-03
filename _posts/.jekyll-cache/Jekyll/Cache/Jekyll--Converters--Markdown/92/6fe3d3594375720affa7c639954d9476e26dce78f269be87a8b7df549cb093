@@ -1,0 +1,135 @@
+I"�.<p><img src="/assets/parallel.jpg" alt="" /></p>
+
+<h2 id="baleen">Baleen</h2>
+<p>I wrote a ruby gem called <a href="http://rubygems.org/gems/baleen">baleen</a>.
+Baleen runs your cucumber tests by using docker containers in parallel. By using docker, baleen archives parallel test execution as well as providing completely isolated environments for each test runner.</p>
+
+<p>For the basic usages, please see <a href="https://github.com/kimh/baleen">github repo</a>. In this post, I will write how balenn runs docker containrs in parallel by using remote API of docker.</p>
+
+<h2 id="api-library">API Library</h2>
+<p>baleen server makes API call to Docker. To make API call, I use ruby gem that wraps the call. Currently, there are two gems of docker ruby api.</p>
+
+<ul>
+  <li><a href="https://github.com/swipely/docker-api">swipely / docker-api</a></li>
+  <li><a href="https://github.com/geku/docker-client">geku / docker-client</a></li>
+</ul>
+
+<p>Unfortunately, docker-client is not under active development, so I will recommend to use docker-api which is also used in baleen.</p>
+
+<h2 id="celluloid">Celluloid</h2>
+<p>To run tests in parallel, we also have to run containers in parallel. To archive this, the operation of running containers should be done asynchronously and not blocking subsequent containers.</p>
+
+<p>Fortunately, we have <a href="https://github.com/celluloid/celluloid">Celluloid</a> to get the power of asynchronous very easily.</p>
+
+<h2 id="brief-explanation-of-how-baleen-works">Brief Explanation of How Baleen Works</h2>
+<p>To get the context, let me quicly go over how baleen works with docker.</p>
+
+<p>This is rough image that shows how baleen interacts with Docker. In the image, you can see how the request made by baleen client is processed by baleen server that makes API calls to Docker host.</p>
+
+<p><img src="/assets/basic-flow.png" alt="basic flow of interaction" /></p>
+
+<p>The flow is what happens when you run</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>baleen cucumber <span class="nt">--image</span> my-test-runner <span class="nt">--files</span> features/
+</code></pre></div></div>
+
+<p>The above command does the following things.</p>
+
+<p><strong>1.</strong> Baleen client asks baleen server to run your tests.
+<strong>2.</strong> Baleen server receives the request and make API call to docker
+<strong>3.</strong> Docker creates and starts containers accordingly
+<strong>4.</strong> Baleen server retrieves results and pass them back to baleen client</p>
+
+<p>In this post, we are interested in a bit of <strong>2.</strong> and more in <strong>3.</strong> and <strong>4.</strong></p>
+
+<h2 id="making-api-call-to-run-containers">Making API Call To Run Containers</h2>
+
+<p>Making container object is very straightforward if you use docker-ruby.</p>
+
+<div class="language-ruby highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">image</span> <span class="o">=</span> <span class="s2">"my-app-runner"</span>
+<span class="n">test_files</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"test1.feature"</span><span class="p">,</span> <span class="s2">"test2.feature"</span><span class="p">,</span> <span class="s2">"test3.feature"</span><span class="p">]</span>
+<span class="n">containers</span> <span class="o">=</span> <span class="n">test_files</span><span class="p">.</span><span class="nf">map</span> <span class="k">do</span> <span class="o">|</span><span class="n">test_file</span><span class="o">|</span>
+  <span class="no">Docker</span><span class="o">::</span><span class="no">Container</span><span class="p">.</span><span class="nf">create</span><span class="p">(</span><span class="s1">'Cmd'</span> <span class="o">=&gt;</span> <span class="p">[</span><span class="s2">"bash"</span><span class="p">,</span> <span class="s2">"-c"</span><span class="p">,</span> <span class="s2">"cucumber features/</span><span class="si">#{</span><span class="n">test_file</span><span class="si">}</span><span class="s2">"</span><span class="p">],</span> <span class="s1">'Image'</span> <span class="o">=&gt;</span> <span class="n">image</span><span class="p">)</span>
+<span class="k">end</span>
+</code></pre></div></div>
+
+<p>Note that we are passing different test files to each container. The basic idea of baleen is let each container to run a single test. Therefore, if we have three test files, then we need to create three containers.</p>
+
+<p>To start container, just call <strong><em>Container.start</em></strong> method like this.</p>
+
+<div class="language-ruby highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">containers</span><span class="p">.</span><span class="nf">each</span> <span class="k">do</span> <span class="o">|</span><span class="n">container</span><span class="o">|</span>
+  <span class="n">container</span><span class="p">.</span><span class="nf">start</span>
+<span class="k">end</span>
+</code></pre></div></div>
+
+<p>The important point here is <strong><em>start</em></strong> method immediately returns once it asks docker to start containers. Therefore this loop finishes very quickly.</p>
+
+<h2 id="running-containers-asynchronously">Running containers asynchronously</h2>
+
+<p>When you start containers, you have to know when it finishes otherwise you don’t know when you can retrieve the results of containers. You can detect when a container finishes by using <strong><em>Container#wait</em></strong>.</p>
+
+<p>However, there is a problem.
+Unlike <strong><em>start</em></strong>,<strong><em>wait</em></strong> blocks until the method returns. This behavior isn’t good for our purpose (parallel tests running) since you don’t want to be blocked at one container.</p>
+
+<p>If you are blocked, you have wait each container one by one which is very inefficient.</p>
+
+<p><img src="/assets/synchronous_wait.png" alt="Waiting containers synchronously" /></p>
+
+<p>In this diagram, you can see that you have wait each container that takes <strong>90 sec</strong> including the time to start containers.</p>
+
+<p>What you want to do is waiting all containers at the same time and ask containers to notify you when they finish so that you can retrieve the results of containers.</p>
+
+<p><img src="/assets/asynchronous_wait.png" alt="Waiting containers asynchronously" /></p>
+
+<p>In this diagram, the maximum time is the time for waiting the slowest container, which is 30 sec. This makes <strong>60 sec</strong> in total which is faster than synchronous version.</p>
+
+<p>How can we archive this? This is where celluloid comes into play. We will put <strong><em>start</em></strong> and <strong><em>wait</em></strong> into a method called <strong><em>run</em></strong> and calling it asynchronously with the help of celluloid.</p>
+
+<p>Here is how <strong><em>run</em></strong> method looks like (some codes are omitted)</p>
+
+<div class="language-ruby highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">def</span> <span class="nf">run</span>
+  <span class="vi">@container</span><span class="p">.</span><span class="nf">start</span>
+  <span class="vi">@container</span><span class="p">.</span><span class="nf">wait</span><span class="p">(</span><span class="mi">600</span><span class="p">)</span>
+  <span class="n">stdout</span><span class="p">,</span> <span class="n">stderr</span> <span class="o">=</span> <span class="o">*</span><span class="vi">@container</span><span class="p">.</span><span class="nf">attach</span><span class="p">(</span><span class="ss">:stream</span> <span class="o">=&gt;</span> <span class="kp">false</span><span class="p">,</span> <span class="ss">:stdout</span> <span class="o">=&gt;</span> <span class="kp">true</span><span class="p">,</span> <span class="ss">:stderr</span> <span class="o">=&gt;</span> <span class="kp">true</span><span class="p">,</span> <span class="ss">:logs</span> <span class="o">=&gt;</span> <span class="kp">true</span><span class="p">)</span>
+
+  <span class="k">return</span> <span class="p">{</span>
+    <span class="ss">status_code: </span><span class="vi">@container</span><span class="p">.</span><span class="nf">json</span><span class="p">[</span><span class="s2">"State"</span><span class="p">][</span><span class="s2">"ExitCode"</span><span class="p">],</span>
+    <span class="ss">stdout: </span><span class="n">stdout</span><span class="p">,</span>
+    <span class="ss">stderr: </span><span class="n">stderr</span><span class="p">,</span>
+  <span class="p">}</span>
+<span class="k">end</span>
+</code></pre></div></div>
+
+<p>At this point, <strong><em>run</em></strong> still blocks. However, by using <a href="https://github.com/celluloid/celluloid/wiki/futures">Futures</a> of celluloid, you can make it asynchronous method.</p>
+
+<p>The code looks something like this.</p>
+
+<div class="language-ruby highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">containers</span><span class="p">.</span><span class="nf">map</span> <span class="p">{</span><span class="o">|</span><span class="n">container</span><span class="o">|</span> <span class="n">container</span><span class="p">.</span><span class="nf">future</span><span class="p">.</span><span class="nf">run</span><span class="p">}</span>
+</code></pre></div></div>
+
+<p>Note that the receiver of <strong><em>run</em></strong> is not the instance of container, but <strong><em>future</em></strong>.</p>
+
+<p>This method magically makes preceding method call asynchronous. In our case, <strong><em>run</em></strong> is called asynchronously.
+Therefore, even if <strong><em>run</em></strong> is blocking method, <strong><em>{|container| container.future.run}</em></strong> immediately moves to next loop without waiting containers to finish.</p>
+
+<p>But how can we be notified when containers finish? Well, we actually even don’t have to get notified because celluloid does it for you. This is done by calling <strong><em>value</em></strong> method.
+Let’s retrieve results by modifying previous codes a bit.</p>
+
+<div class="language-ruby highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">results</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="n">containers</span><span class="p">.</span><span class="nf">map</span> <span class="p">{</span><span class="o">|</span><span class="n">container</span><span class="o">|</span> <span class="n">container</span><span class="p">.</span><span class="nf">future</span><span class="p">.</span><span class="nf">run</span><span class="p">}.</span><span class="nf">each</span> <span class="k">do</span> <span class="o">|</span><span class="n">actor</span><span class="o">|</span>
+  <span class="n">results</span> <span class="o">&lt;&lt;</span> <span class="n">actor</span><span class="p">.</span><span class="nf">value</span>
+<span class="k">end</span>
+</code></pre></div></div>
+
+<p>Methods called with <strong><em>future</em></strong> returns <strong><em>#&lt;Celluloid::Future&gt;</em></strong> that has <strong><em>value</em></strong> method. <strong><em>value</em></strong> returns the return value of <strong><em>future</em></strong> whenever it finishes.</p>
+
+<p>So in our case, <strong><em>value</em></strong> returns the return value of <strong><em>run</em></strong> which is the hash of status code, stdout, and stderr. Now we could accomplish what we wanted. We could run multiple containers at one time and retrieve results whenever they finish.</p>
+
+<p>In summary, we archived running containers in parallel by</p>
+
+<ul>
+  <li>Implementing <strong><em>run</em></strong> method that calls <strong><em>start</em></strong> and <strong><em>wait</em></strong></li>
+  <li>Calling <strong><em>run</em></strong> asynchronously with future of celluloid</li>
+  <li>Retrieving return values with <strong><em>value</em></strong></li>
+</ul>
+:ET

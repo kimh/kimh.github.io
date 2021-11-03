@@ -52,7 +52,7 @@ categories:
 
 オーディエンスの設定とそれに合わせた内容をできたんじゃないかと思う。このツイートは自分のやったことが無駄じゃないと思えたのですごく嬉しかった。がんばったかいがあった！
 
-![devsumi_tweet](/images/devsumi_tweet.png =400x300)
+![devsumi_tweet](/assets/devsumi_tweet.png)
 
 https://twitter.com/devvosa/status/1096407370240909312
 

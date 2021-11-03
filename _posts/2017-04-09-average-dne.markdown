@@ -69,17 +69,17 @@ I'll denote n as the number of times you toss the coin for brevity from now on.
 
 Here is the graph of the average when n is **10**.
 
-![coin-toss-10](/images/coin-toss-10.png)
+![coin-toss-10](/assets/coin-toss-10.png)
 
 As you can see, the average is very quickly approaching to **0.5**. Let's do the same thing with larger n.
 
 When n is **1000**
 
-![coin-toss-1000](/images/coin-toss-1000.png)
+![coin-toss-1000](/assets/coin-toss-1000.png)
 
 When n is **10000**
 
-![coin-toss-10000](/images/coin-toss-10000.png)
+![coin-toss-10000](/assets/coin-toss-10000.png)
 
 By looking at these graphs, we can safely say that the average of dollar you win in this coin toss game is $0.5.
 
@@ -139,23 +139,23 @@ Rscript draw.R
 
 Let's begin with **n=10**.
 
-![coin-toss-until-head-10](/images/coin-toss-until-head-10.png)
+![coin-toss-until-head-10](/assets/coin-toss-until-head-10.png)
 
 It looks like the average is approaching to somewhere around 2.5 but we are not fully sure yet. Let's increase n and see if the average is really 2.5.
 
 Here is the graph when n is 20 and you will probably be disappointed by looking at the graph: the average is approaching to 2.5 and  then suddenly there is a spike around **n=20** which pushes the average a way higher! You will also discover the pattern after **n=20**: the average is converging to a number but then you will see a spike shortly after the convergence.
 
-![coin-toss-until-head-100](/images/coin-toss-until-head-100.png)
+![coin-toss-until-head-100](/assets/coin-toss-until-head-100.png)
 
 Maybe we just haven't tossed the coin enough times. Let's keep going a bit further.
 
 Here is the graph when n is 10000. It looks like this time the average is approaching to somewhere around 12. Did we finally discover the average?
 
-![coin-toss-until-head-10000](/images/coin-toss-until-head-10000.png)
+![coin-toss-until-head-10000](/assets/coin-toss-until-head-10000.png)
 
 It turns out we didn't! This is very clear when you increase n to 50000.
 
-![coin-toss-until-head-50000](/images/coin-toss-until-head-50000.png)
+![coin-toss-until-head-50000](/assets/coin-toss-until-head-50000.png)
 
 Again, there is a spike around 30000 and we lost the average again. You can increase n as much as you want and you will never find a good average in this game.
 

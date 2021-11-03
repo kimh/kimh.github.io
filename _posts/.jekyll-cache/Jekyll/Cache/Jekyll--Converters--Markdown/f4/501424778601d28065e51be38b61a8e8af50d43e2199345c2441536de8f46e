@@ -1,0 +1,23 @@
+I"A<h2 id="security-first">Security First</h2>
+
+<p>Always remind yourself that security is the most important thing. It’s important because the impact of security breach is more severe than anything else.</p>
+
+<p><strong>Risks have to be measured by the impact when that happens, not how likely it happens</strong></p>
+
+<h2 id="dont-break-stuff">Don’t break stuff</h2>
+
+<p>When backend breaks, everything on top of it will also break. Always pay attention to keep the backward compatibility.</p>
+
+<p><strong>Backward compatibility for the win</strong></p>
+
+<h2 id="dont-merge-prs-at-late-night">Don’t merge PRs at late night</h2>
+
+<p>You have much weaker cognitive power than you believe at late night. Merging PRs with the weak cognitive power will likely break the principles noted here.
+This is also important because you can’t test the consequence of your changes until next morning.</p>
+
+<p><strong>Merging PRs at Friday night is a terrible thing to do</strong></p>
+
+<h2 id="never-drink-during-working">Never drink during working</h2>
+
+<p>This is too obvious to be warned :)</p>
+:ET

@@ -1,0 +1,184 @@
+I"Y<h1 id="-double-colon-way">:: Double Colon way</h1>
+
+<p>When you define all specs in one namespace, things are very straightforward. There are two ways to do this. One is using namespaced keywords and the other is double colons.</p>
+
+<div class="language-clojure highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">(</span><span class="nf">ns</span><span class="w"> </span><span class="n">wisky-spec.spec</span><span class="w">
+  </span><span class="p">(</span><span class="no">:require</span><span class="w"> </span><span class="p">[</span><span class="n">clojure.spec.alpha</span><span class="w"> </span><span class="no">:as</span><span class="w"> </span><span class="n">s</span><span class="p">]))</span><span class="w">
+
+</span><span class="p">(</span><span class="nf">s/def</span><span class="w"> </span><span class="no">::wisky</span><span class="w"> </span><span class="p">(</span><span class="nf">s/keys</span><span class="w"> </span><span class="no">:req</span><span class="w"> </span><span class="p">[</span><span class="no">::name</span><span class="w"> </span><span class="no">::age</span><span class="p">])))</span><span class="w">
+</span></code></pre></div></div>
+
+<p>As you may know, double colong will be auto-resolved the current namespace you are in. So, if you define <code class="language-plaintext highlighter-rouge">::wisky</code> in <code class="language-plaintext highlighter-rouge">wisky-spec.spec</code> ns, then it will be resolved to <code class="language-plaintext highlighter-rouge">:wisky-spec.spec/wisky</code>.</p>
+
+<p>This is annoying to deal with when you want to use it from different namespace. Say, you want to use wisky spec from <code class="language-plaintext highlighter-rouge">liquor-shop</code> ns, then it looks like this:</p>
+
+<div class="language-clojure highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">(</span><span class="nf">ns</span><span class="w"> </span><span class="n">liquor-shop.core</span><span class="w">
+  </span><span class="p">(</span><span class="no">:require</span><span class="w"> </span><span class="p">[</span><span class="n">clojure.spec.alpha</span><span class="w"> </span><span class="no">:as</span><span class="w"> </span><span class="n">s</span><span class="p">]</span><span class="w">
+            </span><span class="p">[</span><span class="n">wisky-spec.spec</span><span class="p">]))</span><span class="w">
+
+</span><span class="p">(</span><span class="k">defn</span><span class="w"> </span><span class="n">wisky?</span><span class="w"> </span><span class="p">[</span><span class="n">wisky-map</span><span class="p">]</span><span class="w">
+  </span><span class="p">(</span><span class="nf">s/valid?</span><span class="w"> </span><span class="no">:wisky-spec.spec/wisky</span><span class="w"> </span><span class="n">wisky-map</span><span class="p">))</span><span class="w">
+</span></code></pre></div></div>
+
+<p>Note that you need to write <code class="language-plaintext highlighter-rouge">wisky-spec.spec/wisky</code> all the time if you want to use wisky spec. This is not handy but Clojure provides a solution to this. You can alias your symbols.</p>
+
+<div class="language-clojure highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">(</span><span class="nf">ns</span><span class="w"> </span><span class="n">liquor-shop.core</span><span class="w">
+  </span><span class="p">(</span><span class="no">:require</span><span class="w"> </span><span class="p">[</span><span class="n">clojure.spec.alpha</span><span class="w"> </span><span class="no">:as</span><span class="w"> </span><span class="n">s</span><span class="p">]</span><span class="w">
+            </span><span class="p">[</span><span class="n">wisky-spec.spec</span><span class="w"> </span><span class="no">:as</span><span class="w"> </span><span class="n">ws</span><span class="p">]))</span><span class="w">
+
+</span><span class="p">(</span><span class="k">defn</span><span class="w"> </span><span class="n">wisky?</span><span class="w"> </span><span class="p">[</span><span class="n">wisky-map</span><span class="p">]</span><span class="w">
+  </span><span class="p">(</span><span class="nf">s/valid?</span><span class="w"> </span><span class="no">:ws/wisky</span><span class="w"> </span><span class="n">wisky-map</span><span class="p">))</span><span class="w">
+</span></code></pre></div></div>
+
+<p>Now you can use <code class="language-plaintext highlighter-rouge">:ws/wisky</code> instead of long <code class="language-plaintext highlighter-rouge">:wisky-spec.spec/wisky</code>. Much better. Let’s re-write our wisky spec.</p>
+
+<div class="language-clojure highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">(</span><span class="nf">ns</span><span class="w"> </span><span class="n">wisky-spec.spec</span><span class="w">
+  </span><span class="p">(</span><span class="no">:require</span><span class="w"> </span><span class="p">[</span><span class="n">clojure.spec.alpha</span><span class="w"> </span><span class="no">:as</span><span class="w"> </span><span class="n">s</span><span class="p">]))</span><span class="w">
+
+</span><span class="p">(</span><span class="nf">s/def</span><span class="w"> </span><span class="no">:liquor/wisky</span><span class="w"> </span><span class="p">(</span><span class="nf">s/keys</span><span class="w"> </span><span class="no">:req</span><span class="w"> </span><span class="p">[</span><span class="no">::name</span><span class="w"> </span><span class="no">::age</span><span class="p">])))</span><span class="w">
+</span></code></pre></div></div>
+
+<h1 id="namespace-quaflied-keywords">Namespace quaflied keywords</h1>
+
+<p>Instead of using <code class="language-plaintext highlighter-rouge">::</code>, now we appended <code class="language-plaintext highlighter-rouge">liquor</code> namespace infront of <code class="language-plaintext highlighter-rouge">:wisky</code> symbol. Let’s use the wisky spec.</p>
+
+<div class="language-clojure highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">(</span><span class="nf">ns</span><span class="w"> </span><span class="n">liquor-shop.core</span><span class="w">
+  </span><span class="p">(</span><span class="no">:require</span><span class="w"> </span><span class="p">[</span><span class="n">clojure.spec.alpha</span><span class="w"> </span><span class="no">:as</span><span class="w"> </span><span class="n">s</span><span class="p">]</span><span class="w">
+            </span><span class="p">[</span><span class="n">wisky-spec.spec</span><span class="p">]))</span><span class="w">
+
+</span><span class="p">(</span><span class="k">defn</span><span class="w"> </span><span class="n">wisky?</span><span class="w"> </span><span class="p">[</span><span class="n">wisky-map</span><span class="p">]</span><span class="w">
+  </span><span class="p">(</span><span class="nf">s/valid?</span><span class="w"> </span><span class="no">:liquor/wisky</span><span class="w"> </span><span class="n">wisky-map</span><span class="p">))</span><span class="w">
+</span></code></pre></div></div>
+
+<p>It depends on your preferences, but using namespace qualified symbol may look better because it gives you a context. In this example, our wisky spec is for selling in liquor shop.</p>
+
+<h1 id="problems-with-namespaced-qualfied-keywords">Problems with namespaced qualfied keywords</h1>
+
+<h2 id="doesnt-tell-you-where-it-comes-from">Doesn’t tell you where it comes from</h2>
+
+<p>However, I see a few problems with namespaced qualified keywords. The first problem is it doesn’t tell you where it comes from.</p>
+
+<p>Have you noticed that in the earlier example, <code class="language-plaintext highlighter-rouge">:liquor/wisky</code> is automatically accessible inside <code class="language-plaintext highlighter-rouge">liquor-shop.core</code> ? It sounds like you require <code class="language-plaintext highlighter-rouge">wisky-spec.spec</code> and <code class="language-plaintext highlighter-rouge">:liquor/wisky</code> speci is globally accessible. This is indeed what happened.</p>
+
+<p>Clojure maintains specs in a global registry. We can confirm this from REPL.</p>
+
+<div class="language-clojure highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">(</span><span class="no">:luquor/wisky</span><span class="w"> </span><span class="p">(</span><span class="nf">s/registry</span><span class="p">))</span><span class="w">
+</span><span class="n">nil</span><span class="w">
+
+</span><span class="p">(</span><span class="nf">require</span><span class="w"> </span><span class="ss">'wisky-spec.spec</span><span class="o">'</span><span class="p">)</span><span class="w">
+</span><span class="p">(</span><span class="no">:luquor/wisky</span><span class="w"> </span><span class="p">(</span><span class="nf">s/registry</span><span class="p">))</span><span class="w">
+</span><span class="c1">;; return a spec</span><span class="w">
+</span></code></pre></div></div>
+
+<p>First time I noticed this, this looked a bit awakward to me. When dealing with Clojure namespace, I always do require other namespace and use it with alias. However in the example of spec, you just need to require the spec namespace and all specs defined are available to you. This reminds me back in the day when I was using Ruby or Javascript.</p>
+
+<p>Because specs are global, soemtimes it’s not obvious where the spec comes from. Consider the following example:</p>
+
+<div class="language-clojure highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">(</span><span class="nf">ns</span><span class="w"> </span><span class="n">bar.core</span><span class="w">
+  </span><span class="p">(</span><span class="no">:require</span><span class="w"> </span><span class="p">[</span><span class="n">distriller.spec</span><span class="w">
+             </span><span class="n">distributor.spec</span><span class="p">]))</span><span class="w">
+
+</span><span class="p">(</span><span class="k">defn</span><span class="w"> </span><span class="n">wisky?</span><span class="w"> </span><span class="p">[</span><span class="n">wisky-map</span><span class="p">]</span><span class="w">
+  </span><span class="p">(</span><span class="nf">s/valid?</span><span class="w"> </span><span class="no">:liquor/wisky</span><span class="w"> </span><span class="n">wisky-map</span><span class="p">))</span><span class="w">
+</span></code></pre></div></div>
+
+<p>In this example, you can’t tell whether :liquor/wisky comes from <code class="language-plaintext highlighter-rouge">distriller.spec</code> or <code class="language-plaintext highlighter-rouge">distributor.spec</code>, so you actually need to go in these namespaces to find out where it’s defined.</p>
+
+<h2 id="name-conflict">Name conflict</h2>
+
+<p>Another problem is that it’s possible to have name conflict.</p>
+
+<p>Let’s say Alice defines the follwing spec.</p>
+
+<div class="language-clojure highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">(</span><span class="nf">s/def</span><span class="w"> </span><span class="no">:liquor/wisky</span><span class="w"> </span><span class="p">(</span><span class="nf">s/keys</span><span class="w"> </span><span class="no">:req</span><span class="w"> </span><span class="p">[</span><span class="no">::name</span><span class="w"> </span><span class="no">::age</span><span class="p">])))</span><span class="w">
+</span></code></pre></div></div>
+
+<p>And uses it in <code class="language-plaintext highlighter-rouge">luquor.core</code> namespace</p>
+
+<div class="language-clojure highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">(</span><span class="nf">ns</span><span class="w"> </span><span class="n">liquor-shop.core</span><span class="w">
+  </span><span class="p">(</span><span class="no">:require</span><span class="w"> </span><span class="n">bar.core</span><span class="p">))</span><span class="w">
+
+</span><span class="p">(</span><span class="k">defn</span><span class="w"> </span><span class="n">wisky?</span><span class="w"> </span><span class="p">[</span><span class="n">wisky-map</span><span class="p">]</span><span class="w">
+  </span><span class="p">(</span><span class="nf">s/valid?</span><span class="w"> </span><span class="no">:liquor/wisky</span><span class="w"> </span><span class="n">wisky-map</span><span class="p">))</span><span class="w">
+</span></code></pre></div></div>
+
+<p>Later Bob is working in <code class="language-plaintext highlighter-rouge">bar.core</code> namespace. However, he didn’t know that there is already wisky spec exists, so he defins by his own.</p>
+
+<div class="language-clojure highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">(</span><span class="nf">ns</span><span class="w"> </span><span class="n">distributor.core</span><span class="p">)</span><span class="w">
+
+</span><span class="p">(</span><span class="nf">s/def</span><span class="w"> </span><span class="no">:liquor/wisky</span><span class="w"> </span><span class="p">(</span><span class="nf">s/keys</span><span class="w"> </span><span class="no">:req</span><span class="w"> </span><span class="p">[</span><span class="no">::name</span><span class="w"> </span><span class="no">::age</span><span class="w"> </span><span class="no">::strength</span><span class="p">]))</span><span class="w">
+</span><span class="p">(</span><span class="k">defn</span><span class="w"> </span><span class="n">wisky?</span><span class="w"> </span><span class="p">[</span><span class="n">wisky-map</span><span class="p">]</span><span class="w">
+  </span><span class="p">(</span><span class="nf">s/valid?</span><span class="w"> </span><span class="no">:liquor/wisky</span><span class="w"> </span><span class="n">wisky-map</span><span class="p">))</span><span class="w">
+</span></code></pre></div></div>
+
+<p>Because Bob thinks stregnth is a part of important quality of wisky, he requires <code class="language-plaintext highlighter-rouge">::strength</code> field in wisky map. Because spec is globally defined, the two :liquor/wisky spec conflicts now. When you require <code class="language-plaintext highlighter-rouge">liquor-shop.core</code> and <code class="language-plaintext highlighter-rouge">distributor.core</code> namespaces from another namespace, say, <code class="language-plaintext highlighter-rouge">grocery-store.core</code> and use <code class="language-plaintext highlighter-rouge">:liquro/wisky</code> spec, which one will be used? It’s hard to tell!</p>
+
+<h2 id="problems-with-double-collons">Problems with double collons</h2>
+
+<p>For these problems, I prefer to use :: when defining spec. However, double colon isn’t problem free, either. When defining a spec fo map, things look a bit weird.</p>
+
+<p>Let’s reuse the spec that we’ve seen earlier.</p>
+
+<div class="language-clojure highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">(</span><span class="nf">ns</span><span class="w"> </span><span class="n">wisky-spec.spec</span><span class="w">
+  </span><span class="p">(</span><span class="no">:require</span><span class="w"> </span><span class="p">[</span><span class="n">clojure.spec.alpha</span><span class="w"> </span><span class="no">:as</span><span class="w"> </span><span class="n">s</span><span class="p">]))</span><span class="w">
+
+</span><span class="p">(</span><span class="nf">s/def</span><span class="w"> </span><span class="no">::wisky</span><span class="w"> </span><span class="p">(</span><span class="nf">s/keys</span><span class="w"> </span><span class="no">:req</span><span class="w"> </span><span class="p">[</span><span class="no">:wisky/name</span><span class="w"> </span><span class="no">:wisky/age</span><span class="p">])))</span><span class="w">
+</span><span class="p">(</span><span class="k">defn</span><span class="w"> </span><span class="n">wisky?</span><span class="w"> </span><span class="p">[</span><span class="n">wisky-map</span><span class="p">]</span><span class="w">
+  </span><span class="p">(</span><span class="nf">s/valid?</span><span class="w"> </span><span class="no">::wisky</span><span class="w"> </span><span class="n">wisky-map</span><span class="p">))</span><span class="w">
+</span></code></pre></div></div>
+
+<p>To make a valid wisky, you need to do something liek this.</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>(require '[wisky-spec.spec :as ws])
+(wisky? {:wisky/name "laphroig" :wisky/age 15})
+</code></pre></div></div>
+
+<p>I feel a bit weird that the consumer of the wisky spee always need to supply <code class="language-plaintext highlighter-rouge">:wisky</code> infront of each fields. However this can be workaround by using <code class="language-plaintext highlighter-rouge">req-un</code> when defining spec.</p>
+
+<div class="language-clojure highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">(</span><span class="nf">ns</span><span class="w"> </span><span class="n">wisky-spec.spec</span><span class="w">
+  </span><span class="p">(</span><span class="no">:require</span><span class="w"> </span><span class="p">[</span><span class="n">clojure.spec.alpha</span><span class="w"> </span><span class="no">:as</span><span class="w"> </span><span class="n">s</span><span class="p">]))</span><span class="w">
+
+</span><span class="p">(</span><span class="nf">s/def</span><span class="w"> </span><span class="no">::wisky</span><span class="w"> </span><span class="p">(</span><span class="nf">s/keys</span><span class="w"> </span><span class="no">:req-un</span><span class="w"> </span><span class="p">[</span><span class="no">::name</span><span class="w"> </span><span class="no">::age</span><span class="p">])))</span><span class="w">
+</span><span class="p">(</span><span class="k">defn</span><span class="w"> </span><span class="n">wisky?</span><span class="w"> </span><span class="p">[</span><span class="n">wisky-map</span><span class="p">]</span><span class="w">
+  </span><span class="p">(</span><span class="nf">s/valid?</span><span class="w"> </span><span class="no">::wisky</span><span class="w"> </span><span class="n">wisky-map</span><span class="p">))</span><span class="w">
+</span></code></pre></div></div>
+
+<p>When <code class="language-plaintext highlighter-rouge">req-un</code> (require unqualified) is used, spec only checkes the right most symbol name and skips namespace. So you now make a valid wisky with general symbols that you get used to.</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>(wisky? {:name "laphroig" :age 15})
+</code></pre></div></div>
+
+<h2 id="push-from-clojure-community">Push from Clojure community</h2>
+
+<p>We’ve seen <code class="language-plaintext highlighter-rouge">req-un</code> is handy but this is not the direction that Clojure community is heading to. Clojure communities encourages the more use of namespace qualifed keywords, not in specs, but everywhere. The argument is that the use of namespaced qualfied keyword gives more context and making maps self-descriptibe.</p>
+
+<p>Sure, that sounds a very good arugment but, in practice, I found it’s hard to enforce.</p>
+
+<p>Say Alice builds a new product called “BeaverCI” that does continuous integration and implementing permission things, so I defined the spec like this.</p>
+
+<div class="language-clojure highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">(</span><span class="nf">s/def</span><span class="w"> </span><span class="no">::permission</span><span class="w">
+    </span><span class="p">(</span><span class="nf">s/keys</span><span class="w"> </span><span class="no">:req</span><span class="w"> </span><span class="p">[</span><span class="no">:beeaverci/user-id</span><span class="w"> </span><span class="no">:permission/scope</span><span class="p">]))</span><span class="w">
+</span></code></pre></div></div>
+
+<p>In BeaverCI, it’s very common to call their product simply as “Beaver” omitting CI part because it’s shorter.</p>
+
+<p>Later Bob builds a build system that hooks up permission system made by Alice.</p>
+
+<div class="language-clojure highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">(</span><span class="nf">s/def</span><span class="w"> </span><span class="no">::user</span><span class="w">
+  </span><span class="p">(</span><span class="nf">s/keys</span><span class="w"> </span><span class="no">:req</span><span class="w"> </span><span class="p">[</span><span class="no">:beeaver/user-id</span><span class="p">]))</span><span class="w">
+
+</span><span class="p">(</span><span class="k">defn</span><span class="w"> </span><span class="n">can-build?</span><span class="w"> </span><span class="p">[</span><span class="n">permission</span><span class="w"> </span><span class="n">user</span><span class="p">]</span><span class="w">
+  </span><span class="p">(</span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nf">s/valid</span><span class="w"> </span><span class="no">::permission</span><span class="p">)</span><span class="w">
+
+</span><span class="p">)</span><span class="w">
+</span></code></pre></div></div>
+
+<p>And try to use it.</p>
+
+<div class="language-clojure highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">(</span><span class="nf">can-build?</span><span class="w"> </span><span class="p">{</span><span class="no">:beeaver/user-id</span><span class="err">:</span><span class="w"> </span><span class="s">"12345"</span><span class="p">})</span><span class="w">
+</span></code></pre></div></div>
+
+<p>This breaks in the middle because permission spec requires <code class="language-plaintext highlighter-rouge">:beeaverci/user-id</code>, not <code class="language-plaintext highlighter-rouge">:beeaver/user-id</code>. However, they mean the same things but how to express it will be different among people. However, specs requires the name to be preceise. <code class="language-plaintext highlighter-rouge">:beeaverci/user-id</code> and <code class="language-plaintext highlighter-rouge">:beeaver/user-id</code> are completely different thing.</p>
+
+<p>Of course, the problem wont’ be solved if you go with simply <code class="language-plaintext highlighter-rouge">user-id</code> because other person coming from Ruby background may call it <code class="language-plaintext highlighter-rouge">useri_id</code> and it also breaks. However, by adding namespace, you are going to make this problem harder to deal with becayse you need to care both namespace part and actual symbol name part.</p>
+:ET

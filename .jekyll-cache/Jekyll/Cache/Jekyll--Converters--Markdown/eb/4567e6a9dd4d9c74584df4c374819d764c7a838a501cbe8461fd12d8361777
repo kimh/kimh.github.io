@@ -1,0 +1,208 @@
+I"ZB<p><img src="/assets/criu.jpeg" alt="" /></p>
+
+<h3 id="結論-20146の時点ではcriuを使ってdockerコンテナの停止再開はできないという少し残念な結果でこの記事は終わりますしかし記事を読んでもらえればcriuの面白さはわかってもらえると思います">結論: 2014/6の時点ではCRIUを使ってDockerコンテナの停止/再開はできないという少し残念な結果でこの記事は終わります。しかし、記事を読んでもらえればCRIUの面白さはわかってもらえると思います。</h3>
+
+<p>Dockerが急速に広まったことで、LXCがVMWareやXenなどのVMに対して持つ利点はとても明確になりました。</p>
+
+<p>しかし、VMにあってLXCにはない機能が一つあります。それは、コンテナの停止/再開によるコンテナの状態の保存です。</p>
+
+<p>ここで<a href="http://criu.org/Main_Page">CRIU</a>の出番です。</p>
+
+<p>CRIUはいわゆるCR(checkpoint/restart)ツールです。走っているプロセスを途中で止めてファイルに保存して、いつでも途中からプロセスを再開することができます。</p>
+
+<p>LXCコンテナはプロセスなので、CRIUを使えばコンテナの停止/再開ができそうな気がしますが、本当にできるでしょうか？</p>
+
+<p>この記事では、CRIUをインストールしてDockerコンテナの停止/再開ができるかどうか試してみます。</p>
+
+<h2 id="criuをインスールする">CRIUをインスールする</h2>
+
+<h3 id="カーネルを再構築する">カーネルを再構築する</h3>
+<p>CRIUを動かすためには、CRIUが必要とするカーネルパラメータが有効になったカーネルを使わないといけません。今回はVagrat UbuntuをLXCのホストマシンとして使うのですが、既存のVagrant Boxで必要なカーネルパラメータが有効になっているものはなさそうでした。</p>
+
+<p>なので、まずはカーネルの再構築から始めないといけません。カーネルの再構築と言うと敷居が高そうですが、実際はとても簡単です。</p>
+
+<p>今回は<a href="https://cloud-images.ubuntu.com/vagrant/trusty/current/trusty-server-cloudimg-amd64-vagrant-disk1.box">公式Ubuntu14.04 cloud image</a>を使います。</p>
+
+<p>まずは、このボックスを追加します。</p>
+
+<div class="language-sh highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ </span>vagrant box add ubuntu14.04 https://cloud-images.ubuntu.com/vagrant/trusty/current/trusty-server-cloudimg-amd64-vagrant-disk1.box
+<span class="nv">$ </span>vagrant init ubuntu14.04
+</code></pre></div></div>
+
+<p><code class="language-plaintext highlighter-rouge">vagrant up</code> コマンドを打つ前に、CPUとメモリーを増やしましょう。遅いマシンだと再構築にはとても時間がかかります。2コア、2048Mのメモリがあれば大丈夫だと思います。</p>
+
+<p><code class="language-plaintext highlighter-rouge">Vagrantfile</code> をエディタで開いて、以下を追加してください。</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>config.vm.provider :virtualbox do |vb|
+  vb.customize ["modifyvm", :id, "--memory", "2048"]
+  vb.customize ["modifyvm", :id, "--cpus", 2]
+end
+</code></pre></div></div>
+
+<p>終わったら、<code class="language-plaintext highlighter-rouge">vagrant up &amp;&amp; vagrant ssh</code>してログインしてください。rootユーザになって再構築に必要なパッケージをインストールします。</p>
+
+<div class="language-sh highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ </span>apt-get <span class="nt">-y</span> update
+<span class="nv">$ </span>apt-get <span class="nt">-y</span> <span class="nb">install </span>libncurses-dev build-essential libncurses-dev build-essential fakeroot kernel-package linux-source bc
+</code></pre></div></div>
+
+<p>インストールしたら、<code class="language-plaintext highlighter-rouge">/usr/src/linux-source-&lt;kernel version&gt;</code> というディレクトリが作成されているはずです。そのディレクトリに移動します。</p>
+
+<div class="language-sh highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ </span><span class="nb">cd</span> /usr/src/linux-source-&lt;kernel version&gt;
+<span class="nv">$ </span><span class="nb">tar </span>xvjf linux-source-&lt;kernel version&gt;.tar.bz2
+<span class="nv">$ </span><span class="nb">cd</span> ./linux-source-&lt;kernel version&gt;
+</code></pre></div></div>
+
+<p>次はカーネルのコンフィグファイルが必要になります。</p>
+
+<p>gistにアップロードしたのを使ってもらえれば、自分でコンフィグをする必要はありません。以下のコマンドを入力してください。(カレントディレクトリをKernelのソースを展開したディレクトリに変更しておくのを忘れずに)</p>
+
+<div class="language-sh highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ </span>curl https://gist.githubusercontent.com/kimh/c93f42981d14a33c63c0/raw/a73af0f7f745c2538253ef153a62a8ba1a2d97be/.config <span class="nt">-o</span> .config
+</code></pre></div></div>
+
+<p>もし、CRIUを動かすためにどのオプションが必要か知りたい場合は<a href="http://criu.org/Installation#Kernel_configuration">ここ</a>にリストがあります。</p>
+
+<pre><code class="language-.config```ファイルを準備したら、再構築の準備完了です。">
+**もう一度確認してください。CPUとメモリは増やしましたか？もししていないと、とても長い時間待たされることになります。**
+
+```sh
+$ export LC_CTYPE=C
+$ make-kpkg clean
+$ CONCURRENCY_LEVEL=4 make-kpkg --rootcmd fakeroot --initrd --revision=`date +%Y%m%d` kernel_image kernel_headers
+</code></pre>
+
+<p>ビルドが完了したら、<code class="language-plaintext highlighter-rouge">linux-headers-&lt;kernel version&gt;_amd64.deb</code> と <code class="language-plaintext highlighter-rouge">linux-image-&lt;kernel version&gt;_amd64.deb</code> というファイルが <code class="language-plaintext highlighter-rouge">/usr/src/</code> ディレクトリに作成された思います。</p>
+
+<p>さっそくインストールしましょう。</p>
+
+<div class="language-sh highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ </span>dpkg <span class="nt">-i</span> linux-headers-&lt;kernel version&gt;_amd64.deb
+<span class="nv">$ </span>dpkg <span class="nt">-i</span> linux-image-&lt;kernel version&gt;_amd64.deb
+<span class="nv">$ </span>reboot
+</code></pre></div></div>
+
+<p>再起動したらCRIUが使えるカーネルで動いているはずです。</p>
+
+<h3 id="criuをソースからコンパイルする">CRIUをソースからコンパイルする</h3>
+<p>次はCRIUをインストールします。Ubuntuは最新のパッケージを用意していないので、自分でソースからコンパイルしないといけません。</p>
+
+<div class="language-sh highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ </span>apt-get <span class="nb">install </span>bsdmainutils build-essential libprotobuf-c0-dev linux-headers-generic protobuf-c-compiler
+<span class="nv">$ </span><span class="nb">mkdir</span> /src
+<span class="nv">$ </span><span class="nb">cd</span> /src
+<span class="nv">$ </span>curl http://download.openvz.org/criu/criu-1.3-rc2.tar.bz2 | <span class="nb">tar</span> <span class="nt">-jxf-</span>
+<span class="nv">$ </span>make <span class="nt">-C</span> criu-1.3-rc2/
+<span class="nv">$ </span><span class="nb">cp </span>criu-1.3-rc2/criu /usr/local/sbin/
+</code></pre></div></div>
+
+<p>これでCRIUのインストールは完了です。ちゃんとインストールされているか確認しましょう。CRIUにはそのためのコマンドがあります。</p>
+
+<div class="language-sh highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ </span>criu check <span class="nt">--ms</span>
+Warn  <span class="o">(</span>tun.c:55<span class="o">)</span>: Skipping tun support check
+Warn  <span class="o">(</span>cr-check.c:259<span class="o">)</span>: Skipping mnt_id support check
+Looks good.
+</code></pre></div></div>
+
+<p><code class="language-plaintext highlighter-rouge">Looks good.</code>が表示されましたか？いくつか警告がでますが、無視して構いません。</p>
+
+<p>コンテナに対して使う前に、まずは普通のプロセスを停止/再開してみましょう。以下の例は<a href="http://criu.org/Simple_loop">CRIUのHOWTOページ</a>からです。</p>
+
+<p>まず、ただループするだけのスクリプトを用意します。</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>$ cat &gt; test.sh &lt;&lt;-EOF
+#!/bin/sh
+while true; do
+ date
+ sleep 1
+done
+EOF
+
+$ chmod +x test.sh
+$ ./test.sh
+</code></pre></div></div>
+
+<p>プロセスを停止するには<code class="language-plaintext highlighter-rouge">criu dump</code>コマンドを使います。</p>
+
+<div class="language-sh highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c"># criuを実行するためにはrootじゃないといけない</span>
+<span class="nv">$ </span><span class="nb">sudo</span> <span class="nt">-s</span>
+<span class="nv">$ </span><span class="nb">export </span><span class="nv">PID</span><span class="o">=</span><span class="sb">`</span>pgrep <span class="nt">-f</span> test.sh<span class="sb">`</span>
+<span class="nv">$ </span><span class="nb">mkdir</span> /tmp/test
+<span class="nv">$ </span>criu dump <span class="nt">-t</span> <span class="nv">$PID</span> <span class="nt">--images-dir</span> /tmp/test <span class="nt">--shell-job</span>
+</code></pre></div></div>
+
+<p>もし、ダンプが成功したら<code class="language-plaintext highlighter-rouge">/tmp/test</code>ディレクトリ配下に沢山のファイルができているはずです。</p>
+
+<div class="language-sh highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ </span><span class="nb">ls</span> /tmp/test
+cgroup.img         fanotify-mark.img   fs-4898.img     netlinksk.img     pstree.img         signalfd.img
+core-4521.img      fanotify.img        ids-4521.img    ns-files.img      reg-files.img      sk-queues.img
+core-4898.img      fdinfo-2.img        ids-4898.img    packetsk.img      remap-fpath.img    stats-dump
+creds-4521.img     fdinfo-3.img        inetsk.img      pagemap-4521.img  sigacts-4521.img   tty-info.img
+creds-4898.img     fifo-data.img       inotify-wd.img  pagemap-4898.img  sigacts-4898.img   tty.img
+eventfd.img        fifo.img            inotify.img     pages-1.img       signal-p-4521.img  tunfile.img
+eventpoll-tfd.img  filelocks-4521.img  inventory.img   pages-2.img       signal-p-4898.img  unixsk.img
+eventpoll.img      filelocks-4898.img  mm-4521.img     pipes-data.img    signal-s-4521.img
+ext-files.img      fs-4521.img         mm-4898.img     pipes.img         signal-s-4898.img
+</code></pre></div></div>
+
+<p>今度はプロセスを再開してみましょう。<code class="language-plaintext highlighter-rouge">criu restore</code>コマンドを使います。</p>
+
+<div class="language-sh highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ </span>criu restore <span class="nt">-t</span> <span class="nv">$PID</span> <span class="nt">--images-dir</span> /tmp/test  <span class="nt">--shell-job</span>
+</code></pre></div></div>
+
+<p>プロセスが問題なく再開されたら<code class="language-plaintext highlighter-rouge">test.sh</code>が<code class="language-plaintext highlighter-rouge">date</code>コマンドの出力をターミナルに出すはずです。</p>
+
+<h2 id="criuでコンテナを停止再開してみる">CRIUでコンテナを停止/再開してみる</h2>
+<p>ここまでは大丈夫ですか？では、いよいよDockerコンテナに使ってみましょう。DockerはこのVagrantにはインストールされていないので、まずインストールしましょう。</p>
+
+<div class="language-sh highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ </span>apt-get <span class="nb">install </span>docker.io jq
+<span class="nv">$ </span><span class="nb">ln</span> <span class="nt">-sf</span> /usr/bin/docker.io /usr/local/bin/docker
+<span class="nv">$ </span><span class="nb">sed</span> <span class="nt">-i</span> <span class="s1">'$acomplete -F _docker docker'</span> /etc/bash_completion.d/docker.io
+</code></pre></div></div>
+
+<p>インストールしたら、簡単なコマンドをコンテナに実行させます。</p>
+
+<div class="language-sh highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ </span>docker run <span class="nt">-t</span> <span class="nt">-i</span> ubuntu /bin/bash
+</code></pre></div></div>
+
+<p>コンテナを停止するにはプロセスIDを知る必要があります。</p>
+
+<div class="language-sh highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ ID</span><span class="o">=</span><span class="sb">`</span>docker ps <span class="nt">-l</span> <span class="nt">-q</span><span class="sb">`</span>
+<span class="nv">$ PID</span><span class="o">=</span><span class="sb">`</span>docker inspect <span class="nv">$ID</span> | jq <span class="s1">'.[0].State.Pid'</span><span class="sb">`</span>
+</code></pre></div></div>
+
+<p>いよいよ、苦労が報われる時です。コンテナを停止してみましょう！！</p>
+
+<div class="language-sh highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ </span>criu dump <span class="nt">-t</span> <span class="nv">$PID</span> <span class="nt">--images-dir</span> /tmp/docker
+Error <span class="o">(</span>mount.c:449<span class="o">)</span>: 102:./dev/console doesn<span class="s1">'t have a proper root mount
+Error (cr-dump.c:1882): Dumping FAILED.
+</span></code></pre></div></div>
+
+<p>あれ？CRIUはエラーを吐いてしまいました。ダンプに失敗したようです。エラーメッセージをGoogleで調べてみると、以下のスレッドを見つけました。</p>
+
+<p>CRIU said dumping failed. After googling the error message, I found this discussion.</p>
+
+<p><a href="https://lists.linuxcontainers.org/pipermail/lxc-devel/2013-November/006326.html">[lxc-devel] [CRIU] LXC live migrate</a></p>
+<blockquote>
+  <p>That’s container’s console which is a bind mounted tty from
+the host. And since this is an external connection, CRIU doesn’t dump one.</p>
+</blockquote>
+
+<p>ガーン。どうやら、現状のCRIUではLXCのの停止/再開はできないみたいです。でも、<a href="http://criu.org/LXC">ここのページ</a>にはCRIUを使ってLXCを停止/再開する方法が書かれていますよ。Dockerは内部でLXCを使っているので動くはずじゃ、、、</p>
+
+<p>以下は同じスレッドに書かれていました。</p>
+
+<p><a href="https://lists.linuxcontainers.org/pipermail/lxc-devel/2013-November/006326.html">[lxc-devel] [CRIU] LXC live migrate</a></p>
+<blockquote>
+  <p>AFAIK cgroups are used <em>inside</em> containers only with recent guest templates.
+In OpenVZ we use more old ones (and more stable) so haven’t meet this yet.
+And yes, cgroups are in plans for the nearest future :)</p>
+</blockquote>
+
+<p>要するに、CRIUはcgroupsを2014/06の時点ではサポートしていないらしいです。でも、Dockerが使っているLXCのテンプレートはcgroupsを使っているようです。よって、CRIUではDockerコンテナの停止/再開はできないみたいです。</p>
+
+<p>残念な結果です。。。</p>
+
+<h2 id="結論">結論</h2>
+<p>今回の実験で、CRIU v1.3ではDockerコンテナの停止/再開はできないことがわかりました。CRIUがまだcgroupsに対応していないからです。</p>
+
+<p>今回は少し残念な結果になってしまいましたが、ここまで読んでもらえた方にはCRIUの可能性がわかってもらえたかと思います。</p>
+
+<p>CRIUがLXCのエコシステムにもたらす将来の可能性に対して、このプロジェクトの認知度はとても低いです。この記事を読んでくださった方は、今すぐ<a href="https://github.com/xemul/criu">Github</a>でスターしてウォッチしましょう！このブログでもこれから色々CRIUについて書いて行きたいと思います。</p>
+:ET

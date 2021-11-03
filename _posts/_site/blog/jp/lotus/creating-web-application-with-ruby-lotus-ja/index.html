@@ -1,0 +1,223 @@
+<p><img src="/assets/lotus.jpeg" alt="" /></p>
+
+<p><strong><em>注意</em></strong>  この記事はIBM製のコラボレーションソフトについてのページではありません。Rubyで書かれた<a href="http://lotusrb.org/">Lotus</a>というWebフレームワークについての記事です。</p>
+<h2 id="内容">内容</h2>
+<ul>
+  <li><a href="#what_is_lotus">Lotusとは何か</a></li>
+  <li><a href="#why_lotus_instead_of_rails">なぜRailsじゃなくLotusか</a></li>
+  <li><a href="#creating_one_file_application">One-fileアプリを作る</a></li>
+</ul>
+
+<p><a id="what_is_lotus"></a></p>
+<h2 id="lotusとは何か">Lotusとは何か</h2>
+<p><a href="http://lotusrb.org/">Lotus</a>は新しいRubyで書かれたWebフレームワークです。比較的少人数の<a href="https://github.com/lotus">lotusチーム</a>が開発しています。
+2014年9月の時点ではまだ本番環境では使えませんが、簡単なアプリを作るには十分に動作します。</p>
+
+<p>Lotusのプロジェクトページに書かれているスローガンを見たときに一瞬で一目惚れしました。</p>
+
+<p>ページにはこう書いてあります。(かなり意訳です)</p>
+
+<blockquote>
+  <p>Lotusは軽量で高速かつテストが容易なフレームワークです。Lotusはオブジェクト指向プログラミングのエッセンスを取り戻し、安定したAPI、最小限のDSLを提供してシンプルなオブジェクトに基づいたWeb開発を可能にします。</p>
+</blockquote>
+
+<p>このスローガンを読んだ時、探していたものはこれだと思いました。（後で詳しく説明します）ちょうど個人でやっているプロジェクトでシンプルなAPIサーバを作ろうとしていたので早速Lotusを使ってみることにしました。
+まだ情報がほとんど世の中に存在しないので色々苦労しましたが、最近は少しずつ <strong><em>Lotus Way</em></strong> がわかってきたのでこの記事で紹介しようと思います。</p>
+
+<p><a id="why_lotus_instead_of_rails"></a></p>
+<h2 id="なぜrailsではなくlotusか">なぜRailsではなくLotusか</h2>
+<p>最近はアプリケーションをモジュール方式で開発する機会が増えてきました。この開発方法をSOAと呼ぼうがMicroserviceと呼ぼうがなんでもいいですが、多くのプロジェクトがこの開発方式を採用するようになってきています。
+<a href="https://github.com/flynn">(Fylnnはお気に入りの例です)</a></p>
+
+<p>アプリをモジュール方式で開発する利点はいくつかあります。</p>
+
+<ul>
+  <li>テストがしやすい</li>
+  <li>高いポータビリティ</li>
+  <li>再利用しやすい</li>
+  <li>デプロイが容易</li>
+</ul>
+
+<p>Railsを使ってこれらのことを実現するのは簡単ではありません。Railsは素晴らしいですが、フレームワークスタックは巨大で沢山の機能が最初からビルトインされています。
+要するにRailsは小さいコンポーネントを沢山作るには大きすぎます。</p>
+
+<p><a href="https://github.com/sinatra/sinatra">Sinatra</a>や<a href="https://github.com/rails-api/rails-api">rails-api</a>が使えるのでは？と思う人もいると思います。
+確かにSinatraは軽量です。ただ最近個人的にはDSLよりも <strong><em>純粋なRubyのコード</em></strong> を好むようになってきました。学習コストを低く抑えれるからです。
+正直rails-apiは使ったことがないのでよくわかりません。ただ、Railsがベースなのでそこまで軽量ではないのではないかと思っています。もし、知ってる人がいたら教えてください。</p>
+
+<p><a href="https://github.com/lotus">LotusのGithubページ</a>を見ればわかりますが、Lotusは複数のコンポーネントからできているので、この中の一つだけを自分のプロジェクトで使うことも可能です。
+例えば、<a href="https://github.com/lotus/router">lotus-router</a>だけを自分のRackアプリに組み込んでHTTPルーターとして使うことができます。</p>
+
+<p>またLotusはRailsのようにフルスタックなフレームワークとして使うこともできます。LotusはRailsのいいとこ取りをしているので(例えばCoCの積極的に採用)比較的少ないコードでアプリケーションを作ることもできます。</p>
+
+<p>つまり、LotusはSinatraのように軽量なアプリを作ることができる一方で、Railsのようにフルスタックなアプリも作ることができるということです。</p>
+
+<p><a id="creating_one_file_application"></a></p>
+<h2 id="one-fileアプリケーションを作る">One-fileアプリケーションを作る</h2>
+<p>Lotusを使ってOne-fileアプリケーションを作ってみます。LotusのGithubに掲載されている<a href="https://github.com/lotus/lotus#one-file-application">one file application</a>を参考にします。</p>
+
+<p>まずは、プロジェクト用のディレクトリを作成します。今後の説明はこのディレクトリをカレントディレクトリに設定しているいう前提で進めます。</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>mkdir onefileapp &amp;&amp; cd onefileapp
+</code></pre></div></div>
+
+<p>Lotusの公式なgemはまだ配布されていません。<a href="https://rubygems.org/gems/lotusrb">ここ</a>にありますが更新日は2014年1月となっています。最新のmasterブランチは
+これよりずっと進んでいるので、ソースからインストールします。そのために、まずLotusレポジトリをクローンします。</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>git clone https://github.com/lotus/lotus.git
+</code></pre></div></div>
+
+<p>Gemの管理にbundlerを使います。Gemfileを作成しましょう。</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>bundle init
+</code></pre></div></div>
+
+<p>次にGemfileを編集します。<code class="language-plaintext highlighter-rouge">&lt;your-path-to-lotus-repo&gt;</code>をクローンしてきたLotusのレポジトリのディレクトリに適宜変更してください。</p>
+
+<div class="language-ruby highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">source</span> <span class="s2">"https://rubygems.org"</span>
+<span class="n">gem</span> <span class="s1">'lotusrb'</span><span class="p">,</span> <span class="ss">:path</span> <span class="o">=&gt;</span> <span class="o">&lt;</span><span class="n">your</span><span class="o">-</span><span class="n">path</span><span class="o">-</span><span class="n">to</span><span class="o">-</span><span class="n">lotus</span><span class="o">-</span><span class="n">repo</span><span class="o">&gt;</span>
+</code></pre></div></div>
+
+<p>Gemをインストールします。</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>bundle install --path vendor/
+</code></pre></div></div>
+
+<p>これでアプリケーションを書く準備が整いました(といっても１ファイルですが)。以下のコードを <strong><em>config.ru</em></strong> として保存してください。</p>
+
+<p><strong><em>config.ru</em></strong></p>
+<div class="language-ruby highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nb">require</span> <span class="s1">'lotus'</span>
+
+<span class="k">module</span> <span class="nn">OneFile</span>
+  <span class="k">class</span> <span class="nc">Application</span> <span class="o">&lt;</span> <span class="no">Lotus</span><span class="o">::</span><span class="no">Application</span>
+    <span class="n">configure</span> <span class="k">do</span>
+      <span class="n">routes</span> <span class="k">do</span>
+        <span class="n">get</span> <span class="s1">'/'</span><span class="p">,</span> <span class="ss">to: </span><span class="s1">'home#index'</span>
+      <span class="k">end</span>
+    <span class="k">end</span>
+    <span class="nb">load</span><span class="o">!</span>
+  <span class="k">end</span>
+
+  <span class="k">module</span> <span class="nn">Controllers</span>
+    <span class="k">module</span> <span class="nn">Home</span>
+      <span class="kp">include</span> <span class="no">OneFile</span><span class="o">::</span><span class="no">Controller</span>
+
+      <span class="n">action</span> <span class="s1">'Index'</span> <span class="k">do</span>
+        <span class="k">def</span> <span class="nf">call</span><span class="p">(</span><span class="n">params</span><span class="p">)</span>
+        <span class="k">end</span>
+      <span class="k">end</span>
+    <span class="k">end</span>
+  <span class="k">end</span>
+
+  <span class="k">module</span> <span class="nn">Views</span>
+    <span class="k">module</span> <span class="nn">Home</span>
+      <span class="k">class</span> <span class="nc">Index</span>
+        <span class="kp">include</span> <span class="no">OneFile</span><span class="o">::</span><span class="no">View</span>
+
+        <span class="k">def</span> <span class="nf">render</span>
+          <span class="s2">"Hello, Lotus"</span>
+        <span class="k">end</span>
+      <span class="k">end</span>
+    <span class="k">end</span>
+  <span class="k">end</span>
+<span class="k">end</span>
+
+<span class="n">run</span> <span class="no">OneFile</span><span class="o">::</span><span class="no">Application</span><span class="p">.</span><span class="nf">new</span>
+</code></pre></div></div>
+
+<p>保存したらアプリを起動してみましょう。最新のmasterブランチには <code class="language-plaintext highlighter-rouge">lotus server</code> コマンドがあるのでこれを使います。</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>bundle exec lotus server
+</code></pre></div></div>
+
+<p>起動できましたか？それではブラウザで http://localhost:2300 にアクセスしてみてください。 <code class="language-plaintext highlighter-rouge">Hello, Lotus</code> と表示されるはずです。</p>
+
+<p>コードの説明をします。</p>
+
+<p>まず、最初に気づくことは<code class="language-plaintext highlighter-rouge">Controllers</code>と<code class="language-plaintext highlighter-rouge">Views</code>モジュール内で定義されているクラスは継承を使っていないということです。
+Lotusの哲学の一つに<code class="language-plaintext highlighter-rouge">モジュールをインクルードして最小限のインターフェースを実装する</code>というものがあります。
+この哲学は開発者に本当に必要なものだけをMixinして使うことを推奨します。</p>
+
+<p>次に<code class="language-plaintext highlighter-rouge">Application</code>クラスを見てみましょう。今回の例ではこのクラスはルートの設定をしているだけです。
+<code class="language-plaintext highlighter-rouge">get '/', to: 'home#index'</code>とすることで<code class="language-plaintext highlighter-rouge">GET /</code>のルートは<code class="language-plaintext highlighter-rouge">Home::Index</code>コントローラを使うように設定しています。
+今回はひとつだけしかルートを設定していませんが他のHTTPメソッドも同じように設定できます。</p>
+
+<div class="language-ruby highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">routes</span> <span class="k">do</span>
+  <span class="n">post</span>   <span class="s1">'/books'</span><span class="p">,</span>             <span class="ss">to: </span><span class="s1">'book#create'</span>
+  <span class="n">put</span>    <span class="s1">'/books/:id'</span><span class="p">,</span>         <span class="ss">to: </span><span class="s1">'book#update'</span>
+  <span class="n">delete</span> <span class="s1">'/books/:id'</span><span class="p">,</span>         <span class="ss">to: </span><span class="s1">'book#destroy'</span>
+
+  <span class="c1"># ワンライナーレスポンス</span>
+  <span class="n">get</span>    <span class="s1">'/ping'</span><span class="p">,</span>              <span class="ss">to: </span><span class="o">-&gt;</span><span class="p">(</span><span class="n">env</span><span class="p">)</span> <span class="p">{[</span><span class="mi">200</span><span class="p">,</span> <span class="p">{},</span> <span class="p">[</span><span class="s1">'pong'</span><span class="p">]]}</span>
+<span class="k">end</span>
+</code></pre></div></div>
+
+<p>次に<code class="language-plaintext highlighter-rouge">Controllers</code>を見てみましょう。<code class="language-plaintext highlighter-rouge">action</code>を呼んでいる以外は何もしていません。</p>
+
+<p><code class="language-plaintext highlighter-rouge">action</code>とは何でしょうか？<code class="language-plaintext highlighter-rouge">action</code>はHTTPリクエストのエンドポイントとして動き、ここでリクエストの中身を見たりレスポンスを生成したりします。
+リクエストに対するビジネスロジックもここに書きます。多分、<code class="language-plaintext highlighter-rouge">action</code>はRailsのControllerとほとんど同じものだと考えていいと思います。
+ここでは先ほどみたルートから呼び出される<code class="language-plaintext highlighter-rouge">Index</code> actionを定義しています。</p>
+
+<p>最後に<code class="language-plaintext highlighter-rouge">Views</code>を見ましょう。このクラスの仕事はRailsのViewとは異なります。
+RailsではViewはブラウザでレンダリングされるコンテンツを吐き出すコードを書く場所でした。Lotusではこれは<code class="language-plaintext highlighter-rouge">Template</code>で行います。(今回の例ではTemplateはでてきません)</p>
+
+<p>LotusではViewはPresenterレイヤーとして動きます。RailsではPresenterは標準ではありません。(Draperなどのgemで使えるようになります)
+Presenterの仕事はデータをControllerから受け取って抽象化してTemplateに見せることです。
+このようにすることでコンテンツ描画コードをクリーンに保つことができるので最近では有名なデザインパターンです。</p>
+
+<p>コードの説明に戻ります。ここでは<code class="language-plaintext highlighter-rouge">render</code>メソッドを実装して<code class="language-plaintext highlighter-rouge">Hello, Lotus</code>というメッセージを表示しています。</p>
+
+<p>この例はあまり面白くないですね。ViewとControllerを連携させてデータのやりとりをさせてみましょう。</p>
+
+<p>Controllerのコードを以下のように編集します。</p>
+
+<div class="language-ruby highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">module</span> <span class="nn">Controllers</span>
+  <span class="k">module</span> <span class="nn">Home</span>
+    <span class="kp">include</span> <span class="no">OneFile</span><span class="o">::</span><span class="no">Controller</span>
+    <span class="n">action</span> <span class="s1">'Index'</span> <span class="k">do</span>
+
+      <span class="n">expose</span> <span class="ss">:time</span>
+
+      <span class="k">def</span> <span class="nf">call</span><span class="p">(</span><span class="n">params</span><span class="p">)</span>
+        <span class="vi">@time</span> <span class="o">=</span> <span class="no">Time</span><span class="p">.</span><span class="nf">now</span>
+      <span class="k">end</span>
+    <span class="k">end</span>
+  <span class="k">end</span>
+<span class="k">end</span>
+</code></pre></div></div>
+
+<p>２つ新しいメソッドが出てきました。<code class="language-plaintext highlighter-rouge">expose</code>と<code class="language-plaintext highlighter-rouge">call</code>です。</p>
+
+<p>ControllerからViewにデータを渡すには、exposeを使って明示的に公開する変数を指定しないといけません。
+これも<code class="language-plaintext highlighter-rouge">本当に必要なものだけを使う</code>というLotusの哲学の現れです。</p>
+
+<p><code class="language-plaintext highlighter-rouge">call</code>はHTTPリクエストのエントリーポイントとして動きます。さっきも少し触れたようにこの中にビジネスロジックやレスポンス生成のコードを書きます。</p>
+
+<p>ViewをControllerからデータを受け取るように変更しましょう。</p>
+
+<div class="language-ruby highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">module</span> <span class="nn">Views</span>
+  <span class="k">module</span> <span class="nn">Home</span>
+    <span class="k">class</span> <span class="nc">Index</span>
+      <span class="kp">include</span> <span class="no">OneFile</span><span class="o">::</span><span class="no">View</span>
+
+      <span class="k">def</span> <span class="nf">render</span>
+        <span class="s2">"Current time: </span><span class="si">#{</span><span class="n">time</span><span class="si">}</span><span class="s2">"</span>
+      <span class="k">end</span>
+    <span class="k">end</span>
+  <span class="k">end</span>
+<span class="k">end</span>
+</code></pre></div></div>
+
+<p>Controllerが<code class="language-plaintext highlighter-rouge">@time</code>を<code class="language-plaintext highlighter-rouge">expose</code>で公開しているので、Viewはこのデータに<code class="language-plaintext highlighter-rouge">time</code>変数経由でアクセスすることができます。</p>
+
+<p>アプリケーションを再起動してください。ブラウザで同じページにアクセスすると<code class="language-plaintext highlighter-rouge">Current time: 2014-09-11 23:18:30 +0900</code>のように表示されるはずです。</p>
+
+<h2 id="まとめ">まとめ</h2>
+<p>LotusでWebアプリを書くのはとても簡単だということがわかってもらえたでしょうか？</p>
+
+<p>ええ、あなたの心の声が聞こえてきますよ。<em>この例は単純すぎて全然実用的ではないじゃないか</em> という声が、、、</p>
+
+<p>確かにその通りです。ですが、それは次の記事で紹介させてください。本当はFull stackアプリケーションに作り方まで紹介する予定だったのですが
+この記事を書くのに予想より手間取ってしまいました。</p>
+
+<p>次の記事は、<strong><em>Ruby LotusでフルスタックWeb Appを作ってみる</em></strong> みたな感じになる予定です。</p>

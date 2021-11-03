@@ -1,0 +1,130 @@
+<p><img src="/assets/homepage-docker-logo.png" alt="" /></p>
+<h2 id="what-is-docker">What is Docker?</h2>
+<p>You can think of <a href="https://www.docker.io/">Docker</a> as a wrapper to create and run Linux LXC very easily. In addition to that, Docker comes with very unique technology called “union file system” that allows you to manage the version of your containers with familiar command like <em>commit</em> or <em>push</em> just like you are using git.</p>
+
+<p>LXC is the one of the virtualisation technology that allows you to run a container that is isolated from its host machine. In contrast to hypervisor type virtualisation like Xen Server, the LXC provides lightweight virtual machine. Typically, you can run more virtual machines in a host than hypervisor type with less resource.</p>
+
+<p>Because of the lightweight nature of LXC, one very good use of it is running many tests.</p>
+
+<p>You want to run your each test in very isolated so that running one test doesn’t give other tests any side effects. To do that, running a each test in isolated virtual machine is very natural way. You can do this by using hypervisor type of virtual machine, but it gives you some cost starting and stopping hypervisor type of virtual machine isn’t very fast.</p>
+
+<p>With LXC, you can easily archive this because running a machine is as light as running a process!!</p>
+
+<h2 id="installing-docker">Installing Docker</h2>
+<p>It is pretty easy to install Docker if you are using Ubuntu 12.04.</p>
+
+<p>The below instructions are from <a href="http://docs.docker.io/en/latest/installation/ubuntulinux/">instruction page of Docker</a> which worked for me.</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nb">sudo </span>apt-get update
+<span class="nb">sudo </span>apt-get <span class="nb">install </span>linux-image-generic-lts-raring linux-headers-generic-lts-raring
+<span class="nb">sudo </span>reboot
+<span class="nb">sudo </span>sh <span class="nt">-c</span> <span class="s2">"curl https://get.docker.io/gpg | apt-key add -"</span>
+<span class="nb">sudo </span>sh <span class="nt">-c</span> <span class="s2">"echo deb https://get.docker.io/ubuntu docker main &gt; /etc/apt/sources.list.d/docker.list"</span>
+<span class="nb">sudo </span>apt-get update
+<span class="nb">sudo </span>apt-get <span class="nb">install </span>lxc-docker
+</code></pre></div></div>
+
+<p>Now you can provision a container via Docker.</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nb">sudo </span>docker run <span class="nt">-i</span> <span class="nt">-t</span> ubuntu /bin/bash
+</code></pre></div></div>
+
+<p>If you are using Mac, you need to run Docker on vagrant since Docker doesn’t suppor Mac at this point. Installing on Mac is explained <a href="http://docs.docker.io/en/latest/installation/vagrant/">here</a>.
+However, I recommend you first to try Docker on Ubuntu. I tried Docker on Vagant VM, too, but provisioned container does not run as fast as running on Ubuntu probably because Vagrant is already running virtualized resource.</p>
+
+<h2 id="setting-up-test-environment">Setting up test environment</h2>
+<p>As I mentioned earlier, Docker provides very similar interface to git. You can pull docker images from <a href="https://index.docker.io/">public Docker repository</a> and use it to make your own images and then push.
+Since we are running cucumber test, you need a container that has environment to run ruby program. Although you can create such container very easily, let’s save time by using the image that I created before.</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c"># You need to be root to use Docker</span>
+<span class="nb">sudo</span> <span class="nt">-s</span>
+
+<span class="c"># Pulling images to your machine</span>
+docker pull kimh/ruby-base
+
+<span class="c"># Now let's see if it works</span>
+docker run kimh/ruby-base <span class="nb">echo</span> <span class="s2">"Running on Docker"</span>
+</code></pre></div></div>
+
+<p>Let’s login to the container you just pulled and install our test app.</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c"># Login to the container</span>
+docker run <span class="nt">-i</span> <span class="nt">-t</span> kimh/ruby-base /bin/bash
+<span class="nb">cd</span> /git
+git clone https://github.com/kimh/docker_demo
+<span class="nb">cd </span>docker_demo/ci_app
+bundle <span class="nb">install</span>
+</code></pre></div></div>
+
+<p>Now, since we have done time-consuming operation (pulling a image and bundle install), we want to save the state of the container. We will commit the change of container and save to images.</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c"># Dont't type exit on logged in container. If you do, your changes will be discarded!!</span>
+<span class="c"># Instead, you type Ctrl+p then Ctrl+q to quit from the console.</span>
+Ctrl+p
+Ctrl+q
+<span class="c"># First, you need to know the id of container</span>
+docker ps <span class="c"># In my case, it gives me 23fd82dcc088. Maybe different in different env?</span>
+docker commit 23fd82dcc088 kimh/ruby-base
+</code></pre></div></div>
+
+<p>You are ready to run the cucumber test on a container. Let’s start only running one container.</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>docker run kimh/ruby-base /bin/bash <span class="nt">-c</span> <span class="s2">"
+  source /etc/profile
+  cd /git/docker_demo/ci_app
+  export LC_CTYPE="</span>ja_JP.UTF-8<span class="s2">"
+  export RAILS_ENV=test
+  bundle exec rake cucumber
+"</span>
+</code></pre></div></div>
+
+<p>With the script above, Docker runs kimh/ruby-base and execute bash script which runs cucumber test.</p>
+
+<p>Finally, let’s run tests in paralell. The idea is running multiple containers and each container run one cucumber test. In this case, I will run 5 containers in parallel.</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">DID</span><span class="o">=</span><span class="s2">""</span>
+<span class="nv">container</span><span class="o">=</span><span class="s2">"kimh/ruby-base:latest"</span>
+<span class="nb">dir</span><span class="o">=</span><span class="s2">"/git/docker_demo/ci_app"</span>
+
+<span class="k">for </span>feature <span class="k">in</span> <span class="o">{</span>0..4<span class="o">}</span>
+<span class="k">do
+  </span><span class="nv">DID</span><span class="o">=</span><span class="nv">$DID</span><span class="s2">" "</span><span class="sb">`</span><span class="nb">sudo </span>docker run <span class="nt">-d</span> <span class="nv">$container</span> /bin/bash <span class="nt">-c</span> <span class="s2">"
+  source /etc/profile
+  cd </span><span class="nv">$dir</span><span class="s2">
+  export LC_CTYPE="</span>ja_JP.UTF-8<span class="s2">"
+  export RAILS_ENV=test
+  bundle exec rake cucumber
+  "</span><span class="sb">`</span>
+<span class="k">done
+</span>docker <span class="nb">wait</span> <span class="nv">$DID</span>
+</code></pre></div></div>
+
+<p>There are two things to note in above script.</p>
+
+<p>First, the script stores the ID’s of running containers into DID variable. I need the variable because I want to know the status code (whether test succeeds or fails) later.</p>
+
+<p>Second, by calling <em>docker wait</em> against container ID’s, the shell reports me the status code of each container and blocks until all container’s execution finishes.</p>
+
+<p>You should see consecutive status code of 0 since all tests should pass. (cucumber returns 0 for success).</p>
+
+<h1 id="wrapping-up">Wrapping up</h1>
+<p>You learned basics things about Docker and how to use it to run cucumber tests in parallel. Since each test is invoked by a container,
+tests are run in parallel and isolated environments. In this example, we only ran one test in multiple containers, so it is not very useful, but you see how you can passes different tests
+to each container and run them at once. This could be something like this.</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">DID</span><span class="o">=</span><span class="s2">""</span>
+<span class="nv">container</span><span class="o">=</span><span class="s2">"kimh/ruby-base:nice"</span>
+<span class="nb">dir</span><span class="o">=</span><span class="s2">"/git/your_repo"</span>
+
+<span class="k">for </span>feature <span class="k">in</span> <span class="sb">`</span>find  ./features/<span class="sb">`</span>
+<span class="k">do
+  </span><span class="nv">DID</span><span class="o">=</span><span class="nv">$DID</span><span class="s2">" "</span><span class="sb">`</span>docker run <span class="nt">-d</span> <span class="nv">$container</span> /bin/bash <span class="nt">-c</span> <span class="s2">"
+  source /etc/profile
+  cd </span><span class="nv">$dir</span><span class="s2">
+  export LC_CTYPE="</span>ja_JP.UTF-8<span class="s2">"
+  export RAILS_ENV=test
+  bundle exec cucumber </span><span class="nv">$feature</span><span class="s2"> -r features/
+  "</span><span class="sb">`</span>
+<span class="k">done
+</span>docker <span class="nb">wait</span> <span class="nv">$DID</span>
+</code></pre></div></div>

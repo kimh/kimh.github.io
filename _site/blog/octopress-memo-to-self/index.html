@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.7.1 -->
+<title>Octopressメモ | Program Is Made At Night</title>
+<meta name="generator" content="Jekyll v4.2.1" />
+<meta property="og:title" content="Octopressメモ" />
+<meta name="author" content="kim hirokuni" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="To: ３日後には全てを忘れている自分へ" />
+<meta property="og:description" content="To: ３日後には全てを忘れている自分へ" />
+<link rel="canonical" href="http://localhost:4000/blog/octopress-memo-to-self/" />
+<meta property="og:url" content="http://localhost:4000/blog/octopress-memo-to-self/" />
+<meta property="og:site_name" content="Program Is Made At Night" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2015-05-10T12:55:00+09:00" />
+<meta name="twitter:card" content="summary" />
+<meta property="twitter:title" content="Octopressメモ" />
+<script type="application/ld+json">
+{"url":"http://localhost:4000/blog/octopress-memo-to-self/","headline":"Octopressメモ","dateModified":"2015-05-10T12:55:00+09:00","datePublished":"2015-05-10T12:55:00+09:00","description":"To: ３日後には全てを忘れている自分へ","author":{"@type":"Person","name":"kim hirokuni"},"mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/blog/octopress-memo-to-self/"},"@type":"BlogPosting","@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="http://localhost:4000/feed.xml" title="Program Is Made At Night" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">Program Is Made At Night</a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/about/">About</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">Octopressメモ</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2015-05-10T12:55:00+09:00" itemprop="datePublished">May 10, 2015
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <p><strong><em>To: ３日後には全てを忘れている自分へ</em></strong></p>
+
+<p>今回、久しぶりにブログを書こうとしたらOctopressの仕組みを全く覚えていなくて、いろいろ回り道したせいで、ほぼ丸１日無駄にしてしまった。おそらく未来の自分はまた忘れるのだろうでここにメモをしておく。　</p>
+
+<h3 id="masterとsourceブランチ">masterとsourceブランチ</h3>
+<p>ブログはGithub Pageでホスティングしている。ブログそのものは、http://kimh.github.io/ で記事とかOctopressのコードは、https://github.com/kimh/kimh.github.io で管理している。</p>
+
+<p>https://github.com/kimh/kimh.github.io には <strong>master</strong> と <strong>source</strong> の二つのブランチがある。<strong>soruce</strong> にはmardkdownで書かれた記事が保存されていて、デプロイするとここから静的HTMLを生成して <strong>master</strong> にpushする。</p>
+
+<p>今回このことを覚えていなくて時間の多くを無駄にしてしまった。というのも、新しいMacに移行した際に新しくブログのレポジトリをcloneしたんだけど、中身を見たら静的HTMLしか見当たらない。というかOctopressそのものが見当たらない。
+あるのはmarkdownから生成されたと思われるhtmlファイルばっかり。「なんてこった！！！markdownで書いた記事はどこか別の場所で管理していて、それをGithubにはpushしていなかったんだ！今まで書いた記事が消失してしまった。やってもたー！！！」</p>
+
+<p>それで、静的HTMLからmarkdownへがんばって変換して、復旧が完了した時にふと読んだOctopressの解説記事で <strong>source</strong> ブランチがあることを知った。恐る恐る <strong>source</strong> にcheckoutするとmarkdownで書かれた記事とOctopressがあるじゃないですか！</p>
+
+<p>この発見はすごくショッキングだったけど、きっと未来の自分は忘れているんだろう。ということで、メモ。</p>
+
+<ul>
+  <li>https://github.com/kimh/kimh.github.io には <strong><em>master</em></strong> と <strong><em>source</em></strong> ブランチがある。</li>
+  <li><strong><em>source</em></strong> にはmarkdownで書いた記事とOctopressがある</li>
+  <li><strong><em>master</em></strong> にはmarkdownからOctopressが生成した静的HTMLファイルがある</li>
+  <li>http://kimh.github.io/ は <strong><em>master</em></strong> を表示している</li>
+  <li>記事を編集する時は <strong><em>source</em></strong> で行う</li>
+  <li>というか、基本 <strong><em>master</em></strong> にcheckoutすることはない</li>
+</ul>
+
+<h3 id="octopressのディレクトリ構成-sourceブランチ">Octopressのディレクトリ構成 (sourceブランチ)</h3>
+<p>多くの時間を無駄にしてしまった原因の一つにそもそもOctopressのファイル構成を理解していなかったことがある。幸い今回の復旧作業ではそれ学ぶことができた。</p>
+
+<p>以下は、<code class="language-plaintext highlighter-rouge">kimh.github.io</code>配下の重要ディレクトリ。</p>
+
+<p><code class="language-plaintext highlighter-rouge">source/_posts</code>ディレクトリにはmarkdown記事が置いてある。ブログの編集作業の大半はここにあるファイルを編集することになる。</p>
+
+<p><code class="language-plaintext highlighter-rouge">source/_includes</code>とか<code class="language-plaintext highlighter-rouge">source/_layouts</code>にはOctopressがブログサイトを構成するためのhtmlファイルが置いてある。ブログサイトそのものを変更したければここを直接いじることになる。3rd Party Themeがインストールされるのもここ（後述）</p>
+
+<p><code class="language-plaintext highlighter-rouge">.themes</code>には3rd Party Themeを置く。置き方は、<code class="language-plaintext highlighter-rouge">git clone https://github.com/rwwaskk/linkedlist.git .themes/linkedlist</code>のようにするのが一般的な方法のよう。
+<code class="language-plaintext highlighter-rouge">.themes</code>に置いたら、<code class="language-plaintext highlighter-rouge">rake install['name-of-theme']</code>でインストールできる。このコマンドを実行すると、<code class="language-plaintext highlighter-rouge">source</code>　配下にthemeが生成したHTMLやCSSやJavascriptが生成される。</p>
+
+<h3 id="ブログサイトそのものに変更を加える">ブログサイトそのものに変更を加える</h3>
+<p>前述したように、Octopressは<code class="language-plaintext highlighter-rouge">source</code>配下にあるファイルから静的HTMLを生成して、3rd Party Themeは<code class="language-plaintext highlighter-rouge">source</code>配下にインストールされる。しかし、時にはThemeが気に入らなくて自分で変更を加えたいこともあると思う。</p>
+
+<p>例えば今回の復旧作業でThemeを<a href="https://github.com/rwwaskk/linkedlist">Linked List</a>インストールした状態だとブログのタイトルを site.sub_title から取得しようとしている。コードは<a href="https://github.com/rwwaskk/linkedlist/blob/master/source/_layouts/home.html#L10">linkedlist/source/_layouts/home.html</a></p>
+
+<p>自分的にはここは site.title からとって欲しい。じゃー、どのファイルを編集するのかというと、一つは、<code class="language-plaintext highlighter-rouge">.themes/linkedlist/source/_layouts/home.html</code> 編集して、<code class="language-plaintext highlighter-rouge">rake install['name-of-theme']</code> で再インストールする。</p>
+
+<p>もう一つは、<code class="language-plaintext highlighter-rouge">source/_layouts/home.html</code>を直接編集する。ここで一つ注意するのは、<strong>themeを再インストールするとsource/配下は全て置き換えてしまうので自分で加えた変更も上書きされてしまう。</strong></p>
+
+<p>なので、この方法で編集した際はなんらかの理由でthemeを再インストールする時は要注意。(じゃー、やっぱりThemeのほうを変更すればよくない？と思うかもしれないけど、themeに自分の変更を加えるのはなんかおかしいと思う。この疑問は未解決。)</p>
+
+<h3 id="よく使うoctopressコマンド">よく使うOctopressコマンド</h3>
+
+<p><strong><em>rake new_post[“new-post-title”]</em></strong></p>
+
+<p>新しい記事を作成する。</p>
+
+<p><strong><em>rake generate</em></strong></p>
+
+<p><code class="language-plaintext highlighter-rouge">source</code>にあるファイルを<code class="language-plaintext highlighter-rouge">public</code>配下に静的HTMLとして生成する。</p>
+
+<p><strong><em>rake preview</em></strong></p>
+
+<p>http://localhost:4000 を立ち上げて、<code class="language-plaintext highlighter-rouge">public</code>配下をブラウザからアクセスできるようにする。</p>
+
+<p><strong><em>rake setup_github_pages</em></strong></p>
+
+<p>Github Pageにデプロイするために一度だけ実行しないといけない。</p>
+
+<p><strong><em>rake deploy</em></strong></p>
+
+<p><code class="language-plaintext highlighter-rouge">public</code>配下にあるファイルを<code class="language-plaintext highlighter-rouge">_deploy</code>ディレクトリにコピーして、<strong>master</strong> ブランチにpushする。少ししたら、ブログのurlからアクセスできるようになる。</p>
+
+<p><strong><em>rake gen_deploy</em></strong></p>
+
+<p>generateとdeployを一気に行う。とりあえず、deployしたい時はこれを実行しておけば問題ない。</p>
+
+  </div><a class="u-url" href="/blog/octopress-memo-to-self/" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading">Program Is Made At Night</h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name">kim hirokuni</li><li><a class="u-email" href="mailto:yangkookkim@gmail.com">yangkookkim@gmail.com</a></li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"><li><a href="https://github.com/jekyll"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#github"></use></svg> <span class="username">jekyll</span></a></li><li><a href="https://www.twitter.com/jekyllrb"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#twitter"></use></svg> <span class="username">jekyllrb</span></a></li></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p>Write an awesome description for your new site here. You can edit this line in _config.yml. It will appear in your document head meta (for Google search results) and in your feed.xml site description.</p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>

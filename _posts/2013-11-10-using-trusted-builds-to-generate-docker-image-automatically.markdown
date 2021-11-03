@@ -8,7 +8,7 @@ categories:
 - en
 - docker
 ---
-![](/images/construction.png)
+![](/assets/construction.png)
 ## Trusted Builds
 Recently, [index.docker.io](http://index.docker.io/ "index.docker.io") released a new feature called "Trusted Builds".
 Trusted Builds allows you to automatically builds a Docker container according to Dockerfile when you push to your Github repository.

@@ -8,7 +8,7 @@ categories:
 - en
 - docker
 ---
-![](/images/parallel.jpg)
+![](/assets/parallel.jpg)
 
 ## Baleen
 I wrote a ruby gem called [baleen](http://rubygems.org/gems/baleen).
@@ -35,7 +35,7 @@ To get the context, let me quicly go over how baleen works with docker.
 This is rough image that shows how baleen interacts with Docker. In the image, you can see how the request made by baleen client is processed by baleen server that makes API calls to Docker host.
 
 
-![basic flow of interaction](/images/basic-flow.png)
+![basic flow of interaction](/assets/basic-flow.png)
 
 The flow is what happens when you run
 
@@ -85,13 +85,13 @@ Unlike ***start***,***wait*** blocks until the method returns. This behavior isn
 
 If you are blocked, you have wait each container one by one which is very inefficient.
 
-![Waiting containers synchronously](/images/synchronous_wait.png)
+![Waiting containers synchronously](/assets/synchronous_wait.png)
 
 In this diagram, you can see that you have wait each container that takes **90 sec** including the time to start containers.
 
 What you want to do is waiting all containers at the same time and ask containers to notify you when they finish so that you can retrieve the results of containers.
 
-![Waiting containers asynchronously](/images/asynchronous_wait.png)
+![Waiting containers asynchronously](/assets/asynchronous_wait.png)
 
 In this diagram, the maximum time is the time for waiting the slowest container, which is 30 sec. This makes **60 sec** in total which is faster than synchronous version.
 
